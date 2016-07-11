@@ -1,4 +1,4 @@
-orderid:2982138	goodid:aliyun_b5df3188-7439-4d79-9be4-190fa3796111	buyerid:tb_d00bea1a-4e21-4c0a-8054-b8621cf0f03e	createtime:1463042797	done:true	amount:970	app_order_76_0:28532.77
+orderid:2982138 goodid:aliyun_b5df3188-7439-4d79-9be4-190fa3796111	buyerid:tb_d00bea1a-4e21-4c0a-8054-b8621cf0f03e	createtime:1463042797	done:true	amount:970	app_order_76_0:28532.77
 orderid:2982139	goodid:goodxn_9343708b-4ff2-473b-a83c-8f19d74028f6	buyerid:tb_074743a4-d808-460c-bcc8-6dac062a7872	createtime:1463042846	done:true	amount:956	app_order_3334_1:62
 orderid:2982140	goodid:aliyun_ada1969a-e3bd-4788-a20c-312c41265e6b	buyerid:ap_652e62ec-fcbe-4eaa-9518-a0b2aee572e8	createtime:1463043006	done:true	amount:507	app_order_3334_0:62933.03
 orderid:2982141	goodid:goodtb_2b0d960d-1917-42ec-b344-1b485988b8e5	buyerid:tb_bb43f82c-8737-4ec9-99d7-191021d9d771	createtime:1463043006	done:true	amount:334	app_order_76_1:46693.45	app_order_10021_0:6526.5	app_order_3334_0:43910.36	app_order_3334_2:31049.3
@@ -19,7 +19,7 @@ orderid:2982270	goodid:goodal_d5f21a4a-84bc-4db7-ab81-67075fa711f0	buyerid:tb_db
 orderid:2982271	goodid:good_9776cc21-5bd6-465a-b2b0-299b8c4f0d90	buyerid:tb_11d657c1-c2f7-43aa-a6d1-df1e7acc7e90	createtime:1463054605	done:true	amount:22	app_order_76_1:35476.3	app_order_33_0:122	app_order_3334_3:22
 orderid:2982272	goodid:aliyun_6bc6d9ba-e17d-42e7-8354-e87e6030526f	buyerid:tb_7a1f9032-e715-4c84-abaa-2405e7579408	createtime:1463055160	done:true	amount:175	app_order_33_0:127
 orderid:2982273	goodid:good_dce13536-552f-44c7-9187-92738ba583d6	buyerid:tb_867756b8-c96e-414b-9db8-d722dd99c6bb	createtime:1463055201	done:true	amount:959	app_order_33_2:4629.5	app_order_3334_1:137
-orderid:2982274	goodid:good_7b60e9b4-f66e-423c-9d7d-beecee7dfa01	buyerid:tb_cc8412d6-9b70-4460-93d4-f80f971e5528	createtime:1463055205	done:false	amount:663	app_order_76_0:5767.11
+orderid:2982274	goodid:good_7b60e9b4-f66e-423c-9d7d-beecee7dfa01    buyerid:tb_cc8412d6-9b70-4460-93d4-f80f971e5528	createtime:1463055205	done:false	amount:663	app_order_76_0:5767.11
 orderid:2982275	goodid:goodal_a289ad59-2660-42af-8618-018fd161c391	buyerid:tb_bd6fd52b-92f0-48ac-91c9-e0bbcbebe6d2	createtime:1463056182	done:true	amount:824	app_order_76_0:31029.8	app_order_33_2:37648.0	app_order_3334_0:28114.5	app_order_3334_1:139
 orderid:2982277	goodid:goodxn_458c9251-3e3e-44f0-bcc6-b3dce1fa4b86	buyerid:ap_301b43a3-77d2-4ad9-84b0-3370e1da31ca	createtime:1463056541	done:true	amount:130	app_order_10021_0:50939.83
 orderid:2982278	goodid:goodal_a310d7ae-c033-4d97-accf-de9d10071e2d	buyerid:ap_3da583eb-d2d7-4d91-beed-2d0733e9d632	createtime:1463056569	done:true	amount:569	app_order_10021_0:24260.80	app_order_3334_2:50097.2

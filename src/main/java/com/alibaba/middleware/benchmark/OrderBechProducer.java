@@ -27,9 +27,9 @@ public class OrderBechProducer {
 			fos = new FileOutputStream("orderBench.txt");
 			writer = new BufferedWriter(
 					new OutputStreamWriter(fos));
-			long orders = 10000000;
+			long orders = 1000000;
 			while( orders -- > 0) {
-				writer.write("orderid:" + orders + " fileOffset:" + random.nextNonNegative() + "\n");
+				writer.write("orderid:" + UUID.randomUUID().toString()+ " fileOffset:" + random.nextNonNegative() + "\n");
 				
 			}
 			
