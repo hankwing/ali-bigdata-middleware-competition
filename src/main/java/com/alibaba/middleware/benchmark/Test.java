@@ -16,6 +16,13 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.FileLock;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import com.alibaba.middleware.index.ComparableKeys;
+import com.alibaba.middleware.index.HashBucket;
 
 /**
  * 不用管
@@ -26,7 +33,25 @@ public class Test {
 
 	public static void main( String[] args) {
 		
-		club club1 = new club();
+		/*TreeMap<String, HashMap<String, Long>> treeMap = 
+				new TreeMap<String, HashMap<String,Long>>(new ComparableKeys(2));
+		
+		HashBucket bucket = new HashBucket(null , 0);
+		
+		String[] keys = {"11100", "100", "1000", "10000", "10", "20", "30", "40", "11000"};
+		for( String key : keys) {
+			bucket.putAddress(key, Long.valueOf(key));
+		}
+		
+		List<Map< String, Long>> values = bucket.getAllValues("10");
+		
+		for( Map<String, Long> map : values) {
+			System.out.println("values:" + map.entrySet());
+		}*/
+		
+		
+		
+		/*club club1 = new club();
 		club1.add(20);
 		club1.add(30);
 		long position1 = 0;
@@ -44,9 +69,9 @@ public class Test {
 		
 		FileOutputStream fout;
 		FileInputStream streamIn;
-		BufferedOutputStream bs;
+		BufferedOutputStream bs;*/
 		
-		try {
+		//try {
 			//fout = new FileOutputStream("club.txt");
 			/*ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(fout));
 			postition1 = fout.getChannel().position();
@@ -57,7 +82,7 @@ public class Test {
 			//oos.writeObject(club2);
 			
 			//position3 = fout.getChannel().position();
-			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+			/*ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 	        ObjectOutputStream objectOutputStream = null;
 
 	        try {
@@ -94,14 +119,14 @@ public class Test {
 	        } finally {
 	            //closeStream(objectOutputStream);
 	        	
-	        }
+	        }*/
 
 
 			//oos.writeObject(club3);
 			//oos.flush();
 			//oos.close();
 
-			streamIn = new FileInputStream("club.txt");
+			/*streamIn = new FileInputStream("club.txt");
 			ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
 		    club readCase = null;
 		    FileChannel channel = streamIn.getChannel();
@@ -148,7 +173,7 @@ public class Test {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 		
 
         /*RandomAccessFile serFile = null;
@@ -170,7 +195,7 @@ public class Test {
         }*/
     }
 	
-	public static class club implements Serializable{
+	/*public static class club implements Serializable{
 		int a = 0;
 		int b = 0;
 		ArrayList<member> values = new ArrayList<member>();
@@ -196,5 +221,5 @@ public class Test {
 		public member( int person) {
 			this.person = person;
 		}
-	}
+	}*/
 }

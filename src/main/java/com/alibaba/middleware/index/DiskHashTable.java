@@ -18,8 +18,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.alibaba.middleware.benchmark.Test.club;
 import com.alibaba.middleware.conf.RaceConfig;
 
 /**
@@ -37,7 +35,7 @@ public class DiskHashTable implements Serializable {
 	private String bucketFilePath = null; // save the buckets data
 	private String dataFilePath = null;
 	// 保存桶数据 但一加载此类时这个Map是空的 当调用查询时才会从物理地址里load进相应的桶数据
-	private transient Map<Integer, HashBucket<String, Long>> bucketList = null;
+	private transient Map<Integer, HashBucket> bucketList = null;
 
 	private transient ByteArrayOutputStream byteArrayOs = null;
 	private transient ObjectOutputStream offsetOos = null;
@@ -67,10 +65,10 @@ public class DiskHashTable implements Serializable {
 		recordNum = 0;
 		this.bucketFilePath = bucketFilePath;
 		this.dataFilePath = dataFilePath;
-		bucketList = new ConcurrentHashMap<Integer, HashBucket<String, Long>>();
+		bucketList = new ConcurrentHashMap<Integer, HashBucket>();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
 		for (int i = 9; i >= 0; i--) {
-			bucketList.put(i, new HashBucket<String, Long>(this, i));
+			bucketList.put(i, new HashBucket(this, i));
 		}
 	}
 
@@ -78,7 +76,7 @@ public class DiskHashTable implements Serializable {
 	 * 从文件里读取此类时 调用restore恢复初始化一些数据
 	 */
 	public void restore() {
-		bucketList = new HashMap<Integer, HashBucket<String, Long>>();
+		bucketList = new HashMap<Integer, HashBucket>();
 		if (streamIn == null || bucketReader == null) {
 			try {
 				streamIn = new FileInputStream(bucketFilePath);
@@ -155,7 +153,7 @@ public class DiskHashTable implements Serializable {
 
 		try {
 			if (bufferedFout == null || offsetOos == null) {
-				byteArrayOs = new ByteArrayOutputStream();
+				byteArrayOs = byteArrayOs == null ? new ByteArrayOutputStream() : byteArrayOs;
 				offsetOos = new ObjectOutputStream(byteArrayOs);
 
 				fos = new FileOutputStream(bucketFilePath, true);
@@ -167,7 +165,7 @@ public class DiskHashTable implements Serializable {
 			} else {
 				lastOffset = fos.getChannel().position();
 			}
-			for (Map.Entry<Integer, HashBucket<String, Long>> writeBucket : bucketList
+			for (Map.Entry<Integer, HashBucket> writeBucket : bucketList
 					.entrySet()) {
 				bucketAddressList.put(writeBucket.getKey(), lastOffset);
 				byteArrayOs.reset();
@@ -196,9 +194,9 @@ public class DiskHashTable implements Serializable {
 	 * @param bucketKey
 	 * @return
 	 */
-	public HashBucket<String, Long> readBucket(int bucketKey) {
+	public HashBucket readBucket(int bucketKey) {
 
-		HashBucket<String, Long> fileBucket = null;
+		HashBucket fileBucket = null;
 		try {
 			if (streamIn == null || bucketReader == null) {
 				// 这些工作在restore里做 以防万一这里加上
@@ -208,7 +206,7 @@ public class DiskHashTable implements Serializable {
 			}
 			streamIn.getChannel().position(bucketAddressList.get(bucketKey));
 
-			fileBucket = (HashBucket<String, Long>) bucketReader.readObject();
+			fileBucket = (HashBucket) bucketReader.readObject();
 			bucketList.put(bucketKey, fileBucket);
 
 		} catch (FileNotFoundException e) {
@@ -234,7 +232,7 @@ public class DiskHashTable implements Serializable {
 	 */
 	public long get(String key) {
 
-		HashBucket<String, Long> bucket = null;
+		HashBucket bucket = null;
 		int bucketIndex = getBucketIndex(key);
 		System.out.println("bucketIndex:" + bucketIndex);
 		if (bucketIndex < bucketNum) {
@@ -254,7 +252,7 @@ public class DiskHashTable implements Serializable {
 		}
 
 		if (bucket != null) {
-			return bucket.getAddress(key);
+			return bucket.getAddress(getBucketStringIndex(key), key);
 		} else {
 			// need to read from file
 			System.out.println("read error!");
@@ -272,7 +270,7 @@ public class DiskHashTable implements Serializable {
 	 */
 	public boolean put(String key, long value) {
 
-		HashBucket<String, Long> bucket = null;
+		HashBucket bucket = null;
 		int bucketIndex = getBucketIndex(key);
 		if (bucketIndex < bucketNum) {
 			bucket = bucketList.get((int) bucketIndex);
@@ -290,32 +288,39 @@ public class DiskHashTable implements Serializable {
 		}
 
 		if (bucket != null) {
-			bucket.putAddress(key, value);
+			bucket.putAddress(getBucketStringIndex(key), key, value);
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
-				HashBucket<String, Long> newBucket = new HashBucket<String, Long>(
-						this, bucketNum);
+				HashBucket newBucket = new HashBucket(this, bucketNum);
 				bucketNum++;
 				bucketList.put(bucketNum - 1, newBucket);
 				if (bucketNum > Math.pow(10, usedBits)) {
+					
 					usedBits++;
 				}
 
 				int newBucketIndex = bucketNum - 1;
-				HashBucket<String, Long> modifyBucket = bucketList
-						.get((int) (newBucketIndex % Math.pow(10, usedBits - 1)));
-				List<Map<String, Long>> temp = modifyBucket.getAllValues();
+				HashBucket modifyBucket = bucketList.get(
+						(int) (newBucketIndex % Math.pow(10, usedBits - 1)));
+				if( newBucketIndex == 31) {
+					int i = 0;
+				}
+				List<Map<String, Long>> temp = modifyBucket.getAllValues(String.valueOf(newBucketIndex));
 				for (Map<String, Long> tempMap : temp) {
 
 					for (Iterator<Map.Entry<String, Long>> it = tempMap
 							.entrySet().iterator(); it.hasNext();) {
 						Map.Entry<String, Long> entry = it.next();
 						if (getBucketIndex(entry.getKey()) == newBucketIndex) {
-							newBucket.putAddress(entry.getKey(),
+							newBucket.putAddress(
+									getBucketStringIndex(entry.getKey()), entry.getKey(),
 									entry.getValue());
 							it.remove();
+							modifyBucket.minusRecordNum();	// record num minus 1
 						}
 					}
+					
+					modifyBucket = modifyBucket.getNextBucket();
 				}
 
 			}
@@ -347,6 +352,22 @@ public class DiskHashTable implements Serializable {
 			int bucketIndex = Math.abs(Integer.valueOf(indexValue));
 			return bucketIndex;
 		}
+
+	}
+	
+	/**
+	 * 通过key值得到HashBucket里的数字
+	 * 
+	 * @param key
+	 * @return
+	 */
+	public String getBucketStringIndex(String key) {
+		// String hexValue = IndexUtils.stringToHex(key);
+		if( !isNumeric(key)) {
+			
+			key = String.valueOf(Math.abs(key.hashCode()));
+		}
+		return key;
 
 	}
 

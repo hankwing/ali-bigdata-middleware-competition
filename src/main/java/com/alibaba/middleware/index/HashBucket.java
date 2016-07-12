@@ -2,9 +2,11 @@ package com.alibaba.middleware.index;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import com.alibaba.middleware.conf.RaceConfig;
 
@@ -15,14 +17,14 @@ import com.alibaba.middleware.conf.RaceConfig;
  * @param <K>
  * @param <V>
  */
-public class HashBucket<K,V> implements Serializable{
+public class HashBucket implements Serializable{
 
 	private static final long serialVersionUID = 3610182543890121796L;
 	private int bucketKey = 0;	// 缓冲区管理需要根据这个值调用context.writeBucket将桶写出去
 	private int capacity  = 0;
 	private int recordNum = 0;
-	private Map< K, V> keyToAddress = null;		// need to write to disk
-	private HashBucket<K,V> nextBucket = null;
+	private TreeMap< String, Map<String,Long>> keyToAddress = null;		// need to write to disk
+	private HashBucket nextBucket = null;
 	private transient DiskHashTable context = null; 
 
 	public HashBucket( DiskHashTable context, int bucketKey) {
@@ -30,44 +32,62 @@ public class HashBucket<K,V> implements Serializable{
 		capacity = RaceConfig.hash_index_block_capacity;
 		this.bucketKey = bucketKey;
 		recordNum = 0;
-		keyToAddress = new HashMap<K, V>();
+		keyToAddress = new TreeMap<String, Map<String,Long>>(
+				new ComparableKeys(String.valueOf(bucketKey).length() + 1));
 	}
 	
-	public List<Map< K, V>> getAllValues() {
-		List<Map< K, V>> allValues = new ArrayList<Map<K, V>>();
-		allValues.add(keyToAddress);
+	public List<Map< String, Long>> getAllValues( String newBucketKey) {
+		List<Map< String, Long>> allValues = new ArrayList<Map<String, Long>>();
+		Map<String, Long> addMap = keyToAddress.get(newBucketKey);
+		if( addMap != null) {
+			allValues.add(keyToAddress.get(newBucketKey));
+		}
 		if( nextBucket != null ) {
-			allValues.addAll(nextBucket.getAllValues());
+			allValues.addAll(nextBucket.getAllValues( newBucketKey));
 		}
 		return allValues;
 	}
 	
-	public V getAddress( K key) {
-		if( keyToAddress.get(key) == null) {
+	public HashBucket getNextBucket() {
+		return nextBucket;
+	}
+	
+	public void minusRecordNum() {
+		recordNum -- ;
+	}
+	
+	public Long getAddress( String bucketIndex, String key) {
+		Map<String,Long> map = keyToAddress.get(bucketIndex);
+		if( map == null) {
 			if( nextBucket != null) {
-				return nextBucket.getAddress(key);
+				return nextBucket.getAddress(bucketIndex , key);
 			}
 			else {
 				return null;
 			}
 		}
 		else {
-			return keyToAddress.get(key);
+			return map.get(key);
 		}
 		
 	}
 	
-	public void putAddress( K key, V value) {
+	public void putAddress( String bucketIndex, String key, Long value) {
 		if( recordNum + 1 > capacity) {
 			if( nextBucket == null) {
-				nextBucket = new HashBucket<K, V>( null, 0);	// 溢出桶无需管理
+				nextBucket = new HashBucket( null, bucketKey);	// 溢出桶无需管理
 			}
 			
-			nextBucket.putAddress(key, value);
+			nextBucket.putAddress(bucketIndex, key, value);
 		}
 		else {
 			recordNum ++;
-			keyToAddress.put(key, value);
+			Map<String,Long> map = keyToAddress.get(bucketIndex);
+			if( map == null) {
+				map = new HashMap<String, Long>();
+				keyToAddress.put(bucketIndex, map);
+			}
+			map.put(key, value);
 		}
 		
 	}

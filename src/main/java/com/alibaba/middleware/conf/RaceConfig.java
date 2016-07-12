@@ -13,6 +13,9 @@ public class RaceConfig implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
-	public static int hash_index_block_capacity = 100;
+	public static int hash_index_block_capacity = 10000;
+	
+	public static String booleanTrueValue = "true";
+	public static String booleanFalseValue = "false";
 	
 }

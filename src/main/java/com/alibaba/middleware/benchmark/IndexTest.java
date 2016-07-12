@@ -11,8 +11,6 @@ import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-
-import com.alibaba.middleware.benchmark.Test.club;
 import com.alibaba.middleware.index.DiskHashTable;
 
 /**
