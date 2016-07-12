@@ -1,1 +1,0 @@
-使用方法：可调用OrderBechProducer来生成测试数据，之后就可以通过IndexTest来测试了
