@@ -71,5 +71,9 @@ public class HashBucket<K,V> implements Serializable{
 		}
 		
 	}
+
+	public int getBucketKey() {
+		return this.bucketKey;
+	}
 	
 }

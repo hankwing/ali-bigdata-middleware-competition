@@ -14,5 +14,17 @@ public class RaceConfig implements Serializable{
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static int hash_index_block_capacity = 100;
-	
+
+	/**
+	 * Thread pool config
+	 * */
+	public static int monitorThreadNum = 1;
+    public static int workerThreadNum = Runtime.getRuntime().availableProcessors();
+    public static int monitorInitDelayInMills = 1;
+    public static int monitorFixedDelayInMills = 5;
+
+	/**
+	 * Cache pool config
+	 * */
+	public static String cacheConfig = "/Users/Jelly/Developer/orderQuerySystem/cache.ccf";
 }
