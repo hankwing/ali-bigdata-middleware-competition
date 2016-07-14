@@ -61,7 +61,7 @@ public class OrderSystemImpl implements OrderSystem {
 	   * @return 符合条件的订单集合，按照createtime大到小排列
 	*/
 	public Iterator<Result> queryOrdersByBuyer(long startTime, long endTime,
-			String buyerid) {
+			String buyerid) {	
 		// 根据买家ID在索引里找到结果 再判断结果是否介于startTime和endTime之间  结果集合按照createTime插入排序
 		
 		return null;
