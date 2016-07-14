@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
@@ -27,12 +28,24 @@ public class OrderBechProducer {
 			fos = new FileOutputStream("orderBench.txt");
 			writer = new BufferedWriter(
 					new OutputStreamWriter(fos));
-			long orders = 10000000;
+			ArrayList<String> test = new ArrayList<String>();
+			long orders = 1000000;
 			while( orders -- > 0) {
-				writer.write("orderid:" + orders + " fileOffset:" + random.nextNonNegative() + "\n");
-				
+				String randomString = UUID.randomUUID().toString();
+				test.add(randomString);
+				writer.write("orderid:" + randomString 
+						+ " fileOffset:" + random.nextNonNegative() + "\n");
 			}
 			
+			
+			for( int i = 0; i < 3; i++ ) {
+				orders = 1000000;
+				while( orders -- > 0) {
+					writer.write("orderid:" + test.get((int) orders)  + " fileOffset:" + random.nextNonNegative() + "\n");
+					
+				}
+			}
+						
 			writer.flush();
 			writer.close();
 			

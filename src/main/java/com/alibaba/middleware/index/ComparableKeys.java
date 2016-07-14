@@ -4,8 +4,14 @@ import java.io.Serializable;
 import java.util.Comparator;
 
 
+/**
+ * 实现每个哈希桶内的根据后usedBits位聚簇存放  这样在新桶加入后可以很快定位需要加入到新桶的数据
+ * @author hankwing
+ *
+ */
 public class ComparableKeys implements Comparator<String>, Serializable {
 
+	private static final long serialVersionUID = 4306303294520820664L;
 	int usedBits;
 
 	public ComparableKeys(int usedBits) {

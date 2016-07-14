@@ -2,13 +2,13 @@ package com.alibaba.middleware.index;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.tools.IndexBucketKey;
 
 /**
  * 哈希索引使用的桶类  可有溢出桶
@@ -23,7 +23,7 @@ public class HashBucket implements Serializable{
 	private int bucketKey = 0;	// 缓冲区管理需要根据这个值调用context.writeBucket将桶写出去
 	private int capacity  = 0;
 	private int recordNum = 0;
-	private TreeMap< String, Map<String,Long>> keyToAddress = null;		// need to write to disk
+	private Map< String, Map<String, List<Long>>> keyToAddress = null;		// need to write to disk
 	private HashBucket nextBucket = null;
 	private transient DiskHashTable context = null; 
 
@@ -32,15 +32,16 @@ public class HashBucket implements Serializable{
 		capacity = RaceConfig.hash_index_block_capacity;
 		this.bucketKey = bucketKey;
 		recordNum = 0;
-		keyToAddress = new TreeMap<String, Map<String,Long>>(
+		keyToAddress = new TreeMap<String, Map<String,List<Long>>>(
 				new ComparableKeys(String.valueOf(bucketKey).length() + 1));
 	}
 	
-	public List<Map< String, Long>> getAllValues( String newBucketKey) {
-		List<Map< String, Long>> allValues = new ArrayList<Map<String, Long>>();
-		Map<String, Long> addMap = keyToAddress.get(newBucketKey);
+	public List<Map<String, List<Long>>> getAllValues(String newBucketKey) {
+		
+		List<Map< String, List<Long>>> allValues = new ArrayList<Map<String, List<Long>>>();
+		Map<String, List<Long>> addMap = keyToAddress.get(newBucketKey);
 		if( addMap != null) {
-			allValues.add(keyToAddress.get(newBucketKey));
+			allValues.add(addMap);
 		}
 		if( nextBucket != null ) {
 			allValues.addAll(nextBucket.getAllValues( newBucketKey));
@@ -56,38 +57,71 @@ public class HashBucket implements Serializable{
 		recordNum -- ;
 	}
 	
-	public Long getAddress( String bucketIndex, String key) {
-		Map<String,Long> map = keyToAddress.get(bucketIndex);
-		if( map == null) {
-			if( nextBucket != null) {
-				return nextBucket.getAddress(bucketIndex , key);
-			}
-			else {
-				return null;
-			}
+	public List<Long> getAddress(  String bucketIndex, String key) {
+		List<Long> results = new ArrayList<Long>();
+		Map<String, List<Long>> partialResult = keyToAddress.get(bucketIndex);
+		if( partialResult != null  && partialResult.get(key) != null ) {
+			results.addAll(partialResult.get(key));
 		}
-		else {
-			return map.get(key);
+		
+		if( nextBucket != null) {
+			results.addAll(nextBucket.getAddress(bucketIndex, key));
 		}
+		return results;
 		
 	}
 	
 	public void putAddress( String bucketIndex, String key, Long value) {
+
 		if( recordNum + 1 > capacity) {
 			if( nextBucket == null) {
-				nextBucket = new HashBucket( null, bucketKey);	// 溢出桶无需管理
+				nextBucket = new HashBucket( context, 0);	// 溢出桶无需管理
+			}
+			
+			nextBucket.putAddress( bucketIndex, key, value);
+		}
+		else {
+			recordNum ++;
+			Map<String,List<Long>> values = keyToAddress.get(bucketIndex);
+			if(values == null) {
+				values = new HashMap<String,List<Long>>();
+				keyToAddress.put(bucketIndex, values);
+				
+			}
+			List<Long> valueList = values.get(key);
+			if(valueList == null) {
+				valueList = new ArrayList<Long>();
+				values.put(key, valueList);
+			}
+			valueList.add(value);
+			
+		}
+		
+	}
+	
+	public void putAddress( String bucketIndex, String key, List<Long> value) {
+		if( recordNum + value.size() > capacity) {
+			if( nextBucket == null) {
+				nextBucket = new HashBucket(context, 0);	// 溢出桶无需管理
 			}
 			
 			nextBucket.putAddress(bucketIndex, key, value);
 		}
 		else {
-			recordNum ++;
-			Map<String,Long> map = keyToAddress.get(bucketIndex);
-			if( map == null) {
-				map = new HashMap<String, Long>();
-				keyToAddress.put(bucketIndex, map);
+			recordNum += value.size();
+			Map<String, List<Long>> values = keyToAddress.get(bucketIndex);
+			if(values == null) {
+				values = new HashMap<String, List<Long>>();
+				keyToAddress.put(bucketIndex, values);
 			}
-			map.put(key, value);
+			
+			List<Long> valueList = values.get(key);
+			if( valueList == null) {
+				valueList = new ArrayList<Long>();
+				values.put(key, valueList);
+			}
+			
+			valueList.addAll(value);
 		}
 		
 	}
