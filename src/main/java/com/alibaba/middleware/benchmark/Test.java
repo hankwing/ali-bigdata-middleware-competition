@@ -21,205 +21,237 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.index.ComparableKeys;
-import com.alibaba.middleware.index.HashBucket;
 
 /**
  * 不用管
+ * 
  * @author hankwing
  *
  */
 public class Test {
 
-	public static void main( String[] args) {
-		
-		/*TreeMap<String, HashMap<String, Long>> treeMap = 
-				new TreeMap<String, HashMap<String,Long>>(new ComparableKeys(2));
-		
-		HashBucket bucket = new HashBucket(null , 0);
-		
-		String[] keys = {"11100", "100", "1000", "10000", "10", "20", "30", "40", "11000"};
-		for( String key : keys) {
-			bucket.putAddress(key, Long.valueOf(key));
-		}
-		
-		List<Map< String, Long>> values = bucket.getAllValues("10");
-		
-		for( Map<String, Long> map : values) {
-			System.out.println("values:" + map.entrySet());
-		}*/
-		
-		
-		
-		/*club club1 = new club();
-		club1.add(20);
-		club1.add(30);
-		long position1 = 0;
-		
-		club club2 = new club();
-		club2.add(30);
-		club2.add(40);
-		long position2 = 0;
-		
-		club club3 = new club();
-		club3.add(50);
-		club3.add(60);
-		club3.add(70);
-		long position3 = 0;
-		
-		FileOutputStream fout;
-		FileInputStream streamIn;
-		BufferedOutputStream bs;*/
-		
-		//try {
-			//fout = new FileOutputStream("club.txt");
-			/*ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(fout));
-			postition1 = fout.getChannel().position();
-			oos.writeObject(newClub);*/
+	public static void main(String[] args) {
 
-			//position2 = fout.getChannel().position();
+		/*
+		 * TreeMap<String, HashMap<String, Long>> treeMap = new TreeMap<String,
+		 * HashMap<String,Long>>(new ComparableKeys(2));
+		 * 
+		 * HashBucketTest bucket = new HashBucketTest(null , 0);
+		 * 
+		 * String[] keys = {"11100", "100", "1000", "10000", "10", "20", "30",
+		 * "40", "11000"}; for( String key : keys) { bucket.putAddress(key,
+		 * Long.valueOf(key)); }
+		 * 
+		 * List<Map< String, Long>> values = bucket.getAllValues("10");
+		 * 
+		 * for( Map<String, Long> map : values) { System.out.println("values:" +
+		 * map.entrySet()); }
+		 */
+		try {
+			String a1 = "1";
+			String a2 = "01";
+
+			System.out.println("" + a1.compareTo(a2));
+
+			club club1 = new club();
+			club1.add(20);
+			club1.add(30);
+
+			club club2 = new club();
+			club2.add(30);
+			club2.add(40);
+
+			club club3 = new club();
+			club3.add(80);
+			club3.add(60);
+			club3.add(70);
+
+			HashBucketTest bucket1 = new HashBucketTest();
+			bucket1.putAddress("0", 30);
+
+			HashBucketTest bucket2 = new HashBucketTest();
+			bucket2.putAddress("22312", 40);
+
+			HashBucketTest bucket3 = new HashBucketTest();
+			bucket3.putAddress("22312", 50);
 			
-			//oos.writeObject(club2);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ObjectOutputStream oops = new ObjectOutputStream(baos);
 			
-			//position3 = fout.getChannel().position();
-			/*ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-	        ObjectOutputStream objectOutputStream = null;
-
-	        try {
-	            objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-	            objectOutputStream.writeObject(club1);
-
-	            position1 += byteArrayOutputStream.size();
-	            
-	            fout = new FileOutputStream("club.txt", false);
-				//ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(fout));
-				//oos.writeObject(newClub);
-	            bs = new BufferedOutputStream(fout);
-	            bs.write(byteArrayOutputStream.toByteArray());
-				System.out.println("position2:" + position1);
-				
-				byteArrayOutputStream.reset();
-				objectOutputStream.writeObject(club2);
-				position1 += byteArrayOutputStream.size();
-	            
-				bs.write(byteArrayOutputStream.toByteArray());
-				System.out.println("position3:" + position1);
-				
-				byteArrayOutputStream.reset();
-				objectOutputStream.writeObject(club3);
-	            
-				bs.write(byteArrayOutputStream.toByteArray());
-				System.out.println("position:" + byteArrayOutputStream.toByteArray().length);
-				
-				bs.flush();
-				bs.close();
-	            
-	        } catch (Exception cause) {
-	            cause.printStackTrace();
-	        } finally {
-	            //closeStream(objectOutputStream);
-	        	
-	        }*/
-
-
-			//oos.writeObject(club3);
-			//oos.flush();
-			//oos.close();
-
-			/*streamIn = new FileInputStream("club.txt");
-			ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
-		    club readCase = null;
-		    FileChannel channel = streamIn.getChannel();
-		    channel.position(0);
-		    readCase = (club) objectinputstream.readObject();
-		    System.out.println(readCase.values.get(0).person);
-		    
-		    long postition2 = channel.position();
-		    streamIn.getChannel().position(250);
-		    readCase = (club) objectinputstream.readObject();
-		    System.out.println(readCase.values.get(0).person);
+			FileOutputStream fout = new FileOutputStream("objects.txt");
+			BufferedOutputStream bs = new BufferedOutputStream(fout);
 			
-			System.out.println("position:" + postition2);
+			int position1 = baos.size();								// the first object position
+			bs.write(baos.toByteArray());								// write head
+			baos.reset();
+			
+			oops.writeObject(bucket1);					// write the first object to byte array
+
+			oops.reset();
+			int position2 = position1 + baos.size();	// the second object position
+			bs.write(baos.toByteArray());				// write first object to file
+			baos.reset();
+			
+			oops.writeObject(bucket2);					// write the second object to byte array
+			oops.reset();
+			int position3 = position2 + baos.size();	// the third object position
+			bs.write(baos.toByteArray());				// write the second object to file
+			baos.reset();
+			
+			oops.writeObject(bucket3);					// write the third object to byte array
+			oops.reset();
+			int position4 = position3 + baos.size();	// the fourth object position
+			bs.write(baos.toByteArray());				// write the third object to file
+			baos.reset();
+
+			bs.flush();
+			bs.close();
+			fout.flush();
+			fout.close();
+
+			// read according to the position x
+
+			HashBucketTest readCase1 = null;
+			HashBucketTest readCase2 = null;
+			HashBucketTest readCase3 = null;
+			
+			FileInputStream fis = new FileInputStream("objects.txt");
+			ObjectInputStream ois = new ObjectInputStream(
+					fis);
+			
+			// success case
+			/*readCase1 = (HashBucketTest) ois.readObject();	// read the first object, success
+			fis.getChannel().position(position2);
+			readCase2 = (HashBucketTest) ois.readObject();	// read the second object, success
+			fis.getChannel().position(position3);
+			readCase3 = (HashBucketTest) ois.readObject();	// read the third object, success
+*/			
+			// failed case!!!!
+			readCase1 = (HashBucketTest) ois.readObject();	// read the first object, success
+			fis.getChannel().position(position3);
+			readCase3 = (HashBucketTest) ois.readObject();	// read the second object, success
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 	}
-	
-	public static <T extends Serializable> void writeSerializable( T serialized) {
 
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ObjectOutputStream objectOutputStream = null;
+	public static <T extends Serializable> void writeSerializable(T serialized) {
 
-        try {
-            objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-            objectOutputStream.writeObject(serialized);
-        } catch (Exception cause) {
-            cause.printStackTrace();
-        } finally {
-            //closeStream(objectOutputStream);
-        }
-        
-        FileOutputStream fout;
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		ObjectOutputStream objectOutputStream = null;
+
+		try {
+			objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+			objectOutputStream.writeObject(serialized);
+		} catch (Exception cause) {
+			cause.printStackTrace();
+		} finally {
+			// closeStream(objectOutputStream);
+		}
+
+		FileOutputStream fout;
 		try {
 			fout = new FileOutputStream("club.txt", true);
-			ObjectOutputStream oos = new ObjectOutputStream(new BufferedOutputStream(fout));
+			ObjectOutputStream oos = new ObjectOutputStream(
+					new BufferedOutputStream(fout));
 			oos.write(byteArrayOutputStream.toByteArray());
-			System.out.println("position:" + byteArrayOutputStream.toByteArray().length);
+			System.out.println("position:"
+					+ byteArrayOutputStream.toByteArray().length);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}*/
-		
+		}
 
-        /*RandomAccessFile serFile = null;
-        FileChannel fileChannel = null;
+		/*
+		 * RandomAccessFile serFile = null; FileChannel fileChannel = null;
+		 * 
+		 * try { byte[] source = byteArrayOutputStream.toByteArray(); serFile =
+		 * new RandomAccessFile(file, "rw"); fileChannel = serFile.getChannel();
+		 * ByteBuffer buffer = fileChannel.map(MapMode.READ_WRITE, 0,
+		 * source.length); FileLock fileLock = fileChannel.lock();
+		 * buffer.put(source); fileLock.release(); buffer.clear(); } catch
+		 * (Exception cause) { cause.printStackTrace(); } finally {
+		 * 
+		 * }
+		 */
+	}
 
-        try {
-            byte[] source = byteArrayOutputStream.toByteArray();
-            serFile = new RandomAccessFile(file, "rw");
-            fileChannel = serFile.getChannel();
-            ByteBuffer buffer = fileChannel.map(MapMode.READ_WRITE, 0, source.length);
-            FileLock fileLock = fileChannel.lock();
-            buffer.put(source);
-            fileLock.release();
-            buffer.clear();
-        } catch (Exception cause) {
-            cause.printStackTrace();
-        } finally {
-        	
-        }*/
-    }
-	
-	/*public static class club implements Serializable{
+	public static class club implements Serializable {
 		int a = 0;
 		int b = 0;
-		ArrayList<member> values = new ArrayList<member>();
-		
-		public club() {
+		Map<String, Map<String, member>> values = null;
 
+		public club() {
+			values = new TreeMap<String, Map<String, member>>();
 		}
-		
-		public void add( int number) {
-			values.add(new member(number));
+
+		public void add(int number) {
+			Map<String, member> temp = values.get(String.valueOf(number));
+			if (temp == null) {
+				temp = new HashMap<String, member>();
+				values.put(String.valueOf(number), temp);
+			}
+			temp.put(String.valueOf(number), new member(number));
 		}
-		
 
 	}
-	
-	public static class member implements Serializable{
-		int person  = 0;
-		
+
+	public static class member implements Serializable {
+		int person = 0;
+
 		public member() {
 			person = 0;
 		}
-		
-		public member( int person) {
+
+		public member(int person) {
 			this.person = person;
 		}
-	}*/
+	}
+
+	public static class HashBucketTest implements Serializable {
+
+		private static final long serialVersionUID = 3610182543890121796L;
+
+		Map<String, Integer> values = null; // need to write to disk
+
+		public HashBucketTest() {
+
+			values = new TreeMap<String, Integer>();
+		}
+
+		public void putAddress(String key, int number) {
+
+			values.put(key, number);
+		}
+
+	}
+
+	static class Key implements Serializable {
+		private String keyString;
+		static int xor = 0;
+
+		Key(String keyString) {
+			this.keyString = keyString;
+		}
+
+		@Override
+		public int hashCode() {
+			return keyString.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			Key otherKey = (Key) obj;
+			return keyString.equals(otherKey.keyString);
+		}
+
+	}
 }

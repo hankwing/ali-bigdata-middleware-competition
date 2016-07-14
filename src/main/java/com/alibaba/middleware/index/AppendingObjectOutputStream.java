@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
+/**
+ * 写序列化文件时  如果文件存在且已有首部 则跳过写首部
+ * @author hankwing
+ *
+ */
 public class AppendingObjectOutputStream extends ObjectOutputStream {
 
 	public AppendingObjectOutputStream(OutputStream out) throws IOException {
