@@ -9,8 +9,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+
 import com.alibaba.middleware.index.DiskHashTable;
 
 /**
@@ -83,7 +85,7 @@ public class IndexTest {
 		    		long startTime = System.currentTimeMillis();
 		    		br = new BufferedReader(new FileReader("orderBench.txt"));
 				    String line = br.readLine();
-				    hashTable = new DiskHashTable("bucketFile","dataFile");
+				    hashTable = new DiskHashTable<List<Long>>("bucketFile","dataFile", List.class);
 				    
 				    while (line != null) {
 				        String[] values = line.split("\\s+?");
