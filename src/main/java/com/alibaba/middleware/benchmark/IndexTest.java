@@ -85,7 +85,7 @@ public class IndexTest {
 		    		long startTime = System.currentTimeMillis();
 		    		br = new BufferedReader(new FileReader("orderBench.txt"));
 				    String line = br.readLine();
-				    hashTable = new DiskHashTable<List<Long>>("bucketFile","dataFile", List.class);
+				    hashTable = new DiskHashTable<Long,List<Long>>("bucketFile","dataFile", List.class);
 				    
 				    while (line != null) {
 				        String[] values = line.split("\\s+?");
