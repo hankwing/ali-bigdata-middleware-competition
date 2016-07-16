@@ -11,17 +11,11 @@ import java.util.concurrent.*;
  */
 public class ThreadPool {
     private int workerThreadNum = RaceConfig.workerThreadNum;
-    private int monitorThreadNum = RaceConfig.monitorThreadNum;
     private static ThreadPool instance = null;
-    private static ScheduledExecutorService monitorExe;
     private static ExecutorService workerExe;
-    private int initDelay = RaceConfig.monitorInitDelayInMills;
-    private int fixedDelay = RaceConfig.monitorFixedDelayInMills;
-    private List<JVMMonitorThread> monitorList = new ArrayList<JVMMonitorThread>();
     private List<WorkerThread> workerList = new LinkedList<WorkerThread>();
 
     private ThreadPool() {
-        monitorExe = Executors.newScheduledThreadPool(monitorThreadNum);
         workerExe = Executors.newFixedThreadPool(workerThreadNum);
     }
 
@@ -32,18 +26,8 @@ public class ThreadPool {
         return instance;
     }
 
-    public void addMonitor(JVMMonitorThread mThread) {
-        monitorList.add(mThread);
-    }
-
     public void addWorker(WorkerThread wThread) {
         workerList.add(wThread);
-    }
-
-    public void startMonitors() {
-        for (JVMMonitorThread t: monitorList) {
-             monitorExe.scheduleAtFixedRate(t, initDelay, fixedDelay, TimeUnit.MILLISECONDS);
-        }
     }
 
     public void startWorkers() {
@@ -52,21 +36,14 @@ public class ThreadPool {
         }
     }
 
-    public void stopMonitors() {
-        try {
-            monitorExe.awaitTermination(100, TimeUnit.MILLISECONDS);
-            monitorExe.shutdown();
-            monitorList.clear();
-        } catch (InterruptedException e) {
-            monitorExe.shutdownNow();
-        }
-    }
-
     public void stopWorkers() {
         for (WorkerThread t: workerList) {
-            t.interrupt();
+            t.setReadyToStop();
         }
-        workerExe.shutdown();
         workerList.clear();
+    }
+
+    public void shutdown() {
+        workerExe.shutdown();
     }
 }

@@ -15,7 +15,7 @@ import com.alibaba.middleware.conf.RaceConfig;
  * @author hankwing
  *
  * @param <K>
- * @param <V>
+ * @param <T>
  */
 public class HashBucket<K,T> implements Serializable{
 

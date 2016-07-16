@@ -15,17 +15,6 @@ jcs.default.elementattributes.IsRemote=true
 jcs.default.elementattributes.IsLateral=true
 
 # PRE-DEFINED CACHE REGIONS
-jcs.region.indexCache=DC
-jcs.region.indexCache.cacheattributes=org.apache.commons.jcs.engine.CompositeCacheAttributes
-jcs.region.indexCache.cacheattributes.MaxObjects=1000
-jcs.region.indexCache.cacheattributes.MemoryCacheName=org.apache.commons.jcs.engine.memory.lru.LRUMemoryCache
-jcs.region.indexCache.cacheattributes.UseMemoryShrinker=false
-jcs.region.indexCache.cacheattributes.MaxMemoryIdleTime=3600
-jcs.region.indexCache.cacheattributes.ShrinkerInterval=60
-jcs.region.indexCache.cacheattributes.MaxSpoolPerRun=500
-jcs.region.indexCache.elementattributes=org.apache.commons.jcs.engine.ElementAttributes
-jcs.region.indexCache.elementattributes.IsEternal=false
-
 jcs.region.commonCache=DC
 jcs.region.commonCache.cacheattributes=org.apache.commons.jcs.engine.CompositeCacheAttributes
 jcs.region.commonCache.cacheattributes.MaxObjects=1000

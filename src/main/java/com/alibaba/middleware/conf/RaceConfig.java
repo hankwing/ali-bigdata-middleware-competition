@@ -17,8 +17,8 @@ public class RaceConfig implements Serializable{
 	/**
 	 * Thread pool config
 	 * */
-	public static int monitorThreadNum = 1;
-    public static int workerThreadNum = Runtime.getRuntime().availableProcessors();
+//	public static int monitorThreadNum = 1;
+    public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
     public static int monitorInitDelayInMills = 1;
     public static int monitorFixedDelayInMills = 5;
 
