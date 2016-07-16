@@ -15,6 +15,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.alibaba.middleware.conf.RaceConfig;
 
@@ -25,7 +27,7 @@ import com.alibaba.middleware.conf.RaceConfig;
  * @author hankwing
  *
  */
-public class DiskHashTable<T> implements Serializable {
+public class DiskHashTable<K,T> implements Serializable {
 
 	private static final long serialVersionUID = 6020895636934444399L;
 	private int usedBits;
@@ -34,18 +36,22 @@ public class DiskHashTable<T> implements Serializable {
 	private String bucketFilePath = null; // save the buckets data
 	private String dataFilePath = null;
 	// 保存桶数据 但一加载此类时这个Map是空的 当调用查询时才会从物理地址里load进相应的桶数据
-	private transient Map<Integer, HashBucket<T>> bucketList = null;
+	private transient Map<Integer, HashBucket<K,T>> bucketList = null;
 
 	private transient ByteArrayOutputStream byteArrayOs = null;
 	private transient ObjectOutputStream offsetOos = null;
 	private transient BufferedOutputStream bufferedFout;
 	private transient FileOutputStream fos;
-
 	private transient FileInputStream streamIn;
 	private transient ObjectInputStream bucketReader;
 	private transient long lastOffset = 0;
+	private transient ReadWriteLock readWriteLock = null;
 	private Map<Integer, Long> bucketAddressList = null; // 桶对应的物理地址
 	private Class<?> classType = null;
+	
+	
+	//private transient LinkedBlockingQueue<HashBucket<T>> bucketQueue = null;
+	//private transient Timer timer  = null;
 
 	public DiskHashTable() {
 
@@ -62,22 +68,43 @@ public class DiskHashTable<T> implements Serializable {
 		usedBits = 1;
 		bucketNum = 10;
 		recordNum = 0;
+		readWriteLock = new ReentrantReadWriteLock();
 		this.classType = classType;
 		this.bucketFilePath = bucketFilePath;
 		this.dataFilePath = dataFilePath;
-		bucketList = new ConcurrentHashMap<Integer, HashBucket<T>>();
+		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
-		for (int i = 9; i >= 0; i--) {
-			bucketList.put(i, new HashBucket<T>(this, i, classType));
+
+		//bucketQueue = new LinkedBlockingQueue<HashBucket<T>>(100000);
+		for (int i = 0; i < 10; i++) {
+			bucketList.put(i, new HashBucket<K,T>(this, i, classType));
 		}
+		/*timer = new Timer();
+		timer.schedule(new TimerTask() {
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				int size = bucketQueue.size();
+				readWriteLock.writeLock().lock();
+				while(size -- > 20000) {
+					bucketQueue.poll().writeSelf();
+					
+				}
+				readWriteLock.writeLock().unlock();
+			}
+			
+		}, 5*1000, 10* 1000);*/
+		
+		
 	}
 
 	/**
 	 * 从文件里读取此类时 调用restore恢复初始化一些数据
 	 */
 	public void restore() {
-		bucketList = new HashMap<Integer, HashBucket<T>>();
-
+		bucketList = new HashMap<Integer, HashBucket<K,T>>();
+		readWriteLock = new ReentrantReadWriteLock();
 	}
 
 	/**
@@ -88,8 +115,9 @@ public class DiskHashTable<T> implements Serializable {
 	public synchronized void writeBucket(int bucketKey) {
 
 		try {
+			
 			long offset = 0;
-
+			
 			if (byteArrayOs == null || fos == null) {
 				byteArrayOs = new ByteArrayOutputStream();
 				fos = new FileOutputStream(bucketFilePath, true);
@@ -109,15 +137,15 @@ public class DiskHashTable<T> implements Serializable {
 
 			}
 			byteArrayOs.reset();
-
+			
 			offset = fos.getChannel().position();
 			bucketAddressList.put(bucketKey, offset);
 
 			offsetOos.writeObject(bucketList.remove(bucketKey));
+			
 			bufferedFout.write(byteArrayOs.toByteArray());
 			bufferedFout.flush();
 			offsetOos.reset();
-
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -134,6 +162,7 @@ public class DiskHashTable<T> implements Serializable {
 	public void writeAllBuckets() {
 
 		try {
+			//timer.cancel();
 			if (bufferedFout == null || offsetOos == null) {
 				byteArrayOs = new ByteArrayOutputStream();
 				
@@ -155,7 +184,7 @@ public class DiskHashTable<T> implements Serializable {
 			} else {
 				lastOffset = fos.getChannel().position();
 			}
-			for (Map.Entry<Integer, HashBucket<T>> writeBucket : bucketList
+			for (Map.Entry<Integer, HashBucket<K,T>> writeBucket : bucketList
 					.entrySet()) {
 				bucketAddressList.put(writeBucket.getKey(), lastOffset);
 				byteArrayOs.reset();
@@ -186,20 +215,26 @@ public class DiskHashTable<T> implements Serializable {
 	 * @param bucketKey
 	 * @return
 	 */
-	public HashBucket<T> readBucket(int bucketKey) {
+	public HashBucket<K,T> readBucket(int bucketKey) {
 
-		HashBucket<T> fileBucket = null;
+		HashBucket<K,T> fileBucket = bucketList.get( bucketKey);
 		try {
-			FileInputStream streamIn = new FileInputStream(bucketFilePath);
-			ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
-		    //bucketReader.readObject();			// 必须得读一下  找到类的描述符
-			//}
-			streamIn.getChannel().position(bucketAddressList.get(bucketKey));
+			if( fileBucket == null) {
+				readWriteLock.readLock().lock();
+				streamIn = new FileInputStream(bucketFilePath);
 
-			fileBucket = (HashBucket<T>) bucketReader.readObject();
-			bucketList.put(bucketKey, fileBucket);
-			
-			bucketReader.close();
+				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
+				streamIn.getChannel().position(bucketAddressList.get(bucketKey));
+				
+				fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+				readWriteLock.readLock().unlock();
+				fileBucket.setContext(this);
+				//System.out.println("load bucket:" + bucketKey);
+				bucketList.put(bucketKey, fileBucket);
+				//bucketQueue.put(fileBucket);
+				
+				bucketReader.close();
+			}
 
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -210,8 +245,7 @@ public class DiskHashTable<T> implements Serializable {
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		
+		} 
 		return fileBucket;
 
 	}
@@ -222,25 +256,16 @@ public class DiskHashTable<T> implements Serializable {
 	 * @param key
 	 * @return
 	 */
-	public List<Long> get(String key) {
+	public List<Long> get(K key) {
 
-		HashBucket<T> bucket = null;
+		HashBucket<K,T> bucket = null;
 		int bucketIndex = getBucketIndex(key);
-		System.out.println("bucketIndex:" + bucketIndex);
 		if (bucketIndex < bucketNum) {
-			bucket = bucketList.get((int) bucketIndex);
-			if (bucket == null) {
-				System.out.println("load bucketIndex:" + bucketIndex);
-				bucket = readBucket(bucketIndex);
-			}
+			bucket = readBucket((int) bucketIndex);
+	
 		} else {
-			bucket = bucketList.get((int) (bucketIndex % Math.pow(10,
+			bucket = readBucket((int) (bucketIndex % Math.pow(10,
 					usedBits - 1)));
-			if (bucket == null) {
-				System.out.println("load bucketIndex:" + bucketIndex);
-				bucket = readBucket((int) (bucketIndex % Math.pow(10,
-						usedBits - 1)));
-			}
 		}
 
 		if (bucket != null) {
@@ -260,22 +285,15 @@ public class DiskHashTable<T> implements Serializable {
 	 * @param value
 	 * @return
 	 */
-	public boolean put(String key, long value) {
+	public boolean put(K key, long value) {
 
-		HashBucket<T> bucket = null;
+		HashBucket<K,T> bucket = null;
 		int bucketIndex = getBucketIndex(key);
 		if (bucketIndex < bucketNum) {
-			bucket = bucketList.get((int) bucketIndex);
-			if (bucket == null) {
-				bucket = readBucket(bucketIndex);
-			}
+			bucket = readBucket((int) bucketIndex);
 		} else {
-			bucket = bucketList.get((int) (bucketIndex % Math.pow(10,
+			bucket = readBucket((int) (bucketIndex % Math.pow(10,
 					usedBits - 1)));
-			if (bucket == null) {
-				bucket = readBucket((int) (bucketIndex % Math.pow(10,
-						usedBits - 1)));
-			}
 
 		}
 
@@ -283,23 +301,25 @@ public class DiskHashTable<T> implements Serializable {
 			bucket.putAddress(getBucketStringIndex(key), key, value);
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
-				HashBucket<T> newBucket = new HashBucket<T>(this, bucketNum, classType);
+				HashBucket<K,T> newBucket = new HashBucket<K,T>(this, bucketNum, classType);
 				bucketNum++;
 				bucketList.put(bucketNum - 1, newBucket);
+				
 				if (bucketNum > Math.pow(10, usedBits)) {
 					usedBits++;
 				}
 
 				int newBucketIndex = bucketNum - 1;
-				HashBucket<T> modifyBucket = bucketList
-						.get((int) (newBucketIndex % Math.pow(10, usedBits - 1)));
-				List<Map<String, T>> temp = 
+				HashBucket<K,T> modifyBucket = readBucket(
+						(int) (newBucketIndex % Math.pow(10, usedBits - 1)));
+				
+				List<Map<K, T>> temp = 
 						modifyBucket.getAllValues(String.valueOf(newBucketIndex));
-				for (Map<String, T> tempMap : temp) {
+				for (Map<K, T> tempMap : temp) {
 
-					for (Iterator<Map.Entry<String, T>> it = tempMap
+					for (Iterator<Map.Entry<K, T>> it = tempMap
 							.entrySet().iterator(); it.hasNext();) {
-						Map.Entry<String, T> entry = it.next();
+						Map.Entry<K, T> entry = it.next();
 						if (getBucketIndex(entry.getKey()) == newBucketIndex) {
 							newBucket.putAddress(getBucketStringIndex(entry.getKey()),entry.getKey(),
 									entry.getValue());
@@ -328,7 +348,7 @@ public class DiskHashTable<T> implements Serializable {
 	 * @param key
 	 * @return
 	 */
-	public int getBucketIndex(String key) {
+	public int getBucketIndex(K key) {
 
 		int bucketIndex = Math.abs(key.hashCode());
 		if( bucketIndex < Math.pow(10, usedBits)) {
@@ -345,9 +365,9 @@ public class DiskHashTable<T> implements Serializable {
 	 * @param key
 	 * @return
 	 */
-	public String getBucketStringIndex(String key) {
-		key = String.valueOf(Math.abs(key.hashCode()));
-		return key;
+	public String getBucketStringIndex(K key) {
+		String stringKey = String.valueOf(Math.abs(key.hashCode()));
+		return stringKey;
 
 	}
 

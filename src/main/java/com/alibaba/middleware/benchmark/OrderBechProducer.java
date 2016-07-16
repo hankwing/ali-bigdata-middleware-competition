@@ -29,7 +29,7 @@ public class OrderBechProducer {
 			writer = new BufferedWriter(
 					new OutputStreamWriter(fos));
 			ArrayList<String> test = new ArrayList<String>();
-			long orders = 500000;
+			long orders = 1000000;
 			while( orders -- > 0) {
 				String randomString = String.valueOf( random.nextInt());
 				test.add(randomString);
@@ -39,7 +39,7 @@ public class OrderBechProducer {
 			
 			
 			for( int i = 0; i < 3; i++ ) {
-				orders = 500000;
+				orders = 1000000;
 				while( orders -- > 0) {
 					writer.write("orderid:" + test.get((int) orders)  + " fileOffset:" + random.nextNonNegative() + "\n");
 					

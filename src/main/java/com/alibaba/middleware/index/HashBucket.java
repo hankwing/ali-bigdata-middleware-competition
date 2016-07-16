@@ -17,31 +17,31 @@ import com.alibaba.middleware.conf.RaceConfig;
  * @param <K>
  * @param <V>
  */
-public class HashBucket<T> implements Serializable{
+public class HashBucket<K,T> implements Serializable{
 
 	private static final long serialVersionUID = 3610182543890121796L;
 	private int bucketKey = 0;	// 缓冲区管理需要根据这个值调用context.writeBucket将桶写出去
 	private int capacity  = 0;
 	private int recordNum = 0;
-	private Map< String, Map<String, T>> keyToAddress = null;		// need to write to disk
-	private HashBucket<T> nextBucket = null;
-	private transient DiskHashTable<T> context = null; 
+	private Map< String, Map<K, T>> keyToAddress = null;		// need to write to disk
+	private HashBucket<K,T> nextBucket = null;
+	private transient DiskHashTable<K,T> context = null; 
 	private Class<?> classType = null;
 
-	public HashBucket( DiskHashTable<T> context, int bucketKey, Class<?> classType ) {
+	public HashBucket( DiskHashTable<K,T> context, int bucketKey, Class<?> classType ) {
 		this.context = context;
 		this.classType = classType;
 		capacity = RaceConfig.hash_index_block_capacity;
 		this.bucketKey = bucketKey;
 		recordNum = 0;
-		keyToAddress = new TreeMap<String, Map<String,T>>(
+		keyToAddress = new TreeMap<String, Map<K,T>>(
 				new ComparableKeys(String.valueOf(bucketKey).length() + 1));
 	}
 	
-	public List<Map<String, T>> getAllValues(String newBucketKey) {
+	public List<Map<K, T>> getAllValues(String newBucketKey) {
 		
-		List<Map< String, T>> allValues = new ArrayList<Map<String, T>>();
-		Map<String, T> addMap = keyToAddress.get(newBucketKey);
+		List<Map< K, T>> allValues = new ArrayList<Map<K, T>>();
+		Map<K, T> addMap = keyToAddress.get(newBucketKey);
 		if( addMap != null) {
 			allValues.add(addMap);
 		}
@@ -51,7 +51,7 @@ public class HashBucket<T> implements Serializable{
 		return allValues;
 	}
 	
-	public HashBucket<T> getNextBucket() {
+	public HashBucket<K,T> getNextBucket() {
 		return nextBucket;
 	}
 	
@@ -59,9 +59,22 @@ public class HashBucket<T> implements Serializable{
 		recordNum -= number ;
 	}
 	
-	public List<Long> getAddress(  String bucketIndex, String key) {
+	public DiskHashTable<K,T> getContext() {
+		return context;
+	}
+	
+	public void setContext( DiskHashTable<K,T> context) {
+		this.context = context;
+	}
+	
+	public void writeSelf() {
+		//System.out.println("writeBucket:" + bucketKey);
+		context.writeBucket(bucketKey);
+	}
+	
+	public List<Long> getAddress(  String bucketIndex, K key) {
 		List<Long> results = new ArrayList<Long>();
-		Map<String, T> partialResult = keyToAddress.get(bucketIndex);
+		Map<K, T> partialResult = keyToAddress.get(bucketIndex);
 		if( partialResult != null  && partialResult.get(key) != null ) {
 			if( classType == Long.class) {
 				results.add((Long) partialResult.get(key));
@@ -79,20 +92,20 @@ public class HashBucket<T> implements Serializable{
 		
 	}
 	
-	public void putAddress( String bucketIndex, String key, Long value) {
+	public void putAddress( String bucketIndex, K key, Long value) {
 
 		if( recordNum + 1 > capacity) {
 			if( nextBucket == null) {
-				nextBucket = new HashBucket<T>( context, 0, classType);	// 溢出桶无需管理
+				nextBucket = new HashBucket<K,T>( context, 0, classType);	// 溢出桶无需管理
 			}
 			
 			nextBucket.putAddress( bucketIndex, key, value);
 		}
 		else {
 			recordNum ++;
-			Map<String,T> values = keyToAddress.get(bucketIndex);
+			Map<K,T> values = keyToAddress.get(bucketIndex);
 			if(values == null) {
-				values = new HashMap<String,T>();
+				values = new HashMap<K,T>();
 				keyToAddress.put(bucketIndex, values);
 				
 			}
@@ -113,24 +126,24 @@ public class HashBucket<T> implements Serializable{
 		
 	}
 	
-	public void putAddress( String bucketIndex, String key, T value) {
+	public void putAddress( String bucketIndex, K key, T value) {
 
 		if( classType == Long.class) {
 			putAddress( bucketIndex, key, (Long)value);
 		}
 		else if( recordNum + ((List<Long>) value).size() > capacity) {
 			if( nextBucket == null) {
-				nextBucket = new HashBucket<T>(context, 0, classType);	// 溢出桶无需管理
+				nextBucket = new HashBucket<K,T>(context, 0, classType);	// 溢出桶无需管理
 			}
 			
 			nextBucket.putAddress(bucketIndex, key, value);
 		}
 		else {
 			recordNum += ((List<Long>) value).size();
-			Map<String, List<Long>> values = (Map<String, List<Long>>) keyToAddress.get(bucketIndex);
+			Map<K, List<Long>> values = (Map<K, List<Long>>) keyToAddress.get(bucketIndex);
 			if(values == null) {
-				values = new HashMap<String, List<Long>>();
-				keyToAddress.put(bucketIndex, (Map<String, T>) values);
+				values = new HashMap<K, List<Long>>();
+				keyToAddress.put(bucketIndex, (Map<K, T>) values);
 			}
 			
 			List<Long> valueList = values.get(key);
