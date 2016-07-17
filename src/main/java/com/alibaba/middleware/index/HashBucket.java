@@ -160,5 +160,4 @@ public class HashBucket<K,T> implements Serializable{
 	public int getBucketKey() {
 		return this.bucketKey;
 	}
-	
 }
