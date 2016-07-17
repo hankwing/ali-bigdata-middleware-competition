@@ -7,10 +7,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 import com.alibaba.middleware.index.DiskHashTable;
@@ -38,6 +35,7 @@ public class IndexTest {
 		
 		FileOutputStream fout = null;
 		FileInputStream streamIn = null;
+		long hashTableOffset = 0;
 		
 		try {
 
@@ -49,12 +47,7 @@ public class IndexTest {
 		    		// write 将内存中的索引文件写出去
 		    		
 		    		long startTime = System.currentTimeMillis();
-		    		hashTable.writeAllBuckets();
-
-	    			fout = new FileOutputStream("index.txt");
-	    			ObjectOutputStream oos = new ObjectOutputStream(fout);
-	    			oos.writeObject(hashTable);
-	    			oos.close();
+		    		hashTableOffset = hashTable.writeAllBuckets();
 	    			System.out.println("write all bucket complete:"
 	    			+ (System.currentTimeMillis() - startTime) / 1000);
 		    		
@@ -70,7 +63,8 @@ public class IndexTest {
 		    	else if(command.equals("read")) {
 		    		// read 从文件中读取索引元数据DiskHashTable
 		    		
-		    		streamIn = new FileInputStream("index.txt");
+		    		streamIn = new FileInputStream("dataFile");
+		    		streamIn.getChannel().position(hashTableOffset);
 					ObjectInputStream objectinputstream = new ObjectInputStream(streamIn);
 				    
 				    hashTable = (DiskHashTable) objectinputstream.readObject();

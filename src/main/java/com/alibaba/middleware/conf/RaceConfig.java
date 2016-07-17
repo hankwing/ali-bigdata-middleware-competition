@@ -18,4 +18,18 @@ public class RaceConfig implements Serializable{
 	public static String booleanTrueValue = "true";
 	public static String booleanFalseValue = "false";
 	
+	public static enum IdName {
+    	OrderId,BuyerId,GoodId;
+    }
+	
+	public static enum TableName {
+		OrderTable, BuyerTable, GoodTable
+	}
+	
+	public static String orderId = "orderid";
+	public static String buyerId = "buyerid";
+	public static String goodId = "goodid";
+	public static String createTime = "createtime";
+	public static String salerId = "salerid";
+	
 }

@@ -157,10 +157,11 @@ public class DiskHashTable<K,T> implements Serializable {
 	}
 
 	/**
-	 * 索引建立完之后 将所有桶数据写到外存 不调用单个写桶的函数 因为会频繁调用flush影响效率
+	 * 索引建立完之后 将所有桶数据写到外存 不调用单个写桶的函数 因为会频繁调用flush影响效率 
+	 * 返回值：此DiskHashTable被写入dataFile的哪个位置，方便之后调用
 	 */
-	public void writeAllBuckets() {
-
+	public long writeAllBuckets() {
+		long thisOffset = 0;
 		try {
 			//timer.cancel();
 			if (bufferedFout == null || offsetOos == null) {
@@ -198,6 +199,15 @@ public class DiskHashTable<K,T> implements Serializable {
 			}
 			bufferedFout.flush();
 			bufferedFout.close();
+			
+			// write this HashTable to dataFile and return offset
+			byteArrayOs.reset();
+			fos = new FileOutputStream(dataFilePath, true);
+			ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
+			thisOffset = byteArrayOs.size();
+			oos.writeObject(this);
+			oos.close();
+			fos.write(byteArrayOs.toByteArray());
 
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -206,6 +216,8 @@ public class DiskHashTable<K,T> implements Serializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		return thisOffset;
 
 	}
 
@@ -256,10 +268,10 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param key
 	 * @return
 	 */
-	public List<Long> get(K key) {
+	public List<Long> get(Object key) {
 
 		HashBucket<K,T> bucket = null;
-		int bucketIndex = getBucketIndex(key);
+		int bucketIndex = getBucketIndex((K) key);
 		if (bucketIndex < bucketNum) {
 			bucket = readBucket((int) bucketIndex);
 	
@@ -269,7 +281,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		}
 
 		if (bucket != null) {
-			return bucket.getAddress(getBucketStringIndex(key), key);
+			return bucket.getAddress(getBucketStringIndex((K) key), (K)key);
 		} else {
 			// need to read from file
 			System.out.println("read error!");

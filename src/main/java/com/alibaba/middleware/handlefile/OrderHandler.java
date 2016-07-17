@@ -36,7 +36,7 @@ public class OrderHandler implements Runnable{
 	}
 
 	//处理每一条记录
-	public synchronized void handleRecord(String record){
+	public synchronized void handleRecord(String record){	
 
 		Integer agentGoodId = agentGoodMapping.getValue(Utils.getValueFromRecord(record, "goodid"));
 		if (agentGoodId == null) {
@@ -49,7 +49,7 @@ public class OrderHandler implements Runnable{
 		String[] kvs = record.split("\t");
 		String result = new String(kvs[0]+"\t");
 
-		for(int i = 1; i<kvs.length ;i++){
+		for(int i = 1; i<kvs.length ;i++) {
 			String str = new String(kvs[i]);
 			int p = str.indexOf(":");
 			String key = str.substring(0 , p);

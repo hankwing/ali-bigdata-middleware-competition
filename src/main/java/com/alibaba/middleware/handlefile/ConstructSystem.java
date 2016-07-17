@@ -15,7 +15,6 @@ public class ConstructSystem {
 	AgentMapping agentBuyerMapping;
 	AgentMapping agentGoodMapping;
 
-
 	public ConstructSystem() {
 		agentBuyerMapping = new AgentMapping();
 		agentGoodMapping = new AgentMapping();
