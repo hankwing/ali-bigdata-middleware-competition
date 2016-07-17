@@ -23,7 +23,7 @@ public class GoodHandler implements Runnable{
 		this.readers = readers;
 	}
 
-	public void handleRecord(String record){
+	public synchronized void handleRecord(String record){
 		String value = Utils.getValueFromRecord(record, "goodid");
 		Integer agentGoodId = agentGoodMapping.getValue(value);
 		if (agentGoodId == null) {
