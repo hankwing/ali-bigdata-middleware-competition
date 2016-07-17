@@ -6,7 +6,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class ReadBlockingQueue {
 	//阻塞队列
-	private int count;
+	private final int count;
 	private List<LinkedBlockingQueue<String>> queues;
 
 	public ReadBlockingQueue(int count,int size) {

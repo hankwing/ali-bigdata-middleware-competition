@@ -3,7 +3,7 @@ package com.alibaba.middleware.handlefile;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class GoodHandler implements Runnable{
+public class GoodHandler implements Runnable {
 
 	AgentMapping agentGoodMapping;
 	LinkedBlockingQueue<String> queue;
@@ -23,6 +23,16 @@ public class GoodHandler implements Runnable{
 		this.readers = readers;
 	}
 
+	public GoodHandler(AgentMapping agentGoodMapping,
+					   LinkedBlockingQueue<String> queue,
+					   int threadId,
+					   int readers) {
+		this.agentGoodMapping = agentGoodMapping;
+		this.queue = queue;
+		goodfile = new WriteFile("good/", "good_" + threadId + "_" , 10000000);
+		this.readers = readers;
+	}
+
 	public void handleRecord(String record){
 		String value = Utils.getValueFromRecord(record, "goodid");
 		Integer agentGoodId = agentGoodMapping.getValue(value);
@@ -34,7 +44,6 @@ public class GoodHandler implements Runnable{
 
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
 		while (true) {
 			try {
 				String record = queue.take();
@@ -52,6 +61,6 @@ public class GoodHandler implements Runnable{
 			}
 		}
 		goodfile.closeFile();
-		countDownLatch.countDown();	
+		countDownLatch.countDown();
 	}
 }

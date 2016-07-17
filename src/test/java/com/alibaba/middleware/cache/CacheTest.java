@@ -6,23 +6,23 @@ import java.io.Serializable;
  * @author Jelly
  */
 public class CacheTest {
-    static Cache<Integer, ExampleKV> recordCache = new JCSCache<Integer, ExampleKV>();
+//    static Cache<Integer, ExampleKV> recordCache = new JCSCache<Integer, ExampleKV>();
     static Cache<Integer, String> simpleCache = new SimpleCache<Integer, String>(10);
 
     public static void main(String[] args) {
         /**
          * JCSCache test
          * */
-        for (int i = 0; i < 5000; i++) {
-            ExampleKV kv = new ExampleKV(String.valueOf(i), String.valueOf(i*2));
-            recordCache.putInCache(i, kv);
-        }
-        for (int i = 0; i < 1000; i+=1) {
-            ExampleKV kv = recordCache.getFromCache(i);
-            if (!kv.getValue().equalsIgnoreCase(String.valueOf(i*2))) {
-                System.out.println("Error!");
-            }
-        }
+//        for (int i = 0; i < 5000; i++) {
+//            ExampleKV kv = new ExampleKV(String.valueOf(i), String.valueOf(i*2));
+//            recordCache.putInCache(i, kv);
+//        }
+//        for (int i = 0; i < 1000; i+=1) {
+//            ExampleKV kv = recordCache.getFromCache(i);
+//            if (!kv.getValue().equalsIgnoreCase(String.valueOf(i*2))) {
+//                System.out.println("Error!");
+//            }
+//        }
 
         /**
          * SimpleCache(LRU) test

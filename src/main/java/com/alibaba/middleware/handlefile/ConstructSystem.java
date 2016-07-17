@@ -123,16 +123,16 @@ public class ConstructSystem {
 		long startTime = System.currentTimeMillis();
 		
 		List<String> buyerFiles = new ArrayList<String>();
-		buyerFiles.add("benchmark\\buyer_records.txt");
 		buyerFiles.add("buyer_records_1.txt");
 		buyerFiles.add("buyer_records_2.txt");
+		buyerFiles.add("buyer_records_3.txt");
 		constructSystem.startBuyerHandling(buyerFiles, 3, 3);
 		System.out.println("buyer table time:" + (System.currentTimeMillis() - startTime) / 1000);
 		
 		List<String> goodFiles = new ArrayList<String>();
-		goodFiles.add("benchmark\\good_records.txt");
 		buyerFiles.add("good_records_1.txt");
 		buyerFiles.add("good_records_2.txt");
+		buyerFiles.add("good_records_3.txt");
 		constructSystem.startGoodHandling(goodFiles, 3, 3);
 		System.out.println("good table time:" + (System.currentTimeMillis() - startTime) / 1000);
 

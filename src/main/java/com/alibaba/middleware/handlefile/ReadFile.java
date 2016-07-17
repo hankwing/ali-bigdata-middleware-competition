@@ -1,22 +1,31 @@
 package com.alibaba.middleware.handlefile;
 
+import com.alibaba.middleware.threads.WorkerThread;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 //采用多线程读文件
-class ReadFile implements Runnable{
+class ReadFile extends WorkerThread {
 	ReadBlockingQueue queues;
-	CountDownLatch countDownLatch;
+//	CountDownLatch countDownLatch;
 	List<String> files;
+
 	public ReadFile(ReadBlockingQueue queues,
 			CountDownLatch countDownLatch,
 			List<String> files) {
 		this.queues = queues;
-		this.countDownLatch = countDownLatch;
+//		this.countDownLatch = countDownLatch;
+		this.files = files;
+	}
+
+	public ReadFile(ReadBlockingQueue queues, List<String> files) {
+		this.queues = queues;
 		this.files = files;
 	}
 
@@ -43,7 +52,21 @@ class ReadFile implements Runnable{
 			}
 		}
 		queues.setEnd();
-		countDownLatch.countDown();
+//		countDownLatch.countDown();
 		System.out.println("end reading!");
+	}
+
+	@Override
+	public String getWorkerName() {
+		return "reader";
+	}
+
+	@Override
+	public void setReadyToStop() {
+	}
+
+	@Override
+	public boolean readyToStop() {
+		return false;
 	}
 }

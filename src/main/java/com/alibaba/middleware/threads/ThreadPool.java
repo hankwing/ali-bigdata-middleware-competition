@@ -41,7 +41,7 @@ public class ThreadPool {
 
     public void startWorkers() {
         for (WorkerThread t: workerList) {
-             workerExe.submit(t);
+             workerExe.execute(t);
         }
     }
 

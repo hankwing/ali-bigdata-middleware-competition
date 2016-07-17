@@ -23,10 +23,10 @@ import com.alibaba.middleware.conf.RaceConfig;
  */
 public class BenchmarkProducer {
 
-	public static String buyerTableFileName = "buyer_records_2.txt";
+	public static String buyerTableFileName = "buyer_records_3.txt";
 	public static String buyerTableDatabaseFileName = "buyer_records_database.txt";
 	
-	public static String goodTableFileName = "good_records_2.txt";
+	public static String goodTableFileName = "good_records_3.txt";
 	public static String goodTableDatabaseFileName = "good_records_database.txt";
 	
 	public static String orderTableFileName = "order_records.txt";
