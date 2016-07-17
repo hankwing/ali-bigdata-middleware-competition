@@ -22,10 +22,17 @@ public class BucketCachePool {
     private ReadWriteLock lock = new ReentrantReadWriteLock();
     private List<Integer> bucketIdList = new ArrayList<Integer>();
     private Random random = new Random();
+    private static BucketCachePool instance;
 
-    public BucketCachePool(int capacity) {
+    private BucketCachePool(int capacity) {
         this.capacity = capacity;
         bucketCache = new HashMap<Integer, HashBucket>(capacity);
+    }
+
+    public static BucketCachePool getInstance(int capacity) {
+        if (instance == null)
+            instance = new BucketCachePool(capacity);
+        return instance;
     }
 
     public HashBucket getBucket(int bucketId) {

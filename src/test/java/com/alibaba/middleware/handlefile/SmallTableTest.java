@@ -75,13 +75,13 @@ public class SmallTableTest {
 
         for (int i = 0; i < readers; i++) {
             WorkerThread t = new ReadFile(queues, getDealingFiles(buyerfiles, i, readers));
-            threadPool.addWorker(t);
+//            threadPool.addWorker(t);
         }
 
         for (int i = 0; i < handlers; i++) {
             LinkedBlockingQueue<String> queue = queues.getBlockQueue(i);
             BuyerHandler h = new BuyerHandler(agentBuyerMapping, queue, i, readers);
-            threadPool.addWorker(h);
+//            threadPool.addWorker(h);
         }
 
         threadPool.startWorkers();
