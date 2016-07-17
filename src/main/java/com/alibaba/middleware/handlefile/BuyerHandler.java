@@ -22,7 +22,7 @@ public class BuyerHandler implements Runnable{
 		this.countDownLatch = countDownLatch;
 		this.threadId = threadId;
 		this.readers = readers;
-		buyerfile = new WriteFile("buyer/", "buyer_"+threadId+"_" , 100);
+		buyerfile = new WriteFile("buyer/", "buyer_"+threadId+"_" , 10000000);
 	}
 
 	public synchronized void handleRecord(String record){

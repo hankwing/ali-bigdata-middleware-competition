@@ -19,7 +19,7 @@ public class GoodHandler implements Runnable{
 		this.agentGoodMapping = agentGoodMapping;
 		this.queue = queue;
 		this.countDownLatch = countDownLatch;
-		goodfile = new WriteFile("good/", "good_" + threadId + "_" , 100);
+		goodfile = new WriteFile("good/", "good_" + threadId + "_" , 10000000);
 		this.readers = readers;
 	}
 
