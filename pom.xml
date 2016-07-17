@@ -47,6 +47,6 @@
       <groupId>com.alibaba.middleware.race</groupId>  
       <artifactId>order-system</artifactId>  
       <version>1.0</version> 
-    </dependency>
-  </dependencies>
+    </dependency> 
+  </dependencies> 
 </project>

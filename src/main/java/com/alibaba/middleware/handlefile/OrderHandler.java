@@ -31,12 +31,12 @@ public class OrderHandler implements Runnable{
 		this.countDownLatch = countDownLatch;
 		this.threadId = threadId;
 		this.readers = readers;
-		orderfile = new WriteFile("order/", "order_"+ threadId +"_", 10000000);
+		orderfile = new WriteFile("order/", "order_"+ threadId +"_", 1000);
 		columnFiles = new HashMap<String, WriteFile>();
 	}
 
 	//处理每一条记录
-	public synchronized void handleRecord(String record){	
+	public void handleRecord(String record){	
 
 		Integer agentGoodId = agentGoodMapping.getValue(Utils.getValueFromRecord(record, "goodid"));
 		if (agentGoodId == null) {
