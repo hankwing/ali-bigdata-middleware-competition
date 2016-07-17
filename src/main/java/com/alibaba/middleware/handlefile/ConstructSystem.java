@@ -31,7 +31,7 @@ public class ConstructSystem {
 
 	public void startOrderHandling(List<String> orderfiles, int readers, int handlers){
 		System.out.println("start handling orders!");
-		queues = new ReadBlockingQueue(handlers, 100);
+		queues = new ReadBlockingQueue(handlers, 10000);
 		countDownLatch = new CountDownLatch(readers + handlers);
 
 		for (int i = 0; i < readers; i++) {
@@ -138,9 +138,9 @@ public class ConstructSystem {
 		goodFiles.add("good_records5.txt");
 		constructSystem.startGoodHandling(goodFiles, 1, 1);
 
-		final List<String> orderFiles = new ArrayList<String>();
-		orderFiles.add("order_records.txt");
-		constructSystem.startOrderHandling(orderFiles, 1, 2);
+//		final List<String> orderFiles = new ArrayList<String>();
+//		orderFiles.add("order_records.txt");
+//		constructSystem.startOrderHandling(orderFiles, 1, 2);
 
 	}
 }
