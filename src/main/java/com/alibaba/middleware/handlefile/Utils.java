@@ -71,4 +71,8 @@ public class Utils {
 		}
 		return value;
 	}
+	public static String getValueFromKV(String keyValue){
+		String[] kvs = keyValue.split(":");
+		return kvs[1];
+	}
 }

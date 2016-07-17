@@ -8,6 +8,7 @@ public class ReadBlockingQueue {
 	//阻塞队列
 	private int count;
 	private List<LinkedBlockingQueue<String>> queues;
+	int i = 0;
 
 	public ReadBlockingQueue(int count,int size) {
 		//初始化阻塞队列
@@ -20,10 +21,19 @@ public class ReadBlockingQueue {
 
 	public synchronized void putEntry(String entry){
 		try {
-			queues.get((int)(Math.random()*count)).put(entry);
+			i=(i+1)%count;
+			queues.get(i).put(entry);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		if (queues.get(i).size() == 10000) {
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 

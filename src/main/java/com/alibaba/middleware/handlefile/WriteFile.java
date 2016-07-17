@@ -9,10 +9,13 @@ public class WriteFile {
 
 	private int MAX_LINES = 100;
 	private int count;
-	
+	private int CACHE_SIZE = 40000;
+	private int cache_count = 0;
+
 	private BufferedWriter writer;
 	private String fileName;
 	private int fileNum;
+	private StringBuilder recordBuilder;
 
 	public WriteFile(String path,String name, int maxLines) {
 		this.count = 0;
@@ -28,6 +31,9 @@ public class WriteFile {
 			e.printStackTrace();
 		}
 		this.MAX_LINES = maxLines;
+
+		//记录缓冲区
+		recordBuilder = new StringBuilder();
 	}
 
 	public synchronized void writeLine(String line){
@@ -43,7 +49,15 @@ public class WriteFile {
 		}
 
 		try {
-			writer.write(line+"\n");
+
+			recordBuilder.append(line+"\n");
+			cache_count++;
+			if (cache_count == CACHE_SIZE) {
+				writer.write(recordBuilder.toString());
+				recordBuilder = new StringBuilder();
+				cache_count = 0;
+			}
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -52,6 +66,7 @@ public class WriteFile {
 
 	public void closeFile(){
 		try {
+			writer.write(recordBuilder.toString());
 			writer.close();
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -121,24 +121,30 @@ public class ConstructSystem {
 	public static void main(String args[]){
 		ConstructSystem constructSystem = new ConstructSystem();
 		long startTime = System.currentTimeMillis();
-		
+
 		List<String> buyerFiles = new ArrayList<String>();
-		buyerFiles.add("benchmark\\buyer_records.txt");
-		buyerFiles.add("buyer_records_1.txt");
-		buyerFiles.add("buyer_records_2.txt");
-		constructSystem.startBuyerHandling(buyerFiles, 3, 3);
+		buyerFiles.add("buyer_records.txt");
+		constructSystem.startBuyerHandling(buyerFiles, 1, 1);
 		System.out.println("buyer table time:" + (System.currentTimeMillis() - startTime) / 1000);
-		
+
 		List<String> goodFiles = new ArrayList<String>();
-		goodFiles.add("benchmark\\good_records.txt");
-		buyerFiles.add("good_records_1.txt");
-		buyerFiles.add("good_records_2.txt");
-		constructSystem.startGoodHandling(goodFiles, 3, 3);
+		goodFiles.add("good_records.txt");
+		constructSystem.startGoodHandling(goodFiles, 1, 1);
 		System.out.println("good table time:" + (System.currentTimeMillis() - startTime) / 1000);
 
-//		final List<String> orderFiles = new ArrayList<String>();
-//		orderFiles.add("order_records.txt");
-//		constructSystem.startOrderHandling(orderFiles, 1, 2);
+		final List<String> orderFiles = new ArrayList<String>();
+		orderFiles.add("order_records1.txt");
+		orderFiles.add("order_records2.txt");
+		orderFiles.add("order_records3.txt");
+		orderFiles.add("order_records4.txt");
+		orderFiles.add("order_records5.txt");
+		orderFiles.add("order_records6.txt");
+		orderFiles.add("order_records7.txt");
+		orderFiles.add("order_records8.txt");
+		orderFiles.add("order_records9.txt");
+		orderFiles.add("order_records10.txt");
+		constructSystem.startOrderHandling(orderFiles, 1, 7);
+		System.out.println("good table time:" + (System.currentTimeMillis() - startTime) / 1000);
 
 	}
 }
