@@ -8,7 +8,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * @author Jelly
  *
- * Simple LRU Cache
+ * Simple LRU Cache without interaction with disk
+ * Used for caching records
  */
 public class SimpleCache<K, V> implements Cache<K, V> {
     private final int capacity;
