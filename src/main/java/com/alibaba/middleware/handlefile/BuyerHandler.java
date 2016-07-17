@@ -25,7 +25,7 @@ public class BuyerHandler implements Runnable{
 		buyerfile = new WriteFile("buyer/", "buyer_"+threadId+"_" , 10000000);
 	}
 
-	public synchronized void handleRecord(String record){
+	public void handleRecord(String record){
 		String value = Utils.getValueFromRecord(record, "buyerid");
 		Integer agentBuyerId = agentBuyerMapping.getValue(value);
 		if (agentBuyerId == null) {
