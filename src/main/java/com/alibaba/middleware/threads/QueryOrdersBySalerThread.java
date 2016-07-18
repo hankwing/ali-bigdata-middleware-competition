@@ -54,32 +54,44 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 		// 根据商品ID找到多条订单信息 再筛选出keys 结果集按照订单id插入排序
 		TreeMap<Long, Result> results = new TreeMap<Long, Result>();
 		long surrId = system.getSurrogateKey(goodid, IdName.GoodId);
-		for (FilePathWithIndex filePath : system.orderFileList) {
-			DiskHashTable<Long, List<Long>> hashTable = system.orderGoodIdIndexList
-					.get(filePath.getFilePath());
-			if (hashTable == null) {
-				hashTable = system.getHashDiskTable(filePath.getFilePath(),
-						filePath.getOrderGoodIdIndex());
-			}
-			long resultNum = hashTable.get(surrId).size();
-			if (resultNum != 0) {
-				// find the records offset
-				// 找到后，按照降序插入TreeMap中
-				System.out.println("records offset:"
-						+ resultNum);
-				system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
-				for( Long offset: hashTable.get(surrId)) {
-					
-					Row row = RecordsUtils.getRecordsByKeysFromFile(
-							filePath.getFilePath(), keys, offset);
-					long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
-					results.put(orderId, new ResultImpl(orderId, row));
+		if( surrId == 0) {
+			return null;
+		}
+		else {
+			for (FilePathWithIndex filePath : system.orderFileList) {
+				DiskHashTable<Long, List<Long>> hashTable = system.orderGoodIdIndexList
+						.get(filePath.getFilePath());
+				if (hashTable == null) {
+					hashTable = system.getHashDiskTable(filePath.getFilePath(),
+							filePath.getOrderGoodIdIndex());
+				}
+				long resultNum = hashTable.get(surrId).size();
+				if (resultNum != 0) {
+					// find the records offset
+					// 找到后，按照降序插入TreeMap中
+					System.out.println("records offset:"
+							+ resultNum);
+					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
+					for( Long offset: hashTable.get(surrId)) {
+						
+						Row row = RecordsUtils.getRecordsByKeysFromFile(
+								filePath.getFilePath(), keys, offset);
+						long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
+						try{
+							results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
+						} catch (RuntimeException e) {
+							// 有不存在的字段 直接返回Null
+							
+							return null;
+						}
+						
+					}
 					
 				}
-				
-			}
 
+			}
 		}
+		
 		return results.values().iterator();
     }
 }

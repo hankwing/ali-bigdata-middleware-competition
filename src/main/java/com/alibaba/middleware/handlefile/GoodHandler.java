@@ -83,7 +83,7 @@ public class GoodHandler{
 			String indexFileName = null;
 			DiskHashTable<Long, Long> goodIdHashTable = null;
 			boolean isEnd = false;
-			long surrKey = 0;
+			long surrKey = 1;
 			
 			public GoodIndexConstructor( ) {
 				

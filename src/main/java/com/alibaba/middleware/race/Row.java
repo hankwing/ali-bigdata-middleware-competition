@@ -1,6 +1,7 @@
 package com.alibaba.middleware.race;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -36,6 +37,21 @@ public class Row extends HashMap<String, KeyValueImpl> {
 		KeyValueImpl kv = new KeyValueImpl(key, value);
 		this.put(kv.key(), kv);
 		return this;
+	}
+	
+	public Row getKVs( Collection<String> keys) {
+		
+		Row row = new Row();
+		if( keys == null) {
+			return this;
+		}
+		else {
+			for( String key : keys) {
+				row.put(key, getKV(key));
+			}
+			return row;
+		}
+		
 	}
 
 	public Row putKV(String key, long value) {
