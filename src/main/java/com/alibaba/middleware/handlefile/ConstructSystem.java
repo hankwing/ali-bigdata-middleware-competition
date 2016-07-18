@@ -47,6 +47,8 @@ public class ConstructSystem {
 	public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
 	public DiskHashTable<String, Long> buyerIdSurrKeyIndex = null; // 缓存buyerId事实键与代理键
 	public DiskHashTable<String, Long> goodIdSurrKeyIndex = null; // 缓存goodId事实键与代理键
+	
+	HashMap<String, Boolean> computableItems;
 
 	class BuyerRun implements Runnable {
 		CountDownLatch countDownLatch;
