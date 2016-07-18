@@ -200,6 +200,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			bufferedFout.flush();
 			bufferedFout.close();
 			
+			bucketList.clear();
 			// write this HashTable to dataFile and return offset
 			byteArrayOs.reset();
 			fos = new FileOutputStream(dataFilePath, true);

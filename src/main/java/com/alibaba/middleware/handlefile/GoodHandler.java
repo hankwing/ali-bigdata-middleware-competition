@@ -5,38 +5,43 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IndexType;
+import com.alibaba.middleware.index.DiskHashTable;
+import com.alibaba.middleware.tools.FilePathWithIndex;
+import com.alibaba.middleware.tools.RecordsUtils;
 
 public class GoodHandler{
 
-	AgentMapping agentGoodMapping;
 	WriteFile goodfile;
 	BufferedReader reader;
 	LinkedBlockingQueue<IndexItem> indexQueue;
 
-	public GoodHandler(AgentMapping agentGoodMapping, int threadid) {
-		this.agentGoodMapping = agentGoodMapping;
-		goodfile = new WriteFile("buildfiles/good/", "good_"+threadid+"_", RaceConfig.goodFileCapacity);
-		indexQueue = new LinkedBlockingQueue<IndexItem>();
-	}
+	DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
+	ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList = null;
+	List<FilePathWithIndex> goodFileList = null;
+	List<String> goodAttrList = null;
+	FilePathWithIndex goodIdSurrKeyFile = null;
+	int threadIndex = 0;
 
-	private void handleGoodRecord(String record){
-		String goodid = Utils.getValueFromRecord(record, "goodid");
-		Long agentGoodId = agentGoodMapping.getValue(goodid);
-		if (agentGoodId == null) {
-			agentGoodMapping.addEntry(goodid);
-		}
-		//写入文件之前获取索引,放入阻塞队列中，Good表中对goodid键索引
-		IndexItem item = new IndexItem(goodid, goodfile.getFileName(), goodfile.getOffset(), IndexType.GOODFILE_GOODID);
-		try {
-			indexQueue.put(item);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		goodfile.writeLine(record);
+	public GoodHandler(List<FilePathWithIndex> goodFileList, 
+			List<String> goodAttrList, FilePathWithIndex goodIdSurrKeyFile, 
+			ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList, 
+			DiskHashTable<String, Long> goodIdSurrKeyIndex, int threadIndex) {
+		
+		this.goodFileList = goodFileList;
+		this.goodAttrList = goodAttrList;
+		this.goodIdSurrKeyFile = goodIdSurrKeyFile;
+		this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
+		this.goodIdIndexList = goodIdIndexList;
+		this.threadIndex = threadIndex;
+		indexQueue = new LinkedBlockingQueue<IndexItem>();
+		goodfile = new WriteFile(indexQueue,
+				RaceConfig.storeFolders[threadIndex], 
+				RaceConfig.goodFileNamePrex, (int) RaceConfig.smallFileCapacity);
 	}
 
 	public void HandleGoodFiles(List<String> files){
@@ -51,7 +56,7 @@ public class GoodHandler{
 			try {
 				record = reader.readLine();
 				while (record != null) {
-					handleGoodRecord(record);
+					goodfile.writeLine(record, IndexType.GoodTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -59,7 +64,86 @@ public class GoodHandler{
 				e.printStackTrace();
 			}
 		}
+		// set end signal
+		goodfile.writeLine("end",IndexType.GoodTable);
+		goodfile.closeFile();
+				
 		goodfile.closeFile();
 		System.out.println("end good handling!");
 	}
+	
+	// good表的建索引线程  需要建的索引包括：代理键索引和goodId的索引
+		public class GoodIndexConstructor implements Runnable {
+
+			String indexFileName = "";
+			DiskHashTable<Long, Long> goodIdHashTable = null;
+			boolean isEnd = false;
+			long surrKey = 0;
+			
+			public GoodIndexConstructor( ) {
+				
+			}
+
+			public void run() {
+				// TODO Auto-generated method stub
+					
+				while( true) {
+					IndexItem record = indexQueue.poll();
+					
+					if( record != null ) {
+						if( record.recordsData.equals("end")) {
+							isEnd = true;
+						}
+						
+						if( !record.getFileName().equals(indexFileName)) {
+							if( indexFileName == null) {
+								// 第一次建立索引文件
+								indexFileName = record.getFileName();
+								goodIdHashTable = new DiskHashTable<Long,Long>(
+										indexFileName + RaceConfig.goodIndexFileSuffix,indexFileName, Long.class);
+								goodIdSurrKeyIndex = new DiskHashTable<String,Long>(
+										RaceConfig.goodSurrFileName,RaceConfig.goodSurrFileName, Long.class);
+							}
+							else {
+								// 保存当前goodId的索引  并写入索引List
+								FilePathWithIndex smallFile = new FilePathWithIndex();
+								smallFile.setFilePath(indexFileName);
+								
+								//buyerIdIndexList.put(indexFileName, buyerIdHashTable);
+								smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+								goodIdIndexList.put(indexFileName, goodIdHashTable);
+								goodFileList.add(smallFile);
+								
+								indexFileName = record.getFileName();
+								goodIdHashTable = new DiskHashTable<Long,Long>(
+										record.getFileName() + RaceConfig.goodIndexFileSuffix, indexFileName, Long.class);
+								
+							}
+						}
+						
+						String goodid = RecordsUtils.getValueFromRecord(
+								record.getRecords(), RaceConfig.goodId);
+						goodIdSurrKeyIndex.put(goodid, surrKey);					// 建立代理键索引
+						goodIdHashTable.put(surrKey, record.getOffset());
+						surrKey ++;
+					}
+					else if(isEnd ) {
+						// 说明队列为空
+						// 将代理键索引写出去  并保存相应数据   将gooderid索引写出去  并保存相应数据
+						goodIdSurrKeyFile.setFilePath(RaceConfig.goodSurrFileName);
+						goodIdSurrKeyFile.setSurrogateIndex(goodIdSurrKeyIndex.writeAllBuckets());
+						
+						FilePathWithIndex smallFile = new FilePathWithIndex();
+						smallFile.setFilePath(indexFileName);
+						smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+						goodFileList.add(smallFile);	
+						goodIdIndexList.put(indexFileName, goodIdHashTable);
+						break;
+					}
+					
+				}
+					
+				
+			}
+		}
 }

@@ -47,6 +47,10 @@ public class RaceConfig implements Serializable{
 		OrderTable, BuyerTable, GoodTable
 	}
 
+	public static enum IndexType {
+		OrderTable, BuyerTable, GoodTable, CountableTable
+	}
+	
 	public static String orderId = "orderid";
 	public static String buyerId = "buyerid";
 	public static String goodId = "goodid";
@@ -63,4 +67,17 @@ public class RaceConfig implements Serializable{
 	public static int columnFileCapacity = 10000;
 
 	public static int handleThreadNumber = 3;
+	public static long smallFileCapacity = 10000000;
+	
+	public static String[] storeFolders = null;
+	public static String buyerFileNamePrex = "/buyer_";
+	public static String goodFileNamePrex = "/good_";
+	public static String orderFileNamePrex = "/order_";
+	public static String buyerIndexFileSuffix = "_buyerIdIndex";
+	public static String goodIndexFileSuffix = "_goodIdIndex";
+	public static String orderIndexFileSuffix = "_orderIndex";		// orderindex里包含了三种类型的索引
+	public static String buyerSurrFileName = "buyerSurrIndex";
+	public static String goodSurrFileName = "goodSurrIndex";
+	
+	
 }

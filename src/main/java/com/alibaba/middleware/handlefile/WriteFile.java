@@ -4,6 +4,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IndexType;
 
 public class WriteFile {
 
@@ -12,7 +16,7 @@ public class WriteFile {
 	 * 文件的偏移量为 offset
 	 * 文件纪录的计数 count
 	 */
-	private int MAX_LINES = 10000000;
+	private long MAX_LINES = RaceConfig.smallFileCapacity;
 	private long offset;
 	private int count;
 
@@ -20,12 +24,21 @@ public class WriteFile {
 	private String filePerfix;
 	private String fileName;
 	private int fileNum;
+	private LinkedBlockingQueue<IndexItem> indexQueue = null;
 
-	public WriteFile(String path,String name, int maxLines) {
+	/**
+	 * 写数据到小文件里  并且将数据放到缓冲区里  缓冲区里保存文件名+数据
+	 * @param indexQueue
+	 * @param path	文件路径
+	 * @param name	文件名
+	 * @param maxLines	每个小文件最大记录数
+	 */	
+	public WriteFile(LinkedBlockingQueue<IndexItem> indexQueue, String path,String name, long maxLines) {
 		this.offset = 0;
 		this.count = 0;
 		this.fileNum = 0;
 		this.MAX_LINES = maxLines;
+		this.indexQueue = indexQueue;
 
 		//如果文件夹不存在则创建文件夹
 		File file = new File(path);
@@ -42,22 +55,27 @@ public class WriteFile {
 		}
 	}
 
-	public void writeLine(String line){
+	public void writeLine(String line, IndexType type){
 		try {
 			if (count == MAX_LINES) {
 				writer.close();
 				//创建新的文件
 				fileNum++;
-				fileName = filePerfix + String.valueOf(fileNum) + ".txt";
+				fileName = filePerfix + String.valueOf(fileNum);
 				writer = new BufferedWriter(new FileWriter(fileName));
 				offset = 0;
 				count = 0;
 			}
-
+			// 将数据放入队列中 供建索引的线程建索引
+			indexQueue.put(new IndexItem(fileName, line, offset, type));
+			
 			writer.write(line+"\n");
 			offset = offset + line.length() + 1;
 			count++;
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
