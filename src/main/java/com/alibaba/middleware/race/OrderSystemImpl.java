@@ -78,22 +78,15 @@ public class OrderSystemImpl implements OrderSystem {
 
 			if (command.equals("write")) {
 				// write 将内存中的索引文件写出去
-				
-				
 
 			} else if (command.startsWith("writeBucket")) {
 				// writeBucket:xx 将某个索引块xx写到外存 索引块号xx可在索引块内找到
-
 				
 			} else if (command.equals("read")) {
 				// read 从文件中读取索引元数据DiskHashTable
 
-				
-
 			} else if (command.equals("construct")) {
 				// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
-
-				
 
 				List<String> buyerfiles = new ArrayList<String>();
 				buyerfiles.add("benchmark/buyer_records.txt");
@@ -127,6 +120,7 @@ public class OrderSystemImpl implements OrderSystem {
 				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 				List<String> keys = new ArrayList<String>();
 				for( int i = 1; i < rawCommand.length; i++ ) {
+                    System.out.println(rawCommand[i]);
 					keys.add(rawCommand[i]);
 				}
 				System.out.println("values:" + 
@@ -415,7 +409,6 @@ public class OrderSystemImpl implements OrderSystem {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 		return result;
 	}
 

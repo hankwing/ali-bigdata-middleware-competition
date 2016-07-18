@@ -5,3 +5,5 @@ good/
 *.txt
 .idea/
 *.iml
+/benchmark
+/folder*
