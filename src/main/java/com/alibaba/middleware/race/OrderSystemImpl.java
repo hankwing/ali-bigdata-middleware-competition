@@ -89,13 +89,16 @@ public class OrderSystemImpl implements OrderSystem {
 				// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 
 				List<String> buyerfiles = new ArrayList<String>();
-				buyerfiles.add("benchmark/buyer_records.txt");
+				buyerfiles.add("benchmark/buyer_records1.txt");
+				buyerfiles.add("benchmark/buyer_records2.txt");
 
 				List<String> goodfiles = new ArrayList<String>();
-				goodfiles.add("benchmark/good_records.txt");
+				goodfiles.add("benchmark/good_records1.txt");
+				goodfiles.add("benchmark/good_records2.txt");
 
 				List<String> orderfiles = new ArrayList<String>();
-				orderfiles.add("benchmark/order_records.txt");
+				orderfiles.add("benchmark/order_records1.txt");
+				orderfiles.add("benchmark/order_records2.txt");
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
@@ -114,7 +117,8 @@ public class OrderSystemImpl implements OrderSystem {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			} else if (command.startsWith("lookup")) {
+			} else if (command.startsWith("lookup1")) {
+
 				// lookup:xxx 查找某个key值的value
 				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 				List<String> keys = new ArrayList<String>();
@@ -124,6 +128,19 @@ public class OrderSystemImpl implements OrderSystem {
 				}
 				System.out.println("values:" + 
 				orderSystem.queryOrder( Long.valueOf(rawCommand[0]), keys));
+				
+			}  else if (command.startsWith("lookup2")) {
+				// lookup:xxx 查找某个key值的value
+				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+				String buyerId = rawCommand[0];
+				long startTime = Long.valueOf(rawCommand[1]);
+				long endTime = Long.valueOf(rawCommand[2]);
+				
+				Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
+				while(results.hasNext()) {
+					System.out.println("values:" + results.next());
+				}
+				
 				
 			} else if (command.equals("quit")) {
 				// 索引使用完毕 退出
