@@ -78,8 +78,7 @@ public class Utils {
 	public static Row getRecordsByKeysFromFile(String fileName,List<String> keys,Long offset){
 		Row row = new Row();
 		try {
-			BufferedReader reader = new BufferedReader(new FileReader(fileName));
-			try {
+				BufferedReader reader = new BufferedReader(new FileReader(fileName));
 				reader.skip(offset);
 				String record = reader.readLine();
 
@@ -97,14 +96,14 @@ public class Utils {
 						row.putKV(kstr, vstr);
 					}
 				}
+				
+				reader.close();
+
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
 		return row;
 	}
 
