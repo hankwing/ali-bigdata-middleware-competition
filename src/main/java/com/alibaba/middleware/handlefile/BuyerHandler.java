@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -34,12 +35,13 @@ public class BuyerHandler{
 	HashSet<String> buyerAttrList = null;
 	FilePathWithIndex buyerIdSurrKeyFile = null;
 	int threadIndex = 0;
+	CountDownLatch latch = null;
 
 	public BuyerHandler(List<FilePathWithIndex> buyerFileList, 
 			HashSet<String> buyerAttrList, FilePathWithIndex buyerIdSurrKeyFile, 
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList, 
-			DiskHashTable<String, Long> buyerIdSurrKeyIndex, int threadIndex) {
-		
+			DiskHashTable<String, Long> buyerIdSurrKeyIndex, int threadIndex, CountDownLatch latch) {
+		this.latch = latch;
 		this.buyerFileList = buyerFileList;
 		this.buyerAttrList = buyerAttrList;
 		this.buyerIdSurrKeyFile = buyerIdSurrKeyFile;
@@ -117,11 +119,7 @@ public class BuyerHandler{
 							indexFileName = record.getFileName();
 							buyerIdHashTable = new DiskHashTable<Long,Long>(
 									indexFileName + RaceConfig.buyerIndexFileSuffix ,indexFileName, Long.class);
-							buyerIdSurrKeyIndex = new DiskHashTable<String,Long>(
-									RaceConfig.storeFolders[threadIndex] + 
-									RaceConfig.buyerSurrFileName,
-									RaceConfig.storeFolders[threadIndex] +
-									RaceConfig.buyerSurrFileName, Long.class);
+
 						}
 						else {
 							// 保存当前buyerId的索引  并写入索引List
@@ -149,14 +147,15 @@ public class BuyerHandler{
 				else if(isEnd ) {
 					// 说明队列为空
 					// 将代理键索引写出去  并保存相应数据   将buyerid索引写出去  并保存相应数据
-					buyerIdSurrKeyFile.setFilePath(RaceConfig.buyerSurrFileName);
-					buyerIdSurrKeyFile.setSurrogateIndex(buyerIdSurrKeyIndex.writeAllBuckets());
+					//buyerIdSurrKeyFile.setFilePath(RaceConfig.buyerSurrFileName);
+					//buyerIdSurrKeyFile.setSurrogateIndex(buyerIdSurrKeyIndex.writeAllBuckets());
 					
 					FilePathWithIndex smallFile = new FilePathWithIndex();
 					smallFile.setFilePath(indexFileName);
 					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
 					buyerFileList.add(smallFile);				
 					buyerIdIndexList.put(indexFileName, buyerIdHashTable);
+					latch.countDown();
 					break;
 				}
 				

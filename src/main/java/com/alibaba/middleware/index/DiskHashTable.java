@@ -298,7 +298,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param value
 	 * @return
 	 */
-	public boolean put(K key, long value) {
+	public synchronized boolean put(K key, long value) {
 
 		HashBucket<K,T> bucket = null;
 		int bucketIndex = getBucketIndex(key);

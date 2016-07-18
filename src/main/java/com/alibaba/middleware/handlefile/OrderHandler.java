@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
@@ -35,6 +36,7 @@ public class OrderHandler {
 	List<FilePathWithIndex> orderFileList = null;
 	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
+	CountDownLatch countDownLatch = null;
 
 	public OrderHandler(
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
@@ -43,8 +45,8 @@ public class OrderHandler {
 			ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList,
 			List<FilePathWithIndex> orderFileList, HashSet<String> orderAttrList,
 			DiskHashTable<String, Long> buyerIdSurrKeyIndex,
-			DiskHashTable<String, Long> goodIdSurrKeyIndex, int thread) {
-
+			DiskHashTable<String, Long> goodIdSurrKeyIndex, int thread, CountDownLatch countDownLatch) {
+		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = orderIdIndexList;
 		this.orderBuyerIdIndexList = orderBuyerIdIndexList;
 		this.orderGoodIdIndexList = orderGoodIdIndexList;
@@ -210,7 +212,7 @@ public class OrderHandler {
 						orderGoodIdIndexList.put(indexFileName,
 								orderGoodIdHashTable);
 						orderFileList.add(smallFile);
-
+						countDownLatch.countDown();
 						break;
 
 					}

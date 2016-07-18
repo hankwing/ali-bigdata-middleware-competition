@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
@@ -29,12 +30,13 @@ public class GoodHandler{
 	HashSet<String> goodAttrList = null;
 	FilePathWithIndex goodIdSurrKeyFile = null;
 	int threadIndex = 0;
+	CountDownLatch latch = null;
 
 	public GoodHandler(List<FilePathWithIndex> goodFileList, 
 			HashSet<String> goodAttrList, FilePathWithIndex goodIdSurrKeyFile, 
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList, 
-			DiskHashTable<String, Long> goodIdSurrKeyIndex, int threadIndex) {
-		
+			DiskHashTable<String, Long> goodIdSurrKeyIndex, int threadIndex,CountDownLatch latch) {
+		this.latch = latch;
 		this.goodFileList = goodFileList;
 		this.goodAttrList = goodAttrList;
 		this.goodIdSurrKeyFile = goodIdSurrKeyFile;
@@ -105,11 +107,7 @@ public class GoodHandler{
 								indexFileName = record.getFileName();
 								goodIdHashTable = new DiskHashTable<Long,Long>(
 										indexFileName + RaceConfig.goodIndexFileSuffix,indexFileName, Long.class);
-								goodIdSurrKeyIndex = new DiskHashTable<String,Long>(
-										RaceConfig.storeFolders[threadIndex] +
-										RaceConfig.goodSurrFileName,
-										RaceConfig.storeFolders[threadIndex] +
-										RaceConfig.goodSurrFileName, Long.class);
+
 							}
 							else {
 								// 保存当前goodId的索引  并写入索引List
@@ -139,14 +137,15 @@ public class GoodHandler{
 					else if(isEnd ) {
 						// 说明队列为空
 						// 将代理键索引写出去  并保存相应数据   将gooderid索引写出去  并保存相应数据
-						goodIdSurrKeyFile.setFilePath(RaceConfig.goodSurrFileName);
-						goodIdSurrKeyFile.setSurrogateIndex(goodIdSurrKeyIndex.writeAllBuckets());
+						//goodIdSurrKeyFile.setFilePath(RaceConfig.goodSurrFileName);
+						//goodIdSurrKeyFile.setSurrogateIndex(goodIdSurrKeyIndex.writeAllBuckets());
 						
 						FilePathWithIndex smallFile = new FilePathWithIndex();
 						smallFile.setFilePath(indexFileName);
 						smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
-						goodFileList.add(smallFile);	
+						goodFileList.add(smallFile);
 						goodIdIndexList.put(indexFileName, goodIdHashTable);
+						latch.countDown();
 						break;
 					}
 					

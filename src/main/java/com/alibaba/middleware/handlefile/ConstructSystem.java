@@ -66,9 +66,9 @@ public class ConstructSystem {
 			// TODO Auto-generated method stub
 			
 			BuyerHandler buyerHandler = new BuyerHandler( buyerFileList, buyerAttrList,
-					buyerIdSurrKeyFile, buyerIdIndexList,buyerIdSurrKeyIndex, threadIndex);
+					buyerIdSurrKeyFile, buyerIdIndexList,buyerIdSurrKeyIndex, threadIndex, countDownLatch);
 			buyerHandler.handeBuyerFiles(files);
-			countDownLatch.countDown();
+			//countDownLatch.countDown();
 		}
 	}
 
@@ -86,9 +86,8 @@ public class ConstructSystem {
 		public void run() {
 			// TODO Auto-generated method stub
 			GoodHandler goodHandler = new GoodHandler( goodFileList, goodAttrList,
-					goodIdSurrKeyFile, goodIdIndexList,goodIdSurrKeyIndex, threadIndex);
+					goodIdSurrKeyFile, goodIdIndexList,goodIdSurrKeyIndex, threadIndex, countDownLatch);
 			goodHandler.HandleGoodFiles(files);
-			countDownLatch.countDown();
 		}
 	}
 
@@ -107,9 +106,9 @@ public class ConstructSystem {
 			// TODO Auto-generated method stub
 			OrderHandler orderHandler = new OrderHandler(orderIdIndexList, orderBuyerIdIndexList,
 					orderGoodIdIndexList, orderCountableIndexList, orderFileList, orderAttrList,
-					buyerIdSurrKeyIndex, goodIdSurrKeyIndex,threadIndex);
+					buyerIdSurrKeyIndex, goodIdSurrKeyIndex,threadIndex, countDownLatch);
 			orderHandler.HandleOrderFiles(files);
-			countDownLatch.countDown();
+			//countDownLatch.countDown();
 		}
 	}
 
