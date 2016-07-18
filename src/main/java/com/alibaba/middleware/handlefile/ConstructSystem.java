@@ -3,6 +3,7 @@ package com.alibaba.middleware.handlefile;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -39,9 +40,9 @@ public class ConstructSystem {
 	public List<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
 	public List<FilePathWithIndex> goodFileList = null; // 保存good表所有文件的名字
 
-	public List<String> orderAttrList = null; // 保存order表的所有字段名称
-	public List<String> buyerAttrList = null; // 保存buyer表的所有字段名称
-	public List<String> goodAttrList = null; // 保存good表的所有字段名称
+	public HashSet<String> orderAttrList = null; // 保存order表的所有字段名称
+	public HashSet<String> buyerAttrList = null; // 保存buyer表的所有字段名称
+	public HashSet<String> goodAttrList = null; // 保存good表的所有字段名称
 
 	public FilePathWithIndex buyerIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
 	public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
@@ -65,9 +66,9 @@ public class ConstructSystem {
 			// TODO Auto-generated method stub
 			
 			BuyerHandler buyerHandler = new BuyerHandler( buyerFileList, buyerAttrList,
-					buyerIdSurrKeyFile, buyerIdIndexList,buyerIdSurrKeyIndex, threadIndex);
+					buyerIdSurrKeyFile, buyerIdIndexList,buyerIdSurrKeyIndex, threadIndex, countDownLatch);
 			buyerHandler.handeBuyerFiles(files);
-			countDownLatch.countDown();
+			//countDownLatch.countDown();
 		}
 	}
 
@@ -85,9 +86,8 @@ public class ConstructSystem {
 		public void run() {
 			// TODO Auto-generated method stub
 			GoodHandler goodHandler = new GoodHandler( goodFileList, goodAttrList,
-					goodIdSurrKeyFile, goodIdIndexList,goodIdSurrKeyIndex, threadIndex);
+					goodIdSurrKeyFile, goodIdIndexList,goodIdSurrKeyIndex, threadIndex, countDownLatch);
 			goodHandler.HandleGoodFiles(files);
-			countDownLatch.countDown();
 		}
 	}
 
@@ -106,9 +106,9 @@ public class ConstructSystem {
 			// TODO Auto-generated method stub
 			OrderHandler orderHandler = new OrderHandler(orderIdIndexList, orderBuyerIdIndexList,
 					orderGoodIdIndexList, orderCountableIndexList, orderFileList, orderAttrList,
-					buyerIdSurrKeyIndex, goodIdSurrKeyIndex,threadIndex);
+					buyerIdSurrKeyIndex, goodIdSurrKeyIndex,threadIndex, countDownLatch);
 			orderHandler.HandleOrderFiles(files);
-			countDownLatch.countDown();
+			//countDownLatch.countDown();
 		}
 	}
 
@@ -117,8 +117,8 @@ public class ConstructSystem {
 			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList, 
 			ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList, 
 			List<FilePathWithIndex> orderFileList, List<FilePathWithIndex> buyerFileList, 
-			List<FilePathWithIndex> goodFileList, List<String> orderAttrList, 
-			List<String> buyerAttrList, List<String> goodAttrList, 
+			List<FilePathWithIndex> goodFileList, HashSet<String> orderAttrList, 
+			HashSet<String> buyerAttrList, HashSet<String> goodAttrList, 
 			FilePathWithIndex buyerIdSurrKeyFile, FilePathWithIndex goodIdSurrKeyFile, 
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList, 
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList, 

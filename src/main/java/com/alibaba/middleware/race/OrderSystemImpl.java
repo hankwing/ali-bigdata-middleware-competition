@@ -10,9 +10,11 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,9 +50,9 @@ public class OrderSystemImpl implements OrderSystem {
 	public List<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
 	public List<FilePathWithIndex> goodFileList = null; // 保存good表所有文件的名字
 
-	public List<String> orderAttrList = null; // 保存order表的所有字段名称
-	public List<String> buyerAttrList = null; // 保存buyer表的所有字段名称
-	public List<String> goodAttrList = null; // 保存good表的所有字段名称
+	public HashSet<String> orderAttrList = null; // 保存order表的所有字段名称
+	public HashSet<String> buyerAttrList = null; // 保存buyer表的所有字段名称
+	public HashSet<String> goodAttrList = null; // 保存good表的所有字段名称
 
 	public FilePathWithIndex buyerIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
 	public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
@@ -62,7 +64,7 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-
+		OrderSystemImpl orderSystem = new OrderSystemImpl();
 		Scanner scanner = new Scanner(System.in);
 		String command = null;
 		while (!(command = scanner.nextLine()).equals("quit")) {
@@ -84,7 +86,7 @@ public class OrderSystemImpl implements OrderSystem {
 			} else if (command.equals("construct")) {
 				// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 
-				OrderSystemImpl orderSystem = new OrderSystemImpl();
+				
 
 				List<String> buyerfiles = new ArrayList<String>();
 				buyerfiles.add("benchmark/buyer_records.txt");
@@ -93,7 +95,7 @@ public class OrderSystemImpl implements OrderSystem {
 				goodfiles.add("benchmark/good_records.txt");
 
 				List<String> orderfiles = new ArrayList<String>();
-				//orderfiles.add("order_records.txt");
+				orderfiles.add("benchmark/order_records.txt");
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
@@ -114,7 +116,8 @@ public class OrderSystemImpl implements OrderSystem {
 				}
 			} else if (command.startsWith("lookup")) {
 				// lookup:xxx 查找某个key值的value
-
+				System.out.println("values:" + orderSystem.queryOrder(
+						Long.valueOf(command.substring(command.indexOf(":") + 1)), null));
 				
 			} else if (command.equals("quit")) {
 				// 索引使用完毕 退出
@@ -146,11 +149,12 @@ public class OrderSystemImpl implements OrderSystem {
 		buyerFileList = new ArrayList<FilePathWithIndex>(); // 保存buyer表所有文件的名字
 		goodFileList = new ArrayList<FilePathWithIndex>(); // 保存good表所有文件的名字
 
-		orderAttrList = new ArrayList<String>(); // 保存order表的所有字段名称
-		buyerAttrList = new ArrayList<String>(); // 保存buyer表的所有字段名称
-		goodAttrList = new ArrayList<String>(); // 保存good表的所有字段名称
+		orderAttrList = new HashSet<String>(); // 保存order表的所有字段名称
+		buyerAttrList = new HashSet<String>(); // 保存buyer表的所有字段名称
+		goodAttrList = new HashSet<String>(); // 保存good表的所有字段名称
 		buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
 		goodIdSurrKeyFile = new FilePathWithIndex();
+
 	}
 
 	/**
@@ -164,7 +168,18 @@ public class OrderSystemImpl implements OrderSystem {
 			InterruptedException {
 		// 将存储目录存起来 之后建小文件及索引文件的时候用
 		RaceConfig.storeFolders = storeFolders.toArray(new String[0]);
-
+		
+		buyerIdSurrKeyIndex = new DiskHashTable<String,Long>(
+				RaceConfig.storeFolders[0] + 
+				RaceConfig.buyerSurrFileName,
+				RaceConfig.storeFolders[0] +
+				RaceConfig.buyerSurrFileName, Long.class);
+		
+		goodIdSurrKeyIndex = new DiskHashTable<String,Long>(
+				RaceConfig.storeFolders[0] +
+				RaceConfig.goodSurrFileName,
+				RaceConfig.storeFolders[0] +
+				RaceConfig.goodSurrFileName, Long.class);
 		long startTime = System.currentTimeMillis();
 
 		ConstructSystem constructSystem = new ConstructSystem(orderIdIndexList,
@@ -295,9 +310,10 @@ public class OrderSystemImpl implements OrderSystem {
 						// find the records offset
 						// 不管key是什么，都得载入固定order表里的固定key
 						System.out.println("records offset:"
-								+ hashTable.get(id).size());
+								+ hashTable.get(id).get(0));
 						orderIdIndexList.put(filePath.getFilePath(), hashTable);
-						if (idName == IdName.GoodId) {
+						
+						if (idName == IdName.OrderId) {
 							break; // 找到了就退出 因为orderId不会重复
 						}
 					}
@@ -306,9 +322,6 @@ public class OrderSystemImpl implements OrderSystem {
 				break;
 			case BuyerTable:
 				// 将事实键转为代理键
-				if (keys.size() == 0) {
-					return result;
-				}
 				id = getSurrogateKey(id, idName);
 				for (FilePathWithIndex filePath : buyerFileList) {
 					DiskHashTable<Long, Long> hashTable = buyerIdIndexList
@@ -329,9 +342,6 @@ public class OrderSystemImpl implements OrderSystem {
 				}
 				break;
 			case GoodTable:
-				if (keys.size() == 0) {
-					return result;
-				}
 				id = getSurrogateKey(id, idName);
 				for (FilePathWithIndex filePath : goodFileList) {
 					DiskHashTable<Long, Long> hashTable = goodIdIndexList

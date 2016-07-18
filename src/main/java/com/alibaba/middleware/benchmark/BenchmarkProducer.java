@@ -23,18 +23,18 @@ import com.alibaba.middleware.conf.RaceConfig;
  */
 public class BenchmarkProducer {
 
-	public static String buyerTableFileName = "buyer_records_3.txt";
+	public static String buyerTableFileName = "benchmark/buyer_records.txt";
 	public static String buyerTableDatabaseFileName = "buyer_records_database.txt";
 	
-	public static String goodTableFileName = "good_records_3.txt";
+	public static String goodTableFileName = "benchmark/good_records.txt";
 	public static String goodTableDatabaseFileName = "good_records_database.txt";
 	
-	public static String orderTableFileName = "order_records.txt";
+	public static String orderTableFileName = "benchmark/order_records.txt";
 	public static String orderTableDatabaseFileName = "order_records_database.txt";
 	
-	public static long buyerTableRecordsNum = 6000000;
-	public static long goodTableRecordsNum = 2000000;
-	public static long orderTableRecordsNum = 200000000;
+	public static long buyerTableRecordsNum = 500000;
+	public static long goodTableRecordsNum = 500000;
+	public static long orderTableRecordsNum = 500000;
 	
 	public static String buyerTableReAttr[] = {"buyerid","contactphone","recieveaddress"};
 	public static String buerTableOpAttr[] = 
@@ -51,12 +51,12 @@ public class BenchmarkProducer {
 	public static void main( String[] args) {
 		try {
 			// produce buyer table
-//			smallTableProducer(buyerTableFileName, buyerTableDatabaseFileName,
-//					buyerTableRecordsNum, buyerTableReAttr, buerTableOpAttr);
+			smallTableProducer(buyerTableFileName, buyerTableDatabaseFileName,
+					buyerTableRecordsNum, buyerTableReAttr, buerTableOpAttr);
 			
 			// produce good table
-//			smallTableProducer(goodTableFileName, goodTableDatabaseFileName,
-//					goodTableRecordsNum, goodTableReAttr, goodTableOpAttr);
+			smallTableProducer(goodTableFileName, goodTableDatabaseFileName,
+					goodTableRecordsNum, goodTableReAttr, goodTableOpAttr);
 			
 			// then produce order table
 			orderTableProducer(orderTableFileName, orderTableDatabaseFileName,

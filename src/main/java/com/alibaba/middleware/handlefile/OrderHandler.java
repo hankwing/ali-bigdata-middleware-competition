@@ -5,14 +5,17 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
+import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.FilePathWithIndex;
@@ -31,18 +34,19 @@ public class OrderHandler {
 	DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
 	DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
 	List<FilePathWithIndex> orderFileList = null;
-	List<String> orderAttrList = null;
+	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
+	CountDownLatch countDownLatch = null;
 
 	public OrderHandler(
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
 			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderBuyerIdIndexList,
 			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList,
 			ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList,
-			List<FilePathWithIndex> orderFileList, List<String> orderAttrList,
+			List<FilePathWithIndex> orderFileList, HashSet<String> orderAttrList,
 			DiskHashTable<String, Long> buyerIdSurrKeyIndex,
-			DiskHashTable<String, Long> goodIdSurrKeyIndex, int thread) {
-
+			DiskHashTable<String, Long> goodIdSurrKeyIndex, int thread, CountDownLatch countDownLatch) {
+		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = orderIdIndexList;
 		this.orderBuyerIdIndexList = orderBuyerIdIndexList;
 		this.orderGoodIdIndexList = orderGoodIdIndexList;
@@ -61,6 +65,7 @@ public class OrderHandler {
 
 	public void HandleOrderFiles(List<String> files) {
 		System.out.println("start order handling!");
+		new Thread(new GoodIndexConstructor( )).start();					// 同时开启建索引线程
 		for (String file : files) {
 			try {
 				reader = new BufferedReader(new FileReader(file));
@@ -71,7 +76,7 @@ public class OrderHandler {
 			try {
 				record = reader.readLine();
 				while (record != null) {
-					Utils.getAttrsFromRecords(orderAttrList, record);
+					//Utils.getAttrsFromRecords(orderAttrList, record);
 					orderfile.writeLine(record, IndexType.OrderTable);
 					record = reader.readLine();
 				}
@@ -80,12 +85,9 @@ public class OrderHandler {
 				e.printStackTrace();
 			}
 		}
-		orderfile.closeFile();
 
 		// set end signal
 		orderfile.writeLine("end", IndexType.OrderTable);
-		orderfile.closeFile();
-
 		orderfile.closeFile();
 		System.out.println("end order handling!");
 	}
@@ -93,7 +95,7 @@ public class OrderHandler {
 	// order表的建索引线程 需要建的索引包括：orderid, buyerid, goodid, countable 字段的索引
 	public class GoodIndexConstructor implements Runnable {
 
-		String indexFileName = "";
+		String indexFileName = null;
 		DiskHashTable<Long, Long> orderIdHashTable = null;
 		DiskHashTable<Long, List<Long>> orderBuyerIdHashTable = null;
 		DiskHashTable<Long, List<Long>> orderGoodIdHashTable = null;
@@ -111,6 +113,7 @@ public class OrderHandler {
 					if (record != null) {
 						if (record.recordsData.equals("end")) {
 							isEnd = true;
+							continue;
 						}
 
 						if (!record.getFileName().equals(indexFileName)) {
@@ -172,15 +175,15 @@ public class OrderHandler {
 
 						Row recordRow = Row
 								.createKVMapFromLine(record.recordsData);
+						orderAttrList.addAll(recordRow.keySet());
 						long orderid = recordRow.get(RaceConfig.orderId)
 								.valueAsLong();
 
 						// 获取代理键
 						long agentBuyerId = buyerIdSurrKeyIndex
-								.get(recordRow.get(RaceConfig.buyerId)
-										.valueAsLong()).get(0);
+								.get(recordRow.get(RaceConfig.buyerId).valueAsString()).get(0);
 						long agentGoodId = goodIdSurrKeyIndex.get(
-								recordRow.get(RaceConfig.goodId).valueAsLong())
+								recordRow.get(RaceConfig.goodId).valueAsString())
 								.get(0);
 
 						// 建立三个索引
@@ -209,7 +212,7 @@ public class OrderHandler {
 						orderGoodIdIndexList.put(indexFileName,
 								orderGoodIdHashTable);
 						orderFileList.add(smallFile);
-
+						countDownLatch.countDown();
 						break;
 
 					}

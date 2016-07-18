@@ -48,7 +48,7 @@ public class WriteFile {
 
 		filePerfix = new String(path + name);
 		try {
-			fileName = filePerfix + String.valueOf(fileNum) + ".txt";
+			fileName = filePerfix + String.valueOf(fileNum);
 			this.writer = new BufferedWriter(new FileWriter(fileName));
 		} catch (IOException e) {
 			e.printStackTrace();
