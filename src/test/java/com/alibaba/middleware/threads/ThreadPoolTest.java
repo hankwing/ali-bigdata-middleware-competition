@@ -15,7 +15,7 @@ public class ThreadPoolTest {
 
     public static void main(String[] args) {
 //        exampleThreadTest();
-        jvmMonitorThreadTest();
+//        jvmMonitorThreadTest();
     }
 
     public static void exampleThreadTest() {
@@ -24,26 +24,26 @@ public class ThreadPoolTest {
             threadPool.addWorker(exampleThread);
         }
         threadPool.startWorkers();
-        threadPool.stopWorkers();
+//        threadPool.stopWorkers();
         threadPool.shutdown();
     }
 
-    public static void jvmMonitorThreadTest() {
-        BucketCachePool bucketCachePool = new BucketCachePool(RaceConfig.bucketCachePoolCapacity);
-        DiskHashTable<Integer, String> context = new DiskHashTable<Integer, String>();
-        JVMMonitorThread jvmMonitorThread = new JVMMonitorThread(bucketCachePool);
-        threadPool.addMonitor(jvmMonitorThread);
-        threadPool.startMonitors();
-        for (int i = 0; i < 1000; i++) {
-            HashBucket<Integer, String> bucket = new HashBucket<Integer, String>(context, i, String.class);
-            for (int j = 0; i < 1000; j++) {
-                bucket.putAddress("", i, new Long(i+j));
-            }
-            bucketCachePool.addBucket(i, bucket);
-        }
-        threadPool.stopMonitors();
-        threadPool.shutdown();
-    }
+//    public static void jvmMonitorThreadTest() {
+//        BucketCachePool bucketCachePool = new BucketCachePool(RaceConfig.bucketCachePoolCapacity);
+//        DiskHashTable<Integer, String> context = new DiskHashTable<Integer, String>();
+//        JVMMonitorThread jvmMonitorThread = new JVMMonitorThread(bucketCachePool);
+//        threadPool.addMonitor(jvmMonitorThread);
+//        threadPool.startMonitors();
+//        for (int i = 0; i < 1000; i++) {
+//            HashBucket<Integer, String> bucket = new HashBucket<Integer, String>(context, i, String.class);
+//            for (int j = 0; i < 1000; j++) {
+//                bucket.putAddress("", i, new Long(i+j));
+//            }
+//            bucketCachePool.addBucket(i, bucket);
+//        }
+//        threadPool.stopMonitors();
+//        threadPool.shutdown();
+//    }
 }
 
 class ExampleThread extends WorkerThread {

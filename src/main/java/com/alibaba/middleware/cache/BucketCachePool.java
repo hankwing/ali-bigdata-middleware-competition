@@ -4,7 +4,9 @@ import com.alibaba.middleware.index.HashBucket;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -19,9 +21,8 @@ public class BucketCachePool {
     private int capacity;
     // Number of hash buckets
     private AtomicInteger bucketCounter = new AtomicInteger(0);
-    private ReadWriteLock lock = new ReentrantReadWriteLock();
-    private List<Integer> bucketIdList = new ArrayList<Integer>();
-    private Random random = new Random();
+    private Lock lock = new ReentrantLock();
+    private Queue<Integer> bucketFIFO = new LinkedList<Integer>();
     private static BucketCachePool instance;
 
     private BucketCachePool(int capacity) {
@@ -36,44 +37,46 @@ public class BucketCachePool {
     }
 
     public HashBucket getBucket(int bucketId) {
-        lock.writeLock().lock();
+        lock.lock();
         if (!bucketCache.containsKey(bucketId)) {
             // TODO
             return null;
         }
         HashBucket bucket = bucketCache.get(bucketId);
-        lock.writeLock().unlock();
+        lock.unlock();
         return bucketCache.get(bucketId);
     }
 
     public boolean addBucket(int bucketId, HashBucket bucket) {
-        lock.writeLock().lock();
         if (bucketCounter.get() <= capacity) {
+            lock.lock();
             bucketCache.put(bucketId, bucket);
             bucketCounter.getAndIncrement();
+            bucketFIFO.add(bucketId);
+            lock.unlock();
             return true;
         }
-        lock.writeLock().unlock();
         return false;
     }
 
     private void removeBucket(int bucketId) {
-        lock.writeLock().lock();
+        lock.lock();
         if (bucketCache.containsKey(bucketId)) {
             bucketCache.get(bucketId).writeSelf();
             bucketCache.remove(bucketId);
             bucketCounter.getAndDecrement();
         }
-        lock.writeLock().unlock();
+        lock.unlock();
     }
 
     /**
-     * Randomly choose bucket to remove
+     * Remove N buckets based on FIFO
      * */
-    public void removeBucket() {
-        bucketIdList.addAll(bucketCache.keySet());
-        int removeIndex = random.nextInt(bucketIdList.size());
-        removeBucket(bucketIdList.get(removeIndex));
-        bucketIdList.clear();
+    public void removeBuckets(int num) {
+        lock.lock();
+        for (int i = 0; i < num; i++) {
+            removeBucket(bucketFIFO.poll());
+        }
+        lock.unlock();
     }
 }
