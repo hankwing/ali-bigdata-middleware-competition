@@ -24,6 +24,7 @@ public class JVMMonitorThread extends SchedulerThread {
     private int gcCounterThreshold = RaceConfig.gcCounterThreshold;
     private long kb = 1024L;
     private long mb = 1024L * 1024L;
+    private int removeBucketNum = RaceConfig.removeBucketNum;
 
     public JVMMonitorThread(BucketCachePool bucketCachePool) {
         this.bucketCachePool = bucketCachePool;
@@ -61,7 +62,7 @@ public class JVMMonitorThread extends SchedulerThread {
                         gcCounter++;
                     } else {
                         System.out.println("Remove bucket...");
-                        bucketCachePool.removeBucket();
+                        bucketCachePool.removeBuckets(removeBucketNum);
                         gcCounter = 0;
                     }
                 }
@@ -69,7 +70,7 @@ public class JVMMonitorThread extends SchedulerThread {
             System.out.println("Stop");
         } catch (OutOfMemoryError e) {
             System.out.println("Out of memory, remove bucket...");
-            bucketCachePool.removeBucket();
+            bucketCachePool.removeBuckets(removeBucketNum);
             gcCounter = 0;
         }
     }

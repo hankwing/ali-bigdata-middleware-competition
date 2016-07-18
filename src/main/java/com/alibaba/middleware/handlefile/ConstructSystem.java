@@ -111,9 +111,9 @@ public class ConstructSystem {
 
 		long startTime = System.currentTimeMillis();
 		List<String> buyerfiles = new ArrayList<String>();
-		buyerfiles.add("buyer_records.txt");
+		buyerfiles.add("buyer_records_1.txt");
 		List<String> goodfiles = new ArrayList<String>();
-		goodfiles.add("good_records.txt");
+		goodfiles.add("good_records_1.txt");
 		List<String> orderfiles = new ArrayList<String>();
 		orderfiles.add("order_records.txt");
 

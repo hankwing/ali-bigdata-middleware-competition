@@ -51,16 +51,16 @@ public class BenchmarkProducer {
 	public static void main( String[] args) {
 		try {
 			// produce buyer table
-			smallTableProducer(buyerTableFileName, buyerTableDatabaseFileName, 
-					buyerTableRecordsNum, buyerTableReAttr, buerTableOpAttr);
+//			smallTableProducer(buyerTableFileName, buyerTableDatabaseFileName,
+//					buyerTableRecordsNum, buyerTableReAttr, buerTableOpAttr);
 			
 			// produce good table
-			smallTableProducer(goodTableFileName, goodTableDatabaseFileName, 
-					goodTableRecordsNum, goodTableReAttr, goodTableOpAttr);
+//			smallTableProducer(goodTableFileName, goodTableDatabaseFileName,
+//					goodTableRecordsNum, goodTableReAttr, goodTableOpAttr);
 			
 			// then produce order table
-			/*orderTableProducer(orderTableFileName, orderTableDatabaseFileName, 
-					orderTableRecordsNum, orderTableReAttr, orderTableOpAttr);*/
+			orderTableProducer(orderTableFileName, orderTableDatabaseFileName,
+					orderTableRecordsNum, orderTableReAttr, orderTableOpAttr);
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

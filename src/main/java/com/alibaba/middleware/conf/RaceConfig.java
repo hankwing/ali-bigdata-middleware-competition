@@ -24,6 +24,7 @@ public class RaceConfig implements Serializable{
     // JVMMonitorThread
     public static float memFactor = 0.1f;
     public static int gcCounterThreshold = 2;
+	public static int removeBucketNum = 100;
 
 	/**
 	 * Cache pool config
