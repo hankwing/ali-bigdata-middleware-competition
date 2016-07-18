@@ -26,29 +26,32 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
     }
 
     @Override
-    public ResultImpl call() throws Exception {
-        // TODO
+    public ResultImpl call() {
     	ResultImpl result = null;
 		Row resultKV = new Row();
 		resultKV.putKV(RaceConfig.orderId, orderId);
 		if (keys == null) {
 			// 为Null 查询所有字段
+			keys = new ArrayList<String>();
+            keys.addAll(system.orderAttrList);
 			resultKV.putAll(system.getRowById(TableName.OrderTable, IdName.OrderId,
 					orderId, keys));
+            keys.addAll(system.buyerAttrList);
 			resultKV.putAll(system.getRowById(TableName.BuyerTable, IdName.BuyerId,
 					resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
+            keys.addAll(system.goodAttrList);
 			resultKV.putAll(system.getRowById(TableName.GoodTable, IdName.GoodId,
 					resultKV.get(RaceConfig.goodId).valueAsString(), keys));
 		} else if ( !keys.isEmpty()) {
 			// 查询指定字段
 			List<String> orderKeys = new ArrayList<String>();
-			List<String> buyerKesy = new ArrayList<String>();
+			List<String> buyerKeys = new ArrayList<String>();
 			List<String> goodKeys = new ArrayList<String>();
 			for (String key : keys) {
 				if (system.orderAttrList.contains(key)) {
 					orderKeys.add(key);
 				} else if (system.buyerAttrList.contains(key)) {
-					buyerKesy.add(key);
+					buyerKeys.add(key);
 				} else if (system.goodAttrList.contains(key)) {
 					goodKeys.add(key);
 				}
@@ -56,7 +59,7 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 			resultKV.putAll(system.getRowById(TableName.OrderTable, IdName.OrderId,
 					orderId, orderKeys));
 			resultKV.putAll(system.getRowById(TableName.BuyerTable, IdName.BuyerId,
-					resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKesy));
+					resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKeys));
 			resultKV.putAll(system.getRowById(TableName.GoodTable, IdName.GoodId,
 					resultKV.get(RaceConfig.goodId).valueAsString(), goodKeys));
 		}
