@@ -38,7 +38,7 @@ public class RaceConfig implements Serializable{
 	public static int hash_index_block_capacity = 10000;
 
 	// BucketCachePool
-	public static int bucketCachePoolCapacity = 1000;
+	public static int bucketCachePoolCapacity = 10000;
 
 	public static String booleanTrueValue = "true";
 	public static String booleanFalseValue = "false";

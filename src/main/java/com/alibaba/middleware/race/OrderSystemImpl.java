@@ -123,8 +123,13 @@ public class OrderSystemImpl implements OrderSystem {
 				}
 			} else if (command.startsWith("lookup")) {
 				// lookup:xxx 查找某个key值的value
-				System.out.println("values:" + orderSystem.queryOrder(
-						Long.valueOf(command.substring(command.indexOf(":") + 1)), null));
+				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+				List<String> keys = new ArrayList<String>();
+				for( int i = 1; i < rawCommand.length; i++ ) {
+					keys.add(rawCommand[i]);
+				}
+				System.out.println("values:" + 
+				orderSystem.queryOrder( Long.valueOf(rawCommand[0]), keys));
 				
 			} else if (command.equals("quit")) {
 				// 索引使用完毕 退出
@@ -399,9 +404,8 @@ public class OrderSystemImpl implements OrderSystem {
 	public ResultImpl queryOrder(long orderId, Collection<String> keys) {
 		// 主要思想：先判断keys在哪个表里 之后根据索引在不同表里找不同字段
 		ResultImpl result = null;
-
         if (queryExe != null) {
-            QueryOrderThread t = new QueryOrderThread(orderId, keys);
+            QueryOrderThread t = new QueryOrderThread(this,orderId, keys);
             Future<ResultImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
@@ -411,45 +415,6 @@ public class OrderSystemImpl implements OrderSystem {
                 e.printStackTrace();
             }
         }
-
-//		Row resultKV = new Row();
-//		resultKV.putKV(RaceConfig.orderId, orderId);
-//		result = new ResultImpl(orderId, resultKV);
-//		if (keys == null) {
-//			// 为Null 查询所有字段
-//			resultKV.putAll(getRowById(TableName.OrderTable, IdName.OrderId,
-//					orderId, keys));
-//			resultKV.putAll(getRowById(TableName.BuyerTable, IdName.BuyerId,
-//					resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
-//			resultKV.putAll(getRowById(TableName.GoodTable, IdName.GoodId,
-//					resultKV.get(RaceConfig.goodId).valueAsString(), keys));
-//		} else if (keys.isEmpty()) {
-//			// 为空 排除所有字段
-//			result = new ResultImpl(orderId, resultKV);
-//		} else {
-//			// 查询指定字段
-//			List<String> orderKeys = new ArrayList<String>();
-//			List<String> buyerKesy = new ArrayList<String>();
-//			List<String> goodKeys = new ArrayList<String>();
-//			for (String key : keys) {
-//				if (orderAttrList.contains(key)) {
-//					orderKeys.add(key);
-//				} else if (orderAttrList.contains(key)) {
-//					orderKeys.add(key);
-//				} else if (goodAttrList.contains(key)) {
-//					goodKeys.add(key);
-//				}
-//			}
-//
-//			resultKV.putAll(getRowById(TableName.OrderTable, IdName.OrderId,
-//					orderId, orderKeys));
-//			resultKV.putAll(getRowById(TableName.BuyerTable, IdName.BuyerId,
-//					resultKV.get(RaceConfig.buyerId), buyerKesy));
-//			resultKV.putAll(getRowById(TableName.GoodTable, IdName.GoodId,
-//					resultKV.get(RaceConfig.goodId), goodKeys));
-//
-//		}
-
 		return result;
 	}
 
@@ -464,13 +429,12 @@ public class OrderSystemImpl implements OrderSystem {
 	 *            买家Id
 	 * @return 符合条件的订单集合，按照createtime大到小排列
 	 */
-	@SuppressWarnings("unchecked")
 	public Iterator<Result> queryOrdersByBuyer(long startTime, long endTime,
 			String buyerid) {
 
         Iterator<Result> iterator = null;
         if (queryExe != null) {
-            QueryOrderByBuyerThread t = new QueryOrderByBuyerThread(startTime, endTime, buyerid);
+            QueryOrderByBuyerThread t = new QueryOrderByBuyerThread(this, startTime, endTime, buyerid);
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
@@ -481,27 +445,7 @@ public class OrderSystemImpl implements OrderSystem {
             }
         }
 
-		// 根据买家ID在索引里找到结果 再判断结果是否介于startTime和endTime之间 结果集合按照createTime插入排序
-//		TreeMap<Long, Result> results = new TreeMap<Long, Result>(
-//				Collections.reverseOrder());
-//		long surrId = getSurrogateKey(buyerid, IdName.BuyerId);
-//		for (FilePathWithIndex filePath : buyerFileList) {
-//			DiskHashTable<Long, Long> hashTable = buyerIdIndexList.get(filePath
-//					.getFilePath());
-//			if (hashTable == null) {
-//				hashTable = getHashDiskTable(filePath.getFilePath(),
-//						filePath.getBuyerIdIndex());
-//			}
-//			if (hashTable.get(surrId).size() != 0) {
-//				// find the records offset
-//				// 找到后，按照降序插入TreeMap中
-//				System.out.println("records offset:"
-//						+ hashTable.get(surrId).size());
-//				buyerIdIndexList.put(filePath.getFilePath(), hashTable);
-//			}
-//
-//		}
-//		return results.values().iterator();
+		
         return iterator;
 	}
 
