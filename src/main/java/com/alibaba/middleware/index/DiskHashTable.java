@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.conf.RaceConfig;
 
 /**
@@ -77,7 +78,9 @@ public class DiskHashTable<K,T> implements Serializable {
 
 		//bucketQueue = new LinkedBlockingQueue<HashBucket<T>>(100000);
 		for (int i = 0; i < 10; i++) {
-			bucketList.put(i, new HashBucket<K,T>(this, i, classType));
+			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
+			bucketList.put(i, newBucket );
+			BucketCachePool.getInstance().addBucket(newBucket);
 		}
 		/*timer = new Timer();
 		timer.schedule(new TimerTask() {
@@ -315,6 +318,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
 				HashBucket<K,T> newBucket = new HashBucket<K,T>(this, bucketNum, classType);
+				BucketCachePool.getInstance().addBucket(newBucket);
 				bucketNum++;
 				bucketList.put(bucketNum - 1, newBucket);
 				

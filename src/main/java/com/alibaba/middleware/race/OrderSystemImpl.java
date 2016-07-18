@@ -117,8 +117,13 @@ public class OrderSystemImpl implements OrderSystem {
 				}
 			} else if (command.startsWith("lookup")) {
 				// lookup:xxx 查找某个key值的value
-				System.out.println("values:" + orderSystem.queryOrder(
-						Long.valueOf(command.substring(command.indexOf(":") + 1)), null));
+				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+				List<String> keys = new ArrayList<String>();
+				for( int i = 1; i < rawCommand.length; i++ ) {
+					keys.add(rawCommand[i]);
+				}
+				System.out.println("values:" + 
+				orderSystem.queryOrder( Long.valueOf(rawCommand[0]), keys));
 				
 			} else if (command.equals("quit")) {
 				// 索引使用完毕 退出
@@ -405,10 +410,7 @@ public class OrderSystemImpl implements OrderSystem {
 					resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
 			resultKV.putAll(getRowById(TableName.GoodTable, IdName.GoodId,
 					resultKV.get(RaceConfig.goodId).valueAsString(), keys));
-		} else if (keys.isEmpty()) {
-			// 为空 排除所有字段
-			result = new ResultImpl(orderId, resultKV);
-		} else {
+		} else if ( !keys.isEmpty()) {
 			// 查询指定字段
 			List<String> orderKeys = new ArrayList<String>();
 			List<String> buyerKesy = new ArrayList<String>();
@@ -416,22 +418,20 @@ public class OrderSystemImpl implements OrderSystem {
 			for (String key : keys) {
 				if (orderAttrList.contains(key)) {
 					orderKeys.add(key);
-				} else if (orderAttrList.contains(key)) {
-					orderKeys.add(key);
+				} else if (buyerAttrList.contains(key)) {
+					buyerKesy.add(key);
 				} else if (goodAttrList.contains(key)) {
 					goodKeys.add(key);
 				}
 			}
-
 			resultKV.putAll(getRowById(TableName.OrderTable, IdName.OrderId,
 					orderId, orderKeys));
 			resultKV.putAll(getRowById(TableName.BuyerTable, IdName.BuyerId,
-					resultKV.get(RaceConfig.buyerId), buyerKesy));
+					resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKesy));
 			resultKV.putAll(getRowById(TableName.GoodTable, IdName.GoodId,
-					resultKV.get(RaceConfig.goodId), goodKeys));
-
+					resultKV.get(RaceConfig.goodId).valueAsString(), goodKeys));
 		}
-
+		result = new ResultImpl(orderId, resultKV);
 		return result;
 	}
 
