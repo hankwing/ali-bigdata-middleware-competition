@@ -249,7 +249,6 @@ public class OrderSystemImpl implements OrderSystem {
 	/**
 	 * 根据orderid查找索引返回记录 无记录则返回null
 	 * 
-	 * @param orderId
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
