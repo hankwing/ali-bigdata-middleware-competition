@@ -62,5 +62,14 @@ public class OrderSystemImpleTest {
         while (iterator.hasNext()) {
             System.out.println((ResultImpl)iterator.next());
         }
+
+        String goodId = "8ff6c8b6-147f-4962-ae1c-3342523823bd";
+        String salerId = "bc0eee35-b7e8-484a-a909-ffa3f2cab50b";
+
+        keys = null;
+        iterator = orderSystem.queryOrdersBySaler(salerId, goodId, keys);
+        while (iterator.hasNext()) {
+            System.out.println((ResultImpl)iterator.next());
+        }
     }
 }
