@@ -1,5 +1,6 @@
 package com.alibaba.middleware.cache;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.index.HashBucket;
 
 import java.util.*;
@@ -24,14 +25,14 @@ public class BucketCachePool {
     private Queue<HashBucket> bucketCache;
     private static BucketCachePool instance;
 
-    private BucketCachePool(int capacity) {
-        this.capacity = capacity;
+    private BucketCachePool() {
+        this.capacity = RaceConfig.bucketCachePoolCapacity;
         bucketCache = new LinkedList<HashBucket>();
     }
 
-    public static BucketCachePool getInstance(int capacity) {
+    public static BucketCachePool getInstance() {
         if (instance == null)
-            instance = new BucketCachePool(capacity);
+            instance = new BucketCachePool();
         return instance;
     }
 
@@ -63,6 +64,7 @@ public class BucketCachePool {
             num = bucketCounter.get();
         }
         for (int i = 0; i < num; i++) {
+        	System.out.println("remove bucket!!");
             removeBucket(bucketCache.poll());
         }
         lock.unlock();
