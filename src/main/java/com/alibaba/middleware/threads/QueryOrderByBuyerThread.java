@@ -33,6 +33,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
     }
 
     /**
+     * 第二个查询
 	 * 查询某位买家createtime字段从[startTime, endTime) 时间范围内发生的所有订单的所有信息
 	 * 
 	 * @param startTime

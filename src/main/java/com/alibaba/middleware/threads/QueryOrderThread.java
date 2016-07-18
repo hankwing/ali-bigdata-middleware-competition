@@ -25,6 +25,9 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
         this.keys = keys;
     }
 
+    /**
+     * 第一个查询
+     */
     @Override
     public ResultImpl call() {
     	ResultImpl result = null;

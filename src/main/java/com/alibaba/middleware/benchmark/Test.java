@@ -34,6 +34,9 @@ public class Test {
 
 	public static void main(String[] args) {
 
+		Double sum = 0.0;
+		Long a1 = 3L;
+		sum += a1;
 		/*
 		 * TreeMap<String, HashMap<String, Long>> treeMap = new TreeMap<String,
 		 * HashMap<String,Long>>(new ComparableKeys(2));
@@ -49,7 +52,7 @@ public class Test {
 		 * for( Map<String, Long> map : values) { System.out.println("values:" +
 		 * map.entrySet()); }
 		 */
-		try {
+		/*try {
 			String a1 = "1";
 			String a2 = "01";
 
@@ -122,12 +125,12 @@ public class Test {
 					fis);
 			
 			// success case
-			/*readCase1 = (HashBucketTest) ois.readObject();	// read the first object, success
+			readCase1 = (HashBucketTest) ois.readObject();	// read the first object, success
 			fis.getChannel().position(position2);
 			readCase2 = (HashBucketTest) ois.readObject();	// read the second object, success
 			fis.getChannel().position(position3);
 			readCase3 = (HashBucketTest) ois.readObject();	// read the third object, success
-*/			
+			
 			// failed case!!!!
 			readCase1 = (HashBucketTest) ois.readObject();	// read the first object, success
 			fis.getChannel().position(position3);
@@ -170,7 +173,7 @@ public class Test {
 			e.printStackTrace();
 		}
 
-		/*
+		
 		 * RandomAccessFile serFile = null; FileChannel fileChannel = null;
 		 * 
 		 * try { byte[] source = byteArrayOutputStream.toByteArray(); serFile =
@@ -181,7 +184,7 @@ public class Test {
 		 * (Exception cause) { cause.printStackTrace(); } finally {
 		 * 
 		 * }
-		 */
+		 
 	}
 
 	public static class club implements Serializable {
@@ -251,7 +254,7 @@ public class Test {
 		public boolean equals(Object obj) {
 			Key otherKey = (Key) obj;
 			return keyString.equals(otherKey.keyString);
-		}
+		}*/
 
 	}
 }
