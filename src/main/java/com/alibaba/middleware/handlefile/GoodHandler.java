@@ -94,6 +94,7 @@ public class GoodHandler{
 					if( record != null ) {
 						if( record.recordsData.equals("end")) {
 							isEnd = true;
+							continue;
 						}
 						
 						if( !record.getFileName().equals(indexFileName)) {
