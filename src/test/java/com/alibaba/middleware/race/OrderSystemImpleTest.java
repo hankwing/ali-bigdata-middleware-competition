@@ -3,6 +3,7 @@ package com.alibaba.middleware.race;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -51,10 +52,15 @@ public class OrderSystemImpleTest {
         Collection<String> keys = new ArrayList<String>();
         keys.add("done");
         keys.add("amount");
-        System.out.println(orderSystem.queryOrder(7381492278246634845L, keys));
+//        System.out.println(orderSystem.queryOrder(7381492278246634845L, keys));
         keys = null;
-        System.out.println(orderSystem.queryOrder(7381492278246634845L, keys));
+//        System.out.println(orderSystem.queryOrder(7381492278246634845L, keys));
         keys = new ArrayList<String>();
-        System.out.println(orderSystem.queryOrder(7381492278246634845L, keys));
+//        System.out.println(orderSystem.queryOrder(7381492278246634845L, keys));
+
+        Iterator<OrderSystem.Result> iterator = orderSystem.queryOrdersByBuyer(2616152755183780199L, 163089172349893490L, "35856dc2-9255-4379-a1c9-4a67f84f3c7b");
+        while (iterator.hasNext()) {
+            System.out.println((ResultImpl)iterator.next());
+        }
     }
 }

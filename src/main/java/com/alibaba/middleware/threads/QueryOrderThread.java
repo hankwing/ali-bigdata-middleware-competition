@@ -32,14 +32,10 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 		resultKV.putKV(RaceConfig.orderId, orderId);
 		if (keys == null) {
 			// 为Null 查询所有字段
-			keys = new ArrayList<String>();
-            keys.addAll(system.orderAttrList);
 			resultKV.putAll(system.getRowById(TableName.OrderTable, IdName.OrderId,
 					orderId, keys));
-            keys.addAll(system.buyerAttrList);
 			resultKV.putAll(system.getRowById(TableName.BuyerTable, IdName.BuyerId,
 					resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
-            keys.addAll(system.goodAttrList);
 			resultKV.putAll(system.getRowById(TableName.GoodTable, IdName.GoodId,
 					resultKV.get(RaceConfig.goodId).valueAsString(), keys));
 		} else if ( !keys.isEmpty()) {

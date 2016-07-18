@@ -455,7 +455,6 @@ public class OrderSystemImpl implements OrderSystem {
             }
         }
 
-		
         return iterator;
 	}
 
