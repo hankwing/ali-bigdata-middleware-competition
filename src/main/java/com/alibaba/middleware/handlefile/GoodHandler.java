@@ -56,6 +56,7 @@ public class GoodHandler{
 			try {
 				record = reader.readLine();
 				while (record != null) {
+					Utils.getAttrsFromRecords(goodAttrList, record);
 					goodfile.writeLine(record, IndexType.GoodTable);
 					record = reader.readLine();
 				}

@@ -52,7 +52,7 @@ public class BuyerHandler{
 	}
 
 	/**
-	 * 处理没一行数据
+	 * 处理每一行数据
 	 * @param files
 	 */
 	public void handeBuyerFiles(List<String> files){
@@ -69,7 +69,7 @@ public class BuyerHandler{
 			try {
 				record = reader.readLine();
 				while (record != null) {
-					//handleBuyerRecord(record);
+					Utils.getAttrsFromRecords(buyerAttrList, record);
 					buyerfile.writeLine(record, IndexType.BuyerTable);
 					record = reader.readLine();
 				}

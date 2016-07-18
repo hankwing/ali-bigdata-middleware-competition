@@ -71,6 +71,7 @@ public class OrderHandler {
 			try {
 				record = reader.readLine();
 				while (record != null) {
+					Utils.getAttrsFromRecords(orderAttrList, record);
 					orderfile.writeLine(record, IndexType.OrderTable);
 					record = reader.readLine();
 				}

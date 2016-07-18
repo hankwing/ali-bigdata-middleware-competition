@@ -1,8 +1,10 @@
 package com.alibaba.middleware.handlefile;
 
+import java.util.ArrayList;
+import java.util.List;
 
 public class Utils {
-	
+
 	/**
 	 * 判断字符串是否是长整数
 	 */
@@ -60,10 +62,25 @@ public class Utils {
 		}
 		return value;
 	}
-	
+
 	//从KeyValue中获取Value
 	public static String getValueFromKV(String keyValue){
 		String[] kvs = keyValue.split(":");
 		return kvs[1];
+	}
+
+	public static void getAttrsFromRecords(List<String> list, String record){
+		String[] kvs = record.split("\t");
+		for(int i = 0; i<kvs.length ;i++){
+			String str = new String(kvs[i]);
+			int p = str.indexOf(":");
+			String kstr = str.substring(0 , p);
+			if (kstr.length() == 0) {
+				throw new RuntimeException("Bad data:" + record);
+			}
+			if (list.contains(kstr) == false) {
+				list.add(kstr);
+			}
+		}
 	}
 }
