@@ -18,12 +18,12 @@ public class RaceConfig implements Serializable{
 	 * Thread pool config
 	 * */
 	public static int monitorThreadNum = 1;
-    public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
-    public static int monitorInitDelayInMills = 1;
-    public static int monitorFixedDelayInMills = 5;
-    // JVMMonitorThread
-    public static float memFactor = 0.1f;
-    public static int gcCounterThreshold = 2;
+	public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
+	public static int monitorInitDelayInMills = 1;
+	public static int monitorFixedDelayInMills = 5;
+	// JVMMonitorThread
+	public static float memFactor = 0.1f;
+	public static int gcCounterThreshold = 2;
 	public static int removeBucketNum = 100;
 
 	/**
@@ -33,24 +33,34 @@ public class RaceConfig implements Serializable{
 	public static String cacheConfig = "/Users/Jelly/Developer/orderQuerySystem/cache.ccf";
 	public static int hash_index_block_capacity = 10000;
 
-    // BucketCachePool
-    public static int bucketCachePoolCapacity = 1000;
-	
+	// BucketCachePool
+	public static int bucketCachePoolCapacity = 1000;
+
 	public static String booleanTrueValue = "true";
 	public static String booleanFalseValue = "false";
-	
+
 	public static enum IdName {
-    	OrderId,BuyerId,GoodId;
-    }
-	
+		OrderId,BuyerId,GoodId;
+	}
+
 	public static enum TableName {
 		OrderTable, BuyerTable, GoodTable
 	}
-	
+
 	public static String orderId = "orderid";
 	public static String buyerId = "buyerid";
 	public static String goodId = "goodid";
 	public static String createTime = "createtime";
 	public static String salerId = "salerid";
-	
+
+
+	/***
+	 * handle file config
+	 */
+	public static int orderFileCapacity = 10000;
+	public static int buyerFileCapacity = 10000;
+	public static int goodFileCapacity = 10000;
+	public static int columnFileCapacity = 10000;
+
+	public static int handleThreadNumber = 3;
 }

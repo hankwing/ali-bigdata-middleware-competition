@@ -11,14 +11,14 @@ public class TestOffset {
 	
 	public TestOffset(){
 		try {
-			reader = new BufferedReader(new FileReader("good/good_0.txt"));
+			reader = new BufferedReader(new FileReader("buildfiles/order/order_0.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		try {
-			reader.skip(159481);
+			reader.skip(1192903);
 			System.out.println(reader.readLine());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

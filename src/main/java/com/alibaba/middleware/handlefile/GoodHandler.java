@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.conf.RaceConfig;
+
 public class GoodHandler{
 
 	AgentMapping agentGoodMapping;
@@ -14,15 +16,15 @@ public class GoodHandler{
 	BufferedReader reader;
 	LinkedBlockingQueue<IndexItem> indexQueue;
 
-	public GoodHandler(AgentMapping agentGoodMapping) {
+	public GoodHandler(AgentMapping agentGoodMapping, int threadid) {
 		this.agentGoodMapping = agentGoodMapping;
-		goodfile = new WriteFile("good/", "good_", 10000000);
+		goodfile = new WriteFile("buildfiles/good/", "good_"+threadid+"_", RaceConfig.goodFileCapacity);
 		indexQueue = new LinkedBlockingQueue<IndexItem>();
 	}
 
 	private void handleGoodRecord(String record){
 		String goodid = Utils.getValueFromRecord(record, "goodid");
-		Integer agentGoodId = agentGoodMapping.getValue(goodid);
+		Long agentGoodId = agentGoodMapping.getValue(goodid);
 		if (agentGoodId == null) {
 			agentGoodMapping.addEntry(goodid);
 		}

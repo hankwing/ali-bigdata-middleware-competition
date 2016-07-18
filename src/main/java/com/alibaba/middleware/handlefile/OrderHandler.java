@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.conf.RaceConfig;
+
 public class OrderHandler{
 
 	AgentMapping agentBuyerMapping;
@@ -20,12 +22,13 @@ public class OrderHandler{
 	LinkedBlockingQueue<IndexItem> indexQueue;
 
 	public OrderHandler(AgentMapping agentGoodMapping,
-			AgentMapping agentBuyerMapping) {
+			AgentMapping agentBuyerMapping,
+			int threadid) {
 
 		this.agentGoodMapping = agentGoodMapping;
 		this.agentBuyerMapping = agentBuyerMapping;
 
-		orderfile = new WriteFile("order/", "order_", 1000000);
+		orderfile = new WriteFile("buildfiles/order/", "order_"+threadid+"_", RaceConfig.orderFileCapacity);
 		columnFiles = new HashMap<String, WriteFile>();
 
 		indexQueue = new LinkedBlockingQueue<IndexItem>();
@@ -40,8 +43,8 @@ public class OrderHandler{
 		String orderid = Utils.getValueFromKV(kvs[0]);
 
 		//获取代理键
-		Integer agentGoodId = agentGoodMapping.getValue(Utils.getValueFromKV(kvs[1]));
-		Integer agentBuyerId =  agentBuyerMapping.getValue(Utils.getValueFromKV(kvs[2]));
+		Long agentGoodId = agentGoodMapping.getValue(Utils.getValueFromKV(kvs[1]));
+		Long agentBuyerId =  agentBuyerMapping.getValue(Utils.getValueFromKV(kvs[2]));
 
 		resultBuilder.append(agentGoodId).append("\t");
 		resultBuilder.append(agentBuyerId).append("\t");
@@ -57,14 +60,18 @@ public class OrderHandler{
 				//获取WriteFile,存入相应的WriteFile中
 				WriteFile writeFile = columnFiles.get(key);
 				if (writeFile == null) {
-					writeFile = new WriteFile("cacluate/", key+"_", 10000000);
+					writeFile = new WriteFile("buildfiles/cacluate/", key+"_", RaceConfig.columnFileCapacity);
 					columnFiles.put(key, writeFile);
 				}
-				
+
 				String sumRecord = new String(String.valueOf(agentBuyerId)+":"+ value);
 				writeFile.writeLine(sumRecord);
 			}
-			resultBuilder.append(kvs[i]).append("\t");
+			if(i == kvs.length-1){
+				resultBuilder.append(kvs[i]);
+			}else{
+				resultBuilder.append(kvs[i]).append("\t");
+			}
 		}
 
 		//写入文件之前获取索引,放入阻塞队列中，Order表中对orderid键索引
