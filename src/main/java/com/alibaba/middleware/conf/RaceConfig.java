@@ -24,7 +24,7 @@ public class RaceConfig implements Serializable{
     public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	// JVMMonitorThread
-    public static int monitorInitDelayInMills = 1;
+    public static int monitorInitDelayInMills = 2;
     public static int monitorFixedDelayInMills = 5;
 	public static float memFactor = 0.1f;
 	public static int gcCounterThreshold = 2;

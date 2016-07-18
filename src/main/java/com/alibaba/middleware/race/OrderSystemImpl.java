@@ -90,13 +90,16 @@ public class OrderSystemImpl implements OrderSystem {
 				
 
 				List<String> buyerfiles = new ArrayList<String>();
-				buyerfiles.add("benchmark/buyer_records.txt");
+				buyerfiles.add("benchmark/buyer_records1.txt");
+				buyerfiles.add("benchmark/buyer_records2.txt");
 
 				List<String> goodfiles = new ArrayList<String>();
-				goodfiles.add("benchmark/good_records.txt");
+				goodfiles.add("benchmark/good_records1.txt");
+				goodfiles.add("benchmark/good_records2.txt");
 
 				List<String> orderfiles = new ArrayList<String>();
-				orderfiles.add("benchmark/order_records.txt");
+				orderfiles.add("benchmark/order_records1.txt");
+				orderfiles.add("benchmark/order_records2.txt");
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
@@ -115,6 +118,7 @@ public class OrderSystemImpl implements OrderSystem {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				
 			} else if (command.startsWith("lookup")) {
 				// lookup:xxx 查找某个key值的value
 				System.out.println("values:" + orderSystem.queryOrder(
