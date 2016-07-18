@@ -14,6 +14,7 @@ public class ThreadPool {
     private static ThreadPool instance = null;
     private static ScheduledExecutorService monitorExe;
     private static ExecutorService workerExe;
+    private static ExecutorService queryExe;
     private int initDelay = RaceConfig.monitorInitDelayInMills;
     private int fixedDelay = RaceConfig.monitorFixedDelayInMills;
     private List<JVMMonitorThread> monitorList = new ArrayList<JVMMonitorThread>();
@@ -22,6 +23,7 @@ public class ThreadPool {
     private ThreadPool() {
         workerExe = Executors.newFixedThreadPool(workerThreadNum);
         monitorExe = Executors.newScheduledThreadPool(RaceConfig.monitorThreadNum);
+        queryExe = Executors.newFixedThreadPool(RaceConfig.queryThreadNum);
     }
 
     public static ThreadPool getInstance() {
@@ -37,6 +39,13 @@ public class ThreadPool {
 
     public void addMonitor(JVMMonitorThread jvmThread) {
         monitorList.add(jvmThread);
+    }
+
+    public ExecutorService getQueryExe() {
+        if (!queryExe.isTerminated()) {
+            return queryExe;
+        }
+        return null;
     }
 
     public void startWorkers() {
