@@ -127,11 +127,11 @@ public class OrderHandler {
 								orderBuyerIdHashTable = new DiskHashTable<Long, List<Long>>(
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
-										indexFileName, Long.class);
+										indexFileName, List.class);
 								orderGoodIdHashTable = new DiskHashTable<Long, List<Long>>(
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
-										indexFileName, Long.class);
+										indexFileName, List.class);
 
 							} else {
 								// 保存当前goodId的索引 并写入索引List
@@ -164,11 +164,11 @@ public class OrderHandler {
 								orderBuyerIdHashTable = new DiskHashTable<Long, List<Long>>(
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
-										indexFileName, Long.class);
+										indexFileName, List.class);
 								orderGoodIdHashTable = new DiskHashTable<Long, List<Long>>(
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
-										indexFileName, Long.class);
+										indexFileName, List.class);
 
 							}
 						}

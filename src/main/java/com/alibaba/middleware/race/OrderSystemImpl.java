@@ -121,7 +121,7 @@ public class OrderSystemImpl implements OrderSystem {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			} else if (command.startsWith("lookup")) {
+			} else if (command.startsWith("lookup1")) {
 				// lookup:xxx 查找某个key值的value
 				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 				List<String> keys = new ArrayList<String>();
@@ -130,6 +130,19 @@ public class OrderSystemImpl implements OrderSystem {
 				}
 				System.out.println("values:" + 
 				orderSystem.queryOrder( Long.valueOf(rawCommand[0]), keys));
+				
+			}  else if (command.startsWith("lookup2")) {
+				// lookup:xxx 查找某个key值的value
+				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+				String buyerId = rawCommand[0];
+				long startTime = Long.valueOf(rawCommand[1]);
+				long endTime = Long.valueOf(rawCommand[2]);
+				
+				Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
+				while(results.hasNext()) {
+					System.out.println("values:" + results.next());
+				}
+				
 				
 			} else if (command.equals("quit")) {
 				// 索引使用完毕 退出
