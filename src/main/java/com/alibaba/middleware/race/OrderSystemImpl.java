@@ -96,16 +96,13 @@ public class OrderSystemImpl implements OrderSystem {
 				
 
 				List<String> buyerfiles = new ArrayList<String>();
-				buyerfiles.add("benchmark/buyer_records1.txt");
-				buyerfiles.add("benchmark/buyer_records2.txt");
+				buyerfiles.add("benchmark/buyer_records.txt");
 
 				List<String> goodfiles = new ArrayList<String>();
-				goodfiles.add("benchmark/good_records1.txt");
-				goodfiles.add("benchmark/good_records2.txt");
+				goodfiles.add("benchmark/good_records.txt");
 
 				List<String> orderfiles = new ArrayList<String>();
-				orderfiles.add("benchmark/order_records1.txt");
-				orderfiles.add("benchmark/order_records2.txt");
+				orderfiles.add("benchmark/order_records.txt");
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
@@ -148,7 +145,20 @@ public class OrderSystemImpl implements OrderSystem {
 				}
 				
 				
-			} else if (command.equals("quit")) {
+			} else if (command.startsWith("lookup3")) {
+				// lookup:xxx 查找某个key值的value
+				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+				String goodId = rawCommand[0];
+				List<String> keys = new ArrayList<String>();
+				for( int i = 1; i < rawCommand.length; i++ ) {
+					keys.add(rawCommand[i]);
+				}
+				Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, keys);
+				while(results.hasNext()) {
+					System.out.println("values:" + results.next());
+				}
+				
+			}else if (command.equals("quit")) {
 				// 索引使用完毕 退出
 				
 			}
@@ -477,13 +487,12 @@ public class OrderSystemImpl implements OrderSystem {
 	 *            待查询的字段，如果为null，则查询所有字段，如果为空，则排除所有字段
 	 * @return 符合条件的订单集合，按照订单id从小至大排序
 	 */
-	@SuppressWarnings("unchecked")
 	public Iterator<Result> queryOrdersBySaler(String salerid, String goodid,
 			Collection<String> keys) {
 
         Iterator<Result> iterator = null;
         if (queryExe != null) {
-            QueryOrdersBySalerThread t = new QueryOrdersBySalerThread(salerid, goodid, keys);
+            QueryOrdersBySalerThread t = new QueryOrdersBySalerThread(this,salerid, goodid, keys);
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
@@ -494,27 +503,6 @@ public class OrderSystemImpl implements OrderSystem {
             }
         }
 
-		// 根据商品ID找到多条订单信息 再筛选出keys 结果集按照订单id插入排序
-//		TreeMap<Long, Result> results = new TreeMap<Long, Result>(
-//				Collections.reverseOrder());
-//		long surrId = getSurrogateKey(goodid, IdName.GoodId);
-//		for (FilePathWithIndex filePath : orderFileList) {
-//			DiskHashTable<Long, List<Long>> hashTable = orderBuyerIdIndexList
-//					.get(filePath.getFilePath());
-//			if (hashTable == null) {
-//				hashTable = getHashDiskTable(filePath.getFilePath(),
-//						filePath.getBuyerIdIndex());
-//			}
-//			if (hashTable.get(surrId).size() != 0) {
-//				// find the records offset
-//				// 找到后，按照降序插入TreeMap中
-//				System.out.println("records offset:"
-//						+ hashTable.get(surrId).size());
-//				orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
-//			}
-//
-//		}
-//		return results.values().iterator();
         return iterator;
 	}
 
