@@ -1,5 +1,14 @@
 package com.alibaba.middleware.tools;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+
+import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.race.Row;
+
 
 public class RecordsUtils {
 	
@@ -59,6 +68,40 @@ public class RecordsUtils {
 			}
 		}
 		return value;
+	}
+	
+	public static Row getRecordsByKeysFromFile(String fileName,Collection<String> keys,Long offset){
+		Row row = new Row();
+		try {
+				BufferedReader reader = new BufferedReader(new FileReader(fileName));
+				reader.skip(offset);
+				String record = reader.readLine();
+
+				String[] kvs = record.split("\t");
+
+				for(int i = 0; i<kvs.length ;i++){
+					String str = new String(kvs[i]);
+					int p = str.indexOf(":");
+					String kstr = str.substring(0 , p);
+					String vstr = str.substring(p+1);
+					if (kstr.length() == 0 || vstr.length() == 0) {
+						throw new RuntimeException("Bad data:" + record);
+					}
+					if(keys == null || kstr.equals(RaceConfig.orderId) || kstr.equals(RaceConfig.buyerId) 
+							|| kstr.equals(RaceConfig.goodId) || keys.contains(kstr)) {
+						row.putKV(kstr, vstr);
+					}
+					
+				}
+				
+				reader.close();
+
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		
+		return row;
 	}
 	
 	/**
