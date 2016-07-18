@@ -152,7 +152,14 @@ public class OrderSystemImpl implements OrderSystem {
 					System.out.println("values:" + results.next());
 				}
 				
-			}else if (command.equals("quit")) {
+			} else if (command.startsWith("lookup4")) {
+				// lookup:xxx 查找某个key值的value
+				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+				String goodId = rawCommand[0];
+				String key = rawCommand[1];
+				System.out.println(orderSystem.sumOrdersByGood(goodId, key));
+				
+			} else if (command.equals("quit")) {
 				// 索引使用完毕 退出
 				
 			}
@@ -514,7 +521,7 @@ public class OrderSystemImpl implements OrderSystem {
 		KeyValueImpl result = null;
 
         if (queryExe != null) {
-            SumOrdersByGoodThread t = new SumOrdersByGoodThread(goodid, key);
+            SumOrdersByGoodThread t = new SumOrdersByGoodThread(this,goodid, key);
             Future<KeyValueImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
@@ -524,25 +531,6 @@ public class OrderSystemImpl implements OrderSystem {
                 e.printStackTrace();
             }
         }
-
-//		long surrId = getSurrogateKey(goodid, IdName.GoodId);
-//		for (FilePathWithIndex filePath : orderFileList) {
-//			DiskHashTable<Long, List<Long>> hashTable = orderBuyerIdIndexList
-//					.get(filePath.getFilePath());
-//			if (hashTable == null) {
-//				hashTable = getHashDiskTable(filePath.getFilePath(),
-//						filePath.getBuyerIdIndex());
-//			}
-//			if (hashTable.get(surrId).size() != 0) {
-//				// find the records offset
-//				// 找到后，按照降序插入TreeMap中
-//				System.out.println("records offset:"
-//						+ hashTable.get(surrId).size());
-//				orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
-//			}
-//
-//		}
-
 		return result;
 	}
 

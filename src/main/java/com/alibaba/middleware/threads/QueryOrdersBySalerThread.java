@@ -36,6 +36,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
     }
 
     /**
+     * 第三个查询
 	 * 查询某位卖家某件商品所有订单的某些字段
 	 * 
 	 * @param salerid
