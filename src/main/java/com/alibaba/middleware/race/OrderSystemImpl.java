@@ -17,12 +17,16 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.ConstructSystem;
 import com.alibaba.middleware.index.DiskHashTable;
+import com.alibaba.middleware.threads.*;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
@@ -59,6 +63,8 @@ public class OrderSystemImpl implements OrderSystem {
 	public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
 	public DiskHashTable<String, Long> buyerIdSurrKeyIndex = null; // 缓存buyerId事实键与代理键
 	public DiskHashTable<String, Long> goodIdSurrKeyIndex = null; // 缓存goodId事实键与代理键
+
+    private ExecutorService queryExe = ThreadPool.getInstance().getQueryExe();
 
 	/**
 	 * 测试类 construct测试construct方法
@@ -270,7 +276,6 @@ public class OrderSystemImpl implements OrderSystem {
 	/**
 	 * 根据orderid查找索引返回记录 无记录则返回null
 	 * 
-	 * @param orderId
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
@@ -399,39 +404,17 @@ public class OrderSystemImpl implements OrderSystem {
 	public ResultImpl queryOrder(long orderId, Collection<String> keys) {
 		// 主要思想：先判断keys在哪个表里 之后根据索引在不同表里找不同字段
 		ResultImpl result = null;
-		Row resultKV = new Row();
-		resultKV.putKV(RaceConfig.orderId, orderId);
-		result = new ResultImpl(orderId, resultKV);
-		if (keys == null) {
-			// 为Null 查询所有字段
-			resultKV.putAll(getRowById(TableName.OrderTable, IdName.OrderId,
-					orderId, keys));
-			resultKV.putAll(getRowById(TableName.BuyerTable, IdName.BuyerId,
-					resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
-			resultKV.putAll(getRowById(TableName.GoodTable, IdName.GoodId,
-					resultKV.get(RaceConfig.goodId).valueAsString(), keys));
-		} else if ( !keys.isEmpty()) {
-			// 查询指定字段
-			List<String> orderKeys = new ArrayList<String>();
-			List<String> buyerKesy = new ArrayList<String>();
-			List<String> goodKeys = new ArrayList<String>();
-			for (String key : keys) {
-				if (orderAttrList.contains(key)) {
-					orderKeys.add(key);
-				} else if (buyerAttrList.contains(key)) {
-					buyerKesy.add(key);
-				} else if (goodAttrList.contains(key)) {
-					goodKeys.add(key);
-				}
-			}
-			resultKV.putAll(getRowById(TableName.OrderTable, IdName.OrderId,
-					orderId, orderKeys));
-			resultKV.putAll(getRowById(TableName.BuyerTable, IdName.BuyerId,
-					resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKesy));
-			resultKV.putAll(getRowById(TableName.GoodTable, IdName.GoodId,
-					resultKV.get(RaceConfig.goodId).valueAsString(), goodKeys));
-		}
-		result = new ResultImpl(orderId, resultKV);
+        if (queryExe != null) {
+            QueryOrderThread t = new QueryOrderThread(this,orderId, keys);
+            Future<ResultImpl> future = queryExe.submit(t);
+            try {
+                result = future.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
 		return result;
 	}
 
@@ -446,30 +429,24 @@ public class OrderSystemImpl implements OrderSystem {
 	 *            买家Id
 	 * @return 符合条件的订单集合，按照createtime大到小排列
 	 */
-	@SuppressWarnings("unchecked")
 	public Iterator<Result> queryOrdersByBuyer(long startTime, long endTime,
 			String buyerid) {
-		// 根据买家ID在索引里找到结果 再判断结果是否介于startTime和endTime之间 结果集合按照createTime插入排序
-		TreeMap<Long, Result> results = new TreeMap<Long, Result>(
-				Collections.reverseOrder());
-		long surrId = getSurrogateKey(buyerid, IdName.BuyerId);
-		for (FilePathWithIndex filePath : buyerFileList) {
-			DiskHashTable<Long, Long> hashTable = buyerIdIndexList.get(filePath
-					.getFilePath());
-			if (hashTable == null) {
-				hashTable = getHashDiskTable(filePath.getFilePath(),
-						filePath.getBuyerIdIndex());
-			}
-			if (hashTable.get(surrId).size() != 0) {
-				// find the records offset
-				// 找到后，按照降序插入TreeMap中
-				System.out.println("records offset:"
-						+ hashTable.get(surrId).size());
-				buyerIdIndexList.put(filePath.getFilePath(), hashTable);
-			}
 
-		}
-		return results.values().iterator();
+        Iterator<Result> iterator = null;
+        if (queryExe != null) {
+            QueryOrderByBuyerThread t = new QueryOrderByBuyerThread(this, startTime, endTime, buyerid);
+            Future<Iterator<Result>> future = queryExe.submit(t);
+            try {
+                iterator = future.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
+		
+        return iterator;
 	}
 
 	/**
@@ -486,27 +463,42 @@ public class OrderSystemImpl implements OrderSystem {
 	@SuppressWarnings("unchecked")
 	public Iterator<Result> queryOrdersBySaler(String salerid, String goodid,
 			Collection<String> keys) {
-		// 根据商品ID找到多条订单信息 再筛选出keys 结果集按照订单id插入排序
-		TreeMap<Long, Result> results = new TreeMap<Long, Result>(
-				Collections.reverseOrder());
-		long surrId = getSurrogateKey(goodid, IdName.GoodId);
-		for (FilePathWithIndex filePath : orderFileList) {
-			DiskHashTable<Long, List<Long>> hashTable = orderBuyerIdIndexList
-					.get(filePath.getFilePath());
-			if (hashTable == null) {
-				hashTable = getHashDiskTable(filePath.getFilePath(),
-						filePath.getBuyerIdIndex());
-			}
-			if (hashTable.get(surrId).size() != 0) {
-				// find the records offset
-				// 找到后，按照降序插入TreeMap中
-				System.out.println("records offset:"
-						+ hashTable.get(surrId).size());
-				orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
-			}
 
-		}
-		return results.values().iterator();
+        Iterator<Result> iterator = null;
+        if (queryExe != null) {
+            QueryOrdersBySalerThread t = new QueryOrdersBySalerThread(salerid, goodid, keys);
+            Future<Iterator<Result>> future = queryExe.submit(t);
+            try {
+                iterator = future.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
+		// 根据商品ID找到多条订单信息 再筛选出keys 结果集按照订单id插入排序
+//		TreeMap<Long, Result> results = new TreeMap<Long, Result>(
+//				Collections.reverseOrder());
+//		long surrId = getSurrogateKey(goodid, IdName.GoodId);
+//		for (FilePathWithIndex filePath : orderFileList) {
+//			DiskHashTable<Long, List<Long>> hashTable = orderBuyerIdIndexList
+//					.get(filePath.getFilePath());
+//			if (hashTable == null) {
+//				hashTable = getHashDiskTable(filePath.getFilePath(),
+//						filePath.getBuyerIdIndex());
+//			}
+//			if (hashTable.get(surrId).size() != 0) {
+//				// find the records offset
+//				// 找到后，按照降序插入TreeMap中
+//				System.out.println("records offset:"
+//						+ hashTable.get(surrId).size());
+//				orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
+//			}
+//
+//		}
+//		return results.values().iterator();
+        return iterator;
 	}
 
 	/**
@@ -524,24 +516,37 @@ public class OrderSystemImpl implements OrderSystem {
 		// 根据商品ID找到多条订单信息 再根据key值加和
 		KeyValueImpl result = null;
 
-		long surrId = getSurrogateKey(goodid, IdName.GoodId);
-		for (FilePathWithIndex filePath : orderFileList) {
-			DiskHashTable<Long, List<Long>> hashTable = orderBuyerIdIndexList
-					.get(filePath.getFilePath());
-			if (hashTable == null) {
-				hashTable = getHashDiskTable(filePath.getFilePath(),
-						filePath.getBuyerIdIndex());
-			}
-			if (hashTable.get(surrId).size() != 0) {
-				// find the records offset
-				// 找到后，按照降序插入TreeMap中
-				System.out.println("records offset:"
-						+ hashTable.get(surrId).size());
-				orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
-			}
+        if (queryExe != null) {
+            SumOrdersByGoodThread t = new SumOrdersByGoodThread(goodid, key);
+            Future<KeyValueImpl> future = queryExe.submit(t);
+            try {
+                result = future.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
 
-		}
-		return null;
+//		long surrId = getSurrogateKey(goodid, IdName.GoodId);
+//		for (FilePathWithIndex filePath : orderFileList) {
+//			DiskHashTable<Long, List<Long>> hashTable = orderBuyerIdIndexList
+//					.get(filePath.getFilePath());
+//			if (hashTable == null) {
+//				hashTable = getHashDiskTable(filePath.getFilePath(),
+//						filePath.getBuyerIdIndex());
+//			}
+//			if (hashTable.get(surrId).size() != 0) {
+//				// find the records offset
+//				// 找到后，按照降序插入TreeMap中
+//				System.out.println("records offset:"
+//						+ hashTable.get(surrId).size());
+//				orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
+//			}
+//
+//		}
+
+		return result;
 	}
 
 }
