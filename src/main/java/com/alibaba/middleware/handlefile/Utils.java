@@ -1,7 +1,13 @@
 package com.alibaba.middleware.handlefile;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.alibaba.middleware.race.Row;
 
 public class Utils {
 
@@ -67,6 +73,39 @@ public class Utils {
 	public static String getValueFromKV(String keyValue){
 		String[] kvs = keyValue.split(":");
 		return kvs[1];
+	}
+
+	public static Row getRecordsByKeysFromFile(String fileName,List<String> keys,Long offset){
+		Row row = new Row();
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(fileName));
+			try {
+				reader.skip(offset);
+				String record = reader.readLine();
+
+				String[] kvs = record.split("\t");
+
+				for(int i = 0; i<kvs.length ;i++){
+					String str = new String(kvs[i]);
+					int p = str.indexOf(":");
+					String kstr = str.substring(0 , p);
+					String vstr = str.substring(p+1);
+					if (kstr.length() == 0 || vstr.length() == 0) {
+						throw new RuntimeException("Bad data:" + record);
+					}
+					if(keys.contains(kstr)) {
+						row.putKV(kstr, vstr);
+					}
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return row;
 	}
 
 	/*public static void getAttrsFromRecords(List<String> list, String record){
