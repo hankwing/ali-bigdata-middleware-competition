@@ -24,6 +24,7 @@ import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.ConstructSystem;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.tools.FilePathWithIndex;
+import com.alibaba.middleware.tools.RecordsUtils;
 
 /**
  * 订单系统实现
@@ -235,7 +236,7 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public long getSurrogateKey(Object id, IdName idName) {
+	public long getSurrogateKey(String id, IdName idName) {
 		long surrogateKey = 0;
 		switch (idName) {
 		case OrderId:
@@ -269,7 +270,7 @@ public class OrderSystemImpl implements OrderSystem {
 	@SuppressWarnings("unchecked")
 	public Row getRowById(TableName tableName, IdName idName, Object id,
 			Collection<String> keys) {
-		Row result = new Row();
+		Row result = null;
 		try {
 			switch (tableName) {
 			case OrderTable:
@@ -286,13 +287,13 @@ public class OrderSystemImpl implements OrderSystem {
 							break;
 						case BuyerId:
 							// 这里要将id转化成代理键
-							id = getSurrogateKey(id, idName);
+							id = getSurrogateKey(String.valueOf(id), idName);
 							streamIn.getChannel().position(
 									filePath.getOrderBuyerIdIndex());
 							break;
 						case GoodId:
 							// 这里要将id转化成代理键
-							id = getSurrogateKey(id, idName);
+							id = getSurrogateKey(String.valueOf(id), idName);
 							streamIn.getChannel().position(
 									filePath.getOrderGoodIdIndex());
 							break;
@@ -309,20 +310,19 @@ public class OrderSystemImpl implements OrderSystem {
 					if (hashTable.get(id).size() != 0) {
 						// find the records offset
 						// 不管key是什么，都得载入固定order表里的固定key
-						System.out.println("records offset:"
-								+ hashTable.get(id).get(0));
+						/*System.out.println("records offset:"
+								+ hashTable.get(id).get(0));*/
 						orderIdIndexList.put(filePath.getFilePath(), hashTable);
-						
-						if (idName == IdName.OrderId) {
-							break; // 找到了就退出 因为orderId不会重复
-						}
+						result = RecordsUtils.getRecordsByKeysFromFile(
+								filePath.getFilePath(), keys, hashTable.get(id).get(0));
+						break; // 找到了就退出 因为orderId不会重复
 					}
 
 				}
 				break;
 			case BuyerTable:
 				// 将事实键转为代理键
-				id = getSurrogateKey(id, idName);
+				id = getSurrogateKey(String.valueOf(id), idName);
 				for (FilePathWithIndex filePath : buyerFileList) {
 					DiskHashTable<Long, Long> hashTable = buyerIdIndexList
 							.get(filePath.getFilePath());
@@ -333,16 +333,18 @@ public class OrderSystemImpl implements OrderSystem {
 					}
 					if (hashTable.get(id).size() != 0) {
 						// find the records offset
-						System.out.println("records offset:"
-								+ hashTable.get(id).size());
+						/*System.out.println("records offset:"
+								+ hashTable.get(id).size());*/
 						buyerIdIndexList.put(filePath.getFilePath(), hashTable);
+						result = RecordsUtils.getRecordsByKeysFromFile(
+								filePath.getFilePath(), keys, hashTable.get(id).get(0));
 						break; // 找到了就退出 因为buyerId不会重复
 					}
 
 				}
 				break;
 			case GoodTable:
-				id = getSurrogateKey(id, idName);
+				id = getSurrogateKey(String.valueOf(id), idName);
 				for (FilePathWithIndex filePath : goodFileList) {
 					DiskHashTable<Long, Long> hashTable = goodIdIndexList
 							.get(filePath.getFilePath());
@@ -353,9 +355,11 @@ public class OrderSystemImpl implements OrderSystem {
 					}
 					if (hashTable.get(id).size() != 0) {
 						// find the records offset
-						System.out.println("records offset:"
-								+ hashTable.get(id).size());
+						/*System.out.println("records offset:"
+								+ hashTable.get(id).size());*/
 						goodIdIndexList.put(filePath.getFilePath(), hashTable);
+						result = RecordsUtils.getRecordsByKeysFromFile(
+								filePath.getFilePath(), keys, hashTable.get(id).get(0));
 						break; // 找到了就退出 因为buyerId不会重复
 					}
 
@@ -397,9 +401,9 @@ public class OrderSystemImpl implements OrderSystem {
 			resultKV.putAll(getRowById(TableName.OrderTable, IdName.OrderId,
 					orderId, keys));
 			resultKV.putAll(getRowById(TableName.BuyerTable, IdName.BuyerId,
-					resultKV.get(RaceConfig.buyerId), keys));
+					resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
 			resultKV.putAll(getRowById(TableName.GoodTable, IdName.GoodId,
-					resultKV.get(RaceConfig.goodId), keys));
+					resultKV.get(RaceConfig.goodId).valueAsString(), keys));
 		} else if (keys.isEmpty()) {
 			// 为空 排除所有字段
 			result = new ResultImpl(orderId, resultKV);
