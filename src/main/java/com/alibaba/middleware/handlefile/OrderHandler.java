@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -19,10 +20,13 @@ public class OrderHandler{
 	HashMap<String, WriteFile> columnFiles;
 	WriteFile orderfile;
 	BufferedReader reader;
+	HashMap<String, Boolean> computableItems;
 	LinkedBlockingQueue<IndexItem> indexQueue;
+	int threadid;
 
 	public OrderHandler(AgentMapping agentGoodMapping,
 			AgentMapping agentBuyerMapping,
+			HashMap<String, Boolean> computableItems,
 			int threadid) {
 
 		this.agentGoodMapping = agentGoodMapping;
@@ -32,6 +36,8 @@ public class OrderHandler{
 		columnFiles = new HashMap<String, WriteFile>();
 
 		indexQueue = new LinkedBlockingQueue<IndexItem>();
+		this.computableItems = computableItems;
+		this.threadid = threadid;
 	}
 
 	//处理每一条记录
@@ -56,17 +62,33 @@ public class OrderHandler{
 			if (key.length() == 0 || value.length() == 0) {
 				throw new RuntimeException("Bad data:" + record);
 			}
+
+			synchronized (computableItems) {
+				//处理可计算,初始化所有字段都是可计算的遇到不可计算的进行改变false
+				if (computableItems.containsKey(key) == false) {
+					computableItems.put(key, true);
+				}
+			}
+
 			if(Utils.isCanSum(value)) {
 				//获取WriteFile,存入相应的WriteFile中
 				WriteFile writeFile = columnFiles.get(key);
 				if (writeFile == null) {
-					writeFile = new WriteFile("buildfiles/cacluate/", key+"_", RaceConfig.columnFileCapacity);
+					writeFile = new WriteFile("buildfiles/cacluate/", key+"_" + threadid + "_", RaceConfig.columnFileCapacity);
 					columnFiles.put(key, writeFile);
 				}
 
 				String sumRecord = new String(String.valueOf(agentBuyerId)+":"+ value);
 				writeFile.writeLine(sumRecord);
+
+			}else {
+
+				synchronized (computableItems) {
+					computableItems.put(key, false);
+				}
+
 			}
+
 			if(i == kvs.length-1){
 				resultBuilder.append(kvs[i]);
 			}else{

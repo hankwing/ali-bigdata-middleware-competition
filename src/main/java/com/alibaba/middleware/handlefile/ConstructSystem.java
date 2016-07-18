@@ -3,6 +3,7 @@ package com.alibaba.middleware.handlefile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -15,7 +16,7 @@ public class ConstructSystem {
 	//代理映射表
 	AgentMapping agentBuyerMapping;
 	AgentMapping agentGoodMapping;
-	
+	HashMap<String, Boolean> computableItems;
 
 	class BuyerRun implements Runnable{
 		CountDownLatch countDownLatch;
@@ -28,7 +29,7 @@ public class ConstructSystem {
 		}
 		public void run() {
 			// TODO Auto-generated method stub
-			
+
 			BuyerHandler buyerHandler = new BuyerHandler(agentBuyerMapping, threadid);
 			buyerHandler.handeBuyerFiles(files);
 			countDownLatch.countDown();
@@ -63,7 +64,10 @@ public class ConstructSystem {
 		}
 		public void run() {
 			// TODO Auto-generated method stub
-			OrderHandler orderHandler = new OrderHandler(agentGoodMapping, agentBuyerMapping, threadid);
+			OrderHandler orderHandler = new OrderHandler(agentGoodMapping, 
+					agentBuyerMapping, 
+					computableItems,
+					threadid);
 			orderHandler.HandleOrderFiles(files);
 			countDownLatch.countDown();
 		}
@@ -72,6 +76,7 @@ public class ConstructSystem {
 	public ConstructSystem() {
 		agentBuyerMapping = new AgentMapping();
 		agentGoodMapping = new AgentMapping();
+		computableItems = new HashMap<String, Boolean>();
 	}
 
 	public void startHandling(List<String> buyerfiles,List<String> goodfiles,List<String> orderfiles,int threadNum){
@@ -98,7 +103,7 @@ public class ConstructSystem {
 				new Thread(new OrderRun(countDownLatch, files,i)).start();
 			}
 			countDownLatch.await();
-			
+
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -113,6 +118,10 @@ public class ConstructSystem {
 			list.add(files.get(i));
 		}
 		return list;
+	}
+	
+	public void printComputableItems(){
+		System.out.println(computableItems);
 	}
 
 
@@ -135,6 +144,6 @@ public class ConstructSystem {
 		ConstructSystem constructSystem = new ConstructSystem();
 		constructSystem.startHandling(buyerfiles, goodfiles, orderfiles, RaceConfig.handleThreadNumber);
 
-		System.out.println("time:" + (System.currentTimeMillis() - startTime) / 1000);
+		constructSystem.printComputableItems();
 	}
 }
