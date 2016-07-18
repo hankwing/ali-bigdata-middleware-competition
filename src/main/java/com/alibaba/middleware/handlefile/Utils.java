@@ -69,7 +69,7 @@ public class Utils {
 		return kvs[1];
 	}
 
-	public static void getAttrsFromRecords(List<String> list, String record){
+	/*public static void getAttrsFromRecords(List<String> list, String record){
 		String[] kvs = record.split("\t");
 		for(int i = 0; i<kvs.length ;i++){
 			String str = new String(kvs[i]);
@@ -82,5 +82,5 @@ public class Utils {
 				list.add(kstr);
 			}
 		}
-	}
+	}*/
 }

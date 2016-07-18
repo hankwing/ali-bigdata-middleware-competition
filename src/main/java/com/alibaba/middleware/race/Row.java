@@ -15,16 +15,16 @@ public class Row extends HashMap<String, KeyValueImpl> {
 
 	private static final long serialVersionUID = -5133028627154935587L;
 
-	Row() {
+	public Row() {
 		super();
 	}
 
-	Row(KeyValueImpl kv) {
+	public Row(KeyValueImpl kv) {
 		super();
 		this.put(kv.key(), kv);
 	}
 
-	KeyValueImpl getKV(String key) {
+	public KeyValueImpl getKV(String key) {
 		KeyValueImpl kv = this.get(key);
 		if (kv == null) {
 			throw new RuntimeException(key + " is not exist");
@@ -32,13 +32,13 @@ public class Row extends HashMap<String, KeyValueImpl> {
 		return kv;
 	}
 
-	Row putKV(String key, String value) {
+	public Row putKV(String key, String value) {
 		KeyValueImpl kv = new KeyValueImpl(key, value);
 		this.put(kv.key(), kv);
 		return this;
 	}
 
-	Row putKV(String key, long value) {
+	public Row putKV(String key, long value) {
 		KeyValueImpl kv = new KeyValueImpl(key, Long.toString(value));
 		this.put(kv.key(), kv);
 		return this;

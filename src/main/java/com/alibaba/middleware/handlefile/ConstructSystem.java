@@ -3,6 +3,7 @@ package com.alibaba.middleware.handlefile;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -39,9 +40,9 @@ public class ConstructSystem {
 	public List<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
 	public List<FilePathWithIndex> goodFileList = null; // 保存good表所有文件的名字
 
-	public List<String> orderAttrList = null; // 保存order表的所有字段名称
-	public List<String> buyerAttrList = null; // 保存buyer表的所有字段名称
-	public List<String> goodAttrList = null; // 保存good表的所有字段名称
+	public HashSet<String> orderAttrList = null; // 保存order表的所有字段名称
+	public HashSet<String> buyerAttrList = null; // 保存buyer表的所有字段名称
+	public HashSet<String> goodAttrList = null; // 保存good表的所有字段名称
 
 	public FilePathWithIndex buyerIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
 	public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
@@ -117,8 +118,8 @@ public class ConstructSystem {
 			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList, 
 			ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList, 
 			List<FilePathWithIndex> orderFileList, List<FilePathWithIndex> buyerFileList, 
-			List<FilePathWithIndex> goodFileList, List<String> orderAttrList, 
-			List<String> buyerAttrList, List<String> goodAttrList, 
+			List<FilePathWithIndex> goodFileList, HashSet<String> orderAttrList, 
+			HashSet<String> buyerAttrList, HashSet<String> goodAttrList, 
 			FilePathWithIndex buyerIdSurrKeyFile, FilePathWithIndex goodIdSurrKeyFile, 
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList, 
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList, 

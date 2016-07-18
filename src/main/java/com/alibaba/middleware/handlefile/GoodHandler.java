@@ -4,13 +4,16 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
+import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
+import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
@@ -23,12 +26,12 @@ public class GoodHandler{
 	DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
 	ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList = null;
 	List<FilePathWithIndex> goodFileList = null;
-	List<String> goodAttrList = null;
+	HashSet<String> goodAttrList = null;
 	FilePathWithIndex goodIdSurrKeyFile = null;
 	int threadIndex = 0;
 
 	public GoodHandler(List<FilePathWithIndex> goodFileList, 
-			List<String> goodAttrList, FilePathWithIndex goodIdSurrKeyFile, 
+			HashSet<String> goodAttrList, FilePathWithIndex goodIdSurrKeyFile, 
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList, 
 			DiskHashTable<String, Long> goodIdSurrKeyIndex, int threadIndex) {
 		
@@ -46,6 +49,7 @@ public class GoodHandler{
 
 	public void HandleGoodFiles(List<String> files){
 		System.out.println("start good handling!");
+		new Thread(new GoodIndexConstructor()).start();					// 同时开启建索引线程
 		for (String file : files) {
 			try {
 				reader = new BufferedReader(new FileReader(file));
@@ -56,7 +60,7 @@ public class GoodHandler{
 			try {
 				record = reader.readLine();
 				while (record != null) {
-					Utils.getAttrsFromRecords(goodAttrList, record);
+					//Utils.getAttrsFromRecords(goodAttrList, record);
 					goodfile.writeLine(record, IndexType.GoodTable);
 					record = reader.readLine();
 				}
@@ -68,15 +72,13 @@ public class GoodHandler{
 		// set end signal
 		goodfile.writeLine("end",IndexType.GoodTable);
 		goodfile.closeFile();
-				
-		goodfile.closeFile();
 		System.out.println("end good handling!");
 	}
 	
 	// good表的建索引线程  需要建的索引包括：代理键索引和goodId的索引
 		public class GoodIndexConstructor implements Runnable {
 
-			String indexFileName = "";
+			String indexFileName = null;
 			DiskHashTable<Long, Long> goodIdHashTable = null;
 			boolean isEnd = false;
 			long surrKey = 0;
@@ -104,7 +106,10 @@ public class GoodHandler{
 								goodIdHashTable = new DiskHashTable<Long,Long>(
 										indexFileName + RaceConfig.goodIndexFileSuffix,indexFileName, Long.class);
 								goodIdSurrKeyIndex = new DiskHashTable<String,Long>(
-										RaceConfig.goodSurrFileName,RaceConfig.goodSurrFileName, Long.class);
+										RaceConfig.storeFolders[threadIndex] +
+										RaceConfig.goodSurrFileName,
+										RaceConfig.storeFolders[threadIndex] +
+										RaceConfig.goodSurrFileName, Long.class);
 							}
 							else {
 								// 保存当前goodId的索引  并写入索引List
@@ -122,9 +127,11 @@ public class GoodHandler{
 								
 							}
 						}
+						Row recordRow = Row
+								.createKVMapFromLine(record.recordsData);
+						goodAttrList.addAll(recordRow.keySet());
+						String goodid = recordRow.getKV(RaceConfig.goodId).valueAsString();
 						
-						String goodid = RecordsUtils.getValueFromRecord(
-								record.getRecords(), RaceConfig.goodId);
 						goodIdSurrKeyIndex.put(goodid, surrKey);					// 建立代理键索引
 						goodIdHashTable.put(surrKey, record.getOffset());
 						surrKey ++;
