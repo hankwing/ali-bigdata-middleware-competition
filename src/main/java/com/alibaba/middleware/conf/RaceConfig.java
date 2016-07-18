@@ -13,10 +13,12 @@ public class RaceConfig implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
-
+	// 读写线程数
+	public static int handleThreadNumber = 1;
 	/**
 	 * Thread pool config
 	 * */
+	
 	public static int monitorThreadNum = 1;
     public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;
@@ -67,7 +69,7 @@ public class RaceConfig implements Serializable{
 	public static int goodFileCapacity = 10000;
 	public static int columnFileCapacity = 10000;
 
-	public static int handleThreadNumber = 3;
+	
 	public static long smallFileCapacity = 10000000;
 	
 	public static String[] storeFolders = null;
