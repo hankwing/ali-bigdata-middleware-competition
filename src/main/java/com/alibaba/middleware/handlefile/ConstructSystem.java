@@ -199,9 +199,10 @@ public class ConstructSystem {
 	private List<String> getGroupFiles(Collection<String> files, int group,
 			int readers) {
 		// 分给多个读线程
-		List<String> list = new ArrayList<String>(files);
-		for (int i = group; i < files.size(); i += readers) {
-			list.add(list.get(i));
+		List<String> fileList = new ArrayList<String>(files);
+		List<String> list = new ArrayList<String>();
+		for (int i = group; i < fileList.size(); i += readers) {
+			list.add(fileList.get(i));
 		}
 		return list;
 	}

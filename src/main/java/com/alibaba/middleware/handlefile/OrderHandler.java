@@ -52,7 +52,7 @@ public class OrderHandler {
 		this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 		threadIndex = thread;
-		indexQueue = new LinkedBlockingQueue<IndexItem>();
+		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		orderfile = new WriteFile(indexQueue,
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.orderFileNamePrex,

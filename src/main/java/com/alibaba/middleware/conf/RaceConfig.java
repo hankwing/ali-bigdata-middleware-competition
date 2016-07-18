@@ -15,6 +15,7 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	// 读写线程数
 	public static int handleThreadNumber = 1;
+	public static int QueueNumber = 10000;					// 一个缓冲队列的大小
 	/**
 	 * Thread pool config
 	 * */

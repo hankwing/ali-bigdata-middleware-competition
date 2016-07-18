@@ -87,20 +87,19 @@ public class OrderSystemImpl implements OrderSystem {
 				OrderSystemImpl orderSystem = new OrderSystemImpl();
 
 				List<String> buyerfiles = new ArrayList<String>();
-				buyerfiles.add("benchmark\\buyer_records.txt");
-				buyerfiles.add("buyer_records_1.txt");
-				buyerfiles.add("buyer_records_2.txt");
+				buyerfiles.add("benchmark/buyer_records.txt");
 
 				List<String> goodfiles = new ArrayList<String>();
-				goodfiles.add("benchmark\\good_records.txt");
-				goodfiles.add("good_records_1.txt");
-				goodfiles.add("good_records_2.txt");
+				goodfiles.add("benchmark/good_records.txt");
 
 				List<String> orderfiles = new ArrayList<String>();
-				orderfiles.add("order_records.txt");
+				//orderfiles.add("order_records.txt");
 
 				List<String> storeFolders = new ArrayList<String>();
-				storeFolders.add("benchmark//");
+				// 添加三个盘符
+				storeFolders.add("folder1/");
+				storeFolders.add("folder2/");
+				storeFolders.add("folder3/");
 
 				try {
 					orderSystem.construct(orderfiles, buyerfiles, goodfiles,

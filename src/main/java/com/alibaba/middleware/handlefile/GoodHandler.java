@@ -38,7 +38,7 @@ public class GoodHandler{
 		this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 		this.goodIdIndexList = goodIdIndexList;
 		this.threadIndex = threadIndex;
-		indexQueue = new LinkedBlockingQueue<IndexItem>();
+		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		goodfile = new WriteFile(indexQueue,
 				RaceConfig.storeFolders[threadIndex], 
 				RaceConfig.goodFileNamePrex, (int) RaceConfig.smallFileCapacity);

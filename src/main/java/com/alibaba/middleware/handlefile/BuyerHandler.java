@@ -44,9 +44,9 @@ public class BuyerHandler{
 		this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		this.buyerIdIndexList = buyerIdIndexList;
 		this.threadIndex = threadIndex;
-		indexQueue = new LinkedBlockingQueue<IndexItem>();
+		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		buyerfile = new WriteFile(indexQueue, 
-				RaceConfig.storeFolders[threadIndex], 
+				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.buyerFileNamePrex, (int) RaceConfig.smallFileCapacity);
 		
 	}
@@ -88,7 +88,7 @@ public class BuyerHandler{
 	// buyer表的建索引线程  需要建的索引包括：代理键索引和buyerId的索引
 	public class BuyerIndexConstructor implements Runnable {
 
-		String indexFileName = "";
+		String indexFileName = null;
 		DiskHashTable<Long, Long> buyerIdHashTable = null;
 		boolean isEnd = false;
 		long surrKey = 0;
@@ -106,6 +106,7 @@ public class BuyerHandler{
 				if( record != null ) {
 					if( record.recordsData.equals("end")) {
 						isEnd = true;
+						continue;
 					}
 					
 					if( !record.getFileName().equals(indexFileName)) {
