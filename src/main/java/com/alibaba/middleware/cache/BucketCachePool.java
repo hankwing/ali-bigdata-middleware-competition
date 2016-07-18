@@ -17,17 +17,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class BucketCachePool {
 
-    private HashMap<Integer, HashBucket> bucketCache;
     private int capacity;
     // Number of hash buckets
     private AtomicInteger bucketCounter = new AtomicInteger(0);
     private Lock lock = new ReentrantLock();
-    private Queue<Integer> bucketFIFO = new LinkedList<Integer>();
+    private Queue<HashBucket> bucketCache;
     private static BucketCachePool instance;
 
     private BucketCachePool(int capacity) {
         this.capacity = capacity;
-        bucketCache = new HashMap<Integer, HashBucket>(capacity);
+        bucketCache = new LinkedList<HashBucket>();
     }
 
     public static BucketCachePool getInstance(int capacity) {
@@ -36,37 +35,23 @@ public class BucketCachePool {
         return instance;
     }
 
-    public HashBucket getBucket(int bucketId) {
-        lock.lock();
-        if (!bucketCache.containsKey(bucketId)) {
-            // TODO
-            return null;
-        }
-        HashBucket bucket = bucketCache.get(bucketId);
-        lock.unlock();
-        return bucketCache.get(bucketId);
-    }
-
-    public boolean addBucket(int bucketId, HashBucket bucket) {
+    public boolean addBucket(HashBucket bucket) {
         if (bucketCounter.get() <= capacity) {
             lock.lock();
-            bucketCache.put(bucketId, bucket);
+            bucketCache.add(bucket);
             bucketCounter.getAndIncrement();
-            bucketFIFO.add(bucketId);
             lock.unlock();
             return true;
         }
         return false;
     }
 
-    private void removeBucket(int bucketId) {
+    private void removeBucket(HashBucket bucket) {
         lock.lock();
-        if (bucketCache.containsKey(bucketId)) {
-            bucketCache.get(bucketId).writeSelf();
-            bucketCache.remove(bucketId);
-            bucketCounter.getAndDecrement();
-        }
+        bucket.writeSelf();
+        bucket = null;
         lock.unlock();
+        bucketCounter.getAndDecrement();
     }
 
     /**
@@ -74,8 +59,11 @@ public class BucketCachePool {
      * */
     public void removeBuckets(int num) {
         lock.lock();
+        if (num > bucketCounter.get()) {
+            num = bucketCounter.get();
+        }
         for (int i = 0; i < num; i++) {
-            removeBucket(bucketFIFO.poll());
+            removeBucket(bucketCache.poll());
         }
         lock.unlock();
     }
