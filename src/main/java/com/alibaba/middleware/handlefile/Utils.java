@@ -2,18 +2,7 @@ package com.alibaba.middleware.handlefile;
 
 
 public class Utils {
-	/**
-	 * 判断字符串是否是整数
-	 */
-	public static boolean isInteger(String value) {
-		try {
-			Integer.parseInt(value);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
-		}
-	}
-
+	
 	/**
 	 * 判断字符串是否是长整数
 	 */
@@ -44,7 +33,7 @@ public class Utils {
 	 * 判断字符串是否是可加
 	 */
 	public static boolean isCanSum(String value) {
-		return isInteger(value) || isDouble(value) || isLong(value);
+		return  isDouble(value) || isLong(value);
 	}
 
 	/***
@@ -71,6 +60,8 @@ public class Utils {
 		}
 		return value;
 	}
+	
+	//从KeyValue中获取Value
 	public static String getValueFromKV(String keyValue){
 		String[] kvs = keyValue.split(":");
 		return kvs[1];
