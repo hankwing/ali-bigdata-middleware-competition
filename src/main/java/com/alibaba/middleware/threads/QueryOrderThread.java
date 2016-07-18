@@ -1,6 +1,5 @@
 package com.alibaba.middleware.threads;
 
-import com.alibaba.middleware.race.OrderSystem.Result;
 import com.alibaba.middleware.race.ResultImpl;
 
 import java.util.Collection;
@@ -20,7 +19,7 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
     @Override
     public ResultImpl call() throws Exception {
         // TODO
-
         return null;
     }
+
 }

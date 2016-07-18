@@ -1,6 +1,5 @@
 package com.alibaba.middleware.threads;
 
-import com.alibaba.middleware.race.OrderSystem;
 import com.alibaba.middleware.race.OrderSystem.Result;
 
 import java.util.Collection;
