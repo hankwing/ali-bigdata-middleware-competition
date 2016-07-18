@@ -8,77 +8,58 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class OrderHandler{
+import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IndexType;
+import com.alibaba.middleware.index.DiskHashTable;
+import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.FilePathWithIndex;
+import com.alibaba.middleware.tools.RecordsUtils;
 
-	AgentMapping agentBuyerMapping;
-	AgentMapping agentGoodMapping;
+public class OrderHandler {
+
 	HashMap<String, WriteFile> columnFiles;
 	WriteFile orderfile;
 	BufferedReader reader;
 	LinkedBlockingQueue<IndexItem> indexQueue;
+	ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList = null;
+	ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderBuyerIdIndexList = null;
+	ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList = null;
+	ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList = null;
+	DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
+	DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
+	List<FilePathWithIndex> orderFileList = null;
+	List<String> orderAttrList = null;
+	int threadIndex = 0;
 
-	public OrderHandler(AgentMapping agentGoodMapping,
-			AgentMapping agentBuyerMapping) {
+	public OrderHandler(
+			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
+			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderBuyerIdIndexList,
+			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList,
+			ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList,
+			List<FilePathWithIndex> orderFileList, List<String> orderAttrList,
+			DiskHashTable<String, Long> buyerIdSurrKeyIndex,
+			DiskHashTable<String, Long> goodIdSurrKeyIndex, int thread) {
 
-		this.agentGoodMapping = agentGoodMapping;
-		this.agentBuyerMapping = agentBuyerMapping;
-
-		orderfile = new WriteFile("order/", "order_", 1000000);
-		columnFiles = new HashMap<String, WriteFile>();
-
+		this.orderIdIndexList = orderIdIndexList;
+		this.orderBuyerIdIndexList = orderBuyerIdIndexList;
+		this.orderGoodIdIndexList = orderGoodIdIndexList;
+		this.orderCountableIndexList = orderCountableIndexList;
+		this.orderFileList = orderFileList;
+		this.orderAttrList = orderAttrList;
+		this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
+		this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
+		threadIndex = thread;
 		indexQueue = new LinkedBlockingQueue<IndexItem>();
+		orderfile = new WriteFile(indexQueue,
+				RaceConfig.storeFolders[threadIndex],
+				RaceConfig.orderFileNamePrex,
+				(int) RaceConfig.smallFileCapacity);
 	}
 
-	//处理每一条记录
-	public void handleOrderRecord(String record){	
-
-		String[] kvs = record.split("\t");
-
-		StringBuilder resultBuilder = new StringBuilder(kvs[0]).append("\t");
-		String orderid = Utils.getValueFromKV(kvs[0]);
-
-		//获取代理键
-		Integer agentGoodId = agentGoodMapping.getValue(Utils.getValueFromKV(kvs[1]));
-		Integer agentBuyerId =  agentBuyerMapping.getValue(Utils.getValueFromKV(kvs[2]));
-
-		resultBuilder.append(agentGoodId).append("\t");
-		resultBuilder.append(agentBuyerId).append("\t");
-
-		for(int i = 3; i<kvs.length ;i++){
-			int p = kvs[i].indexOf(":");
-			String key = kvs[i].substring(0 , p);
-			String value = kvs[i].substring(p+1);
-			if (key.length() == 0 || value.length() == 0) {
-				throw new RuntimeException("Bad data:" + record);
-			}
-			if(Utils.isCanSum(value)) {
-				//获取WriteFile,存入相应的WriteFile中
-				WriteFile writeFile = columnFiles.get(key);
-				if (writeFile == null) {
-					writeFile = new WriteFile("cacluate/", key+"_", 10000000);
-					columnFiles.put(key, writeFile);
-				}
-				
-				String sumRecord = new String(String.valueOf(agentBuyerId)+":"+ value);
-				writeFile.writeLine(sumRecord);
-			}
-			resultBuilder.append(kvs[i]).append("\t");
-		}
-
-		//写入文件之前获取索引,放入阻塞队列中，Order表中对orderid键索引
-		IndexItem item = new IndexItem(orderid, orderfile.getFileName(), orderfile.getOffset(), IndexType.ORDERFILE_ORDERID);
-		try {
-			indexQueue.put(item);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		orderfile.writeLine(resultBuilder.toString());
-	}
-
-	public void HandleOrderFiles(List<String> files){
+	public void HandleOrderFiles(List<String> files) {
 		System.out.println("start order handling!");
 		for (String file : files) {
 			try {
@@ -90,7 +71,7 @@ public class OrderHandler{
 			try {
 				record = reader.readLine();
 				while (record != null) {
-					handleOrderRecord(record);
+					orderfile.writeLine(record, IndexType.OrderTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -99,13 +80,144 @@ public class OrderHandler{
 			}
 		}
 		orderfile.closeFile();
-		//关闭ColumnFiles
-		Iterator<Entry<String, WriteFile>> itr = columnFiles.entrySet().iterator();
-		while (itr.hasNext()) {
-			Entry<String, WriteFile> entry = (Entry<String, WriteFile>) itr.next();
-			WriteFile writeFile = (WriteFile) entry.getValue();
-			writeFile.closeFile();
-		}
+
+		// set end signal
+		orderfile.writeLine("end", IndexType.OrderTable);
+		orderfile.closeFile();
+
+		orderfile.closeFile();
 		System.out.println("end order handling!");
+	}
+
+	// order表的建索引线程 需要建的索引包括：orderid, buyerid, goodid, countable 字段的索引
+	public class GoodIndexConstructor implements Runnable {
+
+		String indexFileName = "";
+		DiskHashTable<Long, Long> orderIdHashTable = null;
+		DiskHashTable<Long, List<Long>> orderBuyerIdHashTable = null;
+		DiskHashTable<Long, List<Long>> orderGoodIdHashTable = null;
+		boolean isEnd = false;
+
+		public GoodIndexConstructor() {
+
+		}
+
+		public void run() {
+			// TODO Auto-generated method stub
+			try {
+				while (true) {
+					IndexItem record = indexQueue.poll();
+					if (record != null) {
+						if (record.recordsData.equals("end")) {
+							isEnd = true;
+						}
+
+						if (!record.getFileName().equals(indexFileName)) {
+							if (indexFileName == null) {
+								// 第一次建立索引文件
+								indexFileName = record.getFileName();
+								orderIdHashTable = new DiskHashTable<Long, Long>(
+										indexFileName
+												+ RaceConfig.orderIndexFileSuffix,
+										indexFileName, Long.class);
+								orderBuyerIdHashTable = new DiskHashTable<Long, List<Long>>(
+										indexFileName
+												+ RaceConfig.orderIndexFileSuffix,
+										indexFileName, Long.class);
+								orderGoodIdHashTable = new DiskHashTable<Long, List<Long>>(
+										indexFileName
+												+ RaceConfig.orderIndexFileSuffix,
+										indexFileName, Long.class);
+
+							} else {
+								// 保存当前goodId的索引 并写入索引List
+								FilePathWithIndex smallFile = new FilePathWithIndex();
+								smallFile.setFilePath(indexFileName);
+								// buyerIdIndexList.put(indexFileName,
+								// buyerIdHashTable);
+								smallFile.setOrderIdIndex(orderIdHashTable
+										.writeAllBuckets());
+								smallFile
+										.setOrderBuyerIdIndex(orderBuyerIdHashTable
+												.writeAllBuckets());
+								smallFile
+										.setOrderGoodIdIndex(orderGoodIdHashTable
+												.writeAllBuckets());
+
+								orderIdIndexList.put(indexFileName,
+										orderIdHashTable);
+								orderBuyerIdIndexList.put(indexFileName,
+										orderBuyerIdHashTable);
+								orderGoodIdIndexList.put(indexFileName,
+										orderGoodIdHashTable);
+								orderFileList.add(smallFile);
+
+								indexFileName = record.getFileName();
+								orderIdHashTable = new DiskHashTable<Long, Long>(
+										indexFileName
+												+ RaceConfig.orderIndexFileSuffix,
+										indexFileName, Long.class);
+								orderBuyerIdHashTable = new DiskHashTable<Long, List<Long>>(
+										indexFileName
+												+ RaceConfig.orderIndexFileSuffix,
+										indexFileName, Long.class);
+								orderGoodIdHashTable = new DiskHashTable<Long, List<Long>>(
+										indexFileName
+												+ RaceConfig.orderIndexFileSuffix,
+										indexFileName, Long.class);
+
+							}
+						}
+
+						Row recordRow = Row
+								.createKVMapFromLine(record.recordsData);
+						long orderid = recordRow.get(RaceConfig.orderId)
+								.valueAsLong();
+
+						// 获取代理键
+						long agentBuyerId = buyerIdSurrKeyIndex
+								.get(recordRow.get(RaceConfig.buyerId)
+										.valueAsLong()).get(0);
+						long agentGoodId = goodIdSurrKeyIndex.get(
+								recordRow.get(RaceConfig.goodId).valueAsLong())
+								.get(0);
+
+						// 建立三个索引
+						orderIdHashTable.put(orderid, record.getOffset());
+						orderBuyerIdHashTable.put(agentBuyerId,
+								record.getOffset());
+						orderGoodIdHashTable.put(agentGoodId,
+								record.getOffset());
+
+					} else if (isEnd) {
+						// 保存当前goodId的索引 并写入索引List
+						FilePathWithIndex smallFile = new FilePathWithIndex();
+						smallFile.setFilePath(indexFileName);
+						// buyerIdIndexList.put(indexFileName,
+						// buyerIdHashTable);
+						smallFile.setOrderIdIndex(orderIdHashTable
+								.writeAllBuckets());
+						smallFile.setOrderBuyerIdIndex(orderBuyerIdHashTable
+								.writeAllBuckets());
+						smallFile.setOrderGoodIdIndex(orderGoodIdHashTable
+								.writeAllBuckets());
+
+						orderIdIndexList.put(indexFileName, orderIdHashTable);
+						orderBuyerIdIndexList.put(indexFileName,
+								orderBuyerIdHashTable);
+						orderGoodIdIndexList.put(indexFileName,
+								orderGoodIdHashTable);
+						orderFileList.add(smallFile);
+
+						break;
+
+					}
+
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		}
 	}
 }

@@ -5,7 +5,19 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IndexType;
+import com.alibaba.middleware.index.DiskHashTable;
+import com.alibaba.middleware.tools.FilePathWithIndex;
+import com.alibaba.middleware.tools.RecordsUtils;
 
 public class BuyerHandler{
 
@@ -14,33 +26,39 @@ public class BuyerHandler{
 	BufferedReader reader;
 	//阻塞队列用于存索引
 	LinkedBlockingQueue<IndexItem> indexQueue;
+	DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
+	ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList = null;
+	List<FilePathWithIndex> buyerFileList = null;
+	List<String> buyerAttrList = null;
+	FilePathWithIndex buyerIdSurrKeyFile = null;
+	int threadIndex = 0;
 
-	public BuyerHandler(AgentMapping agentBuyerMapping) {
-		this.agentBuyerMapping = agentBuyerMapping;
-		buyerfile = new WriteFile("buyer/", "buyer_", 10000000);
+	public BuyerHandler(List<FilePathWithIndex> buyerFileList, 
+			List<String> buyerAttrList, FilePathWithIndex buyerIdSurrKeyFile, 
+			ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList, 
+			DiskHashTable<String, Long> buyerIdSurrKeyIndex, int threadIndex) {
+		
+		this.buyerFileList = buyerFileList;
+		this.buyerAttrList = buyerAttrList;
+		this.buyerIdSurrKeyFile = buyerIdSurrKeyFile;
+		this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
+		this.buyerIdIndexList = buyerIdIndexList;
+		this.threadIndex = threadIndex;
 		indexQueue = new LinkedBlockingQueue<IndexItem>();
+		buyerfile = new WriteFile(indexQueue, 
+				RaceConfig.storeFolders[threadIndex], 
+				RaceConfig.buyerFileNamePrex, (int) RaceConfig.smallFileCapacity);
+		
 	}
 
-	public void handleBuyerRecord(String record){
-		String buyerid = Utils.getValueFromRecord(record, "buyerid");
-		Integer agentBuyerId = agentBuyerMapping.getValue(buyerid);
-		if (agentBuyerId == null) {
-			agentBuyerMapping.addEntry(buyerid);
-		}
-		System.out.println(record.length()+" "+ buyerfile.getOffset());
-		//写入文件之前获取索引,放入阻塞队列中，Buyer表中对buyerid键索引
-		IndexItem item = new IndexItem(buyerid, buyerfile.getFileName(), buyerfile.getOffset(), IndexType.BUYERFILE_BUYERID);
-		try {
-			indexQueue.put(item);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		buyerfile.writeLine(record);
-	}
-
+	/**
+	 * 处理没一行数据
+	 * @param files
+	 */
 	public void handeBuyerFiles(List<String> files){
 		System.out.println("start buyer handling!");
+		new Thread(new BuyerIndexConstructor( )).start();					// 同时开启建索引线程
+		
 		for (String file : files) {
 			try {
 				reader = new BufferedReader(new FileReader(file));
@@ -51,7 +69,8 @@ public class BuyerHandler{
 			try {
 				record = reader.readLine();
 				while (record != null) {
-					handleBuyerRecord(record);
+					//handleBuyerRecord(record);
+					buyerfile.writeLine(record, IndexType.BuyerTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -59,7 +78,81 @@ public class BuyerHandler{
 				e.printStackTrace();
 			}
 		}
+		
+		// set end signal
+		buyerfile.writeLine("end", IndexType.BuyerTable);
 		buyerfile.closeFile();
 		System.out.println("end buyer handling!");
+	}
+	
+	// buyer表的建索引线程  需要建的索引包括：代理键索引和buyerId的索引
+	public class BuyerIndexConstructor implements Runnable {
+
+		String indexFileName = "";
+		DiskHashTable<Long, Long> buyerIdHashTable = null;
+		boolean isEnd = false;
+		long surrKey = 0;
+		
+		public BuyerIndexConstructor( ) {
+			
+		}
+
+		public void run() {
+			// TODO Auto-generated method stub
+				
+			while( true) {
+				IndexItem record = indexQueue.poll();
+				
+				if( record != null ) {
+					if( record.recordsData.equals("end")) {
+						isEnd = true;
+					}
+					
+					if( !record.getFileName().equals(indexFileName)) {
+						if( indexFileName == null) {
+							// 第一次建立索引文件
+							indexFileName = record.getFileName();
+							buyerIdHashTable = new DiskHashTable<Long,Long>(
+									indexFileName + RaceConfig.buyerIndexFileSuffix,indexFileName, Long.class);
+							buyerIdSurrKeyIndex = new DiskHashTable<String,Long>(
+									RaceConfig.buyerSurrFileName,RaceConfig.buyerSurrFileName, Long.class);
+						}
+						else {
+							// 保存当前buyerId的索引  并写入索引List
+							FilePathWithIndex smallFile = new FilePathWithIndex();
+							smallFile.setFilePath(indexFileName);
+							smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+							buyerIdIndexList.put(indexFileName, buyerIdHashTable);
+							buyerFileList.add(smallFile);
+							
+							indexFileName = record.getFileName();
+							buyerIdHashTable = new DiskHashTable<Long,Long>(
+									record.getFileName() + RaceConfig.buyerIndexFileSuffix, indexFileName, Long.class);
+							
+						}
+					}
+					
+					String buyerid = RecordsUtils.getValueFromRecord(
+							record.getRecords(), RaceConfig.buyerId);
+					buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
+					buyerIdHashTable.put(surrKey, record.getOffset());
+					surrKey ++;
+				}
+				else if(isEnd ) {
+					// 说明队列为空
+					// 将代理键索引写出去  并保存相应数据   将buyerid索引写出去  并保存相应数据
+					buyerIdSurrKeyFile.setFilePath(RaceConfig.buyerSurrFileName);
+					buyerIdSurrKeyFile.setSurrogateIndex(buyerIdSurrKeyIndex.writeAllBuckets());
+					
+					FilePathWithIndex smallFile = new FilePathWithIndex();
+					smallFile.setFilePath(indexFileName);
+					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+					buyerFileList.add(smallFile);				
+					buyerIdIndexList.put(indexFileName, buyerIdHashTable);
+					break;
+				}
+				
+			}
+		}
 	}
 }

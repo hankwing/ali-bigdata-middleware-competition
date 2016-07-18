@@ -1,37 +1,32 @@
 package com.alibaba.middleware.handlefile;
 
-public class IndexItem {
-	/***
-	 * 设置索引的类型
-	 */
-	int indexType;
+import com.alibaba.middleware.conf.RaceConfig.IndexType;
 
-	String key;
+public class IndexItem {
+
 	//这里fileName+offset=Value
 	String fileName;
-	long offset;
+	String recordsData = null;
+	long offset = 0;
+	IndexType indexType = null;
 
-	public IndexItem(String key, String fileName, long offset, int indexType) {
-		this.key = key;
+	public IndexItem(String fileName, String recordsData, long offset, IndexType type) {
 		this.fileName = fileName;
+		this.recordsData = recordsData;
 		this.offset = offset;
-		this.indexType = indexType;
+		this.indexType = type;
 	}
-
-	public String getKey() {
-		return key;
-	}
-
-	public String getFileName() {
-		return fileName;
-	}
-
+	
 	public long getOffset() {
 		return offset;
 	}
 
-	public int getIndexType() {
-		return indexType;
+	public String getRecords() {
+		return recordsData;
+	}
+
+	public String getFileName() {
+		return fileName;
 	}
 
 }

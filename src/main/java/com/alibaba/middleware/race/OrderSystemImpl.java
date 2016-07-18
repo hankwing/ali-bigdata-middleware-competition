@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -12,13 +13,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
+import com.alibaba.middleware.handlefile.ConstructSystem;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.threads.*;
 import com.alibaba.middleware.tools.FilePathWithIndex;
-
-import javax.swing.plaf.FontUIResource;
 
 /**
  * 订单系统实现
@@ -28,7 +29,7 @@ import javax.swing.plaf.FontUIResource;
  */
 public class OrderSystemImpl implements OrderSystem {
 		
-	// 存订单表里的orderId索引<文件名（尽量短名）,内存里缓存的索引DiskHashTable>, 因此以下几个Map需要缓冲区管理
+	// 存订单表里的orderId索引<文件名（尽量短名）,内存里缓存的索引DiskHashTable>
 	public ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList = null;		
 	// 订单表里的buyerId代理键索引
 	public ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderBuyerIdIndexList = null;
@@ -46,9 +47,9 @@ public class OrderSystemImpl implements OrderSystem {
 	public List<FilePathWithIndex> buyerFileList = null;					// 保存buyer表所有文件的名字
 	public List<FilePathWithIndex> goodFileList = null;						// 保存good表所有文件的名字
 	
-	public List<FilePathWithIndex> orderAttrList = null;					// 保存order表的所有字段名称
-	public List<FilePathWithIndex> buyerAttrList = null;					// 保存buyer表的所有字段名称
-	public List<FilePathWithIndex> goodAttrList = null;						// 保存good表的所有字段名称
+	public List<String> orderAttrList = null;					// 保存order表的所有字段名称
+	public List<String> buyerAttrList = null;					// 保存buyer表的所有字段名称
+	public List<String> goodAttrList = null;						// 保存good表的所有字段名称
 	
 	public FilePathWithIndex buyerIdSurrKeyFile = null;			// 存代理键索引块的文件地址和索引元数据偏移地址
 	public FilePathWithIndex goodIdSurrKeyFile = null;			// 存代理键索引块的文件地址和索引元数据偏移地址
@@ -59,25 +60,40 @@ public class OrderSystemImpl implements OrderSystem {
 	
 	public static void main(String[] args) {
 
-		// test query
 		OrderSystemImpl orderSystem = new OrderSystemImpl();
+		
+		List<String> buyerfiles = new ArrayList<String>();
+		buyerfiles.add("benchmark\\buyer_records.txt");
+		buyerfiles.add("buyer_records_1.txt");
+		buyerfiles.add("buyer_records_2.txt");
+		
+		List<String> goodfiles = new ArrayList<String>();
+		goodfiles.add("benchmark\\good_records.txt");
+		goodfiles.add("good_records_1.txt");
+		goodfiles.add("good_records_2.txt");
+		
+		List<String> orderfiles = new ArrayList<String>();
+		orderfiles.add("order_records.txt");
+		
+		List<String> storeFolders = new ArrayList<String>();
+		storeFolders.add("benchmark//");
+		
+		try {
+			orderSystem.construct(orderfiles, buyerfiles, goodfiles, storeFolders);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 	
+	
 	public OrderSystemImpl() {
-		// construct start
+		// 初始化操作
 		
-		
-		// construct end:需要保存的内容：每个文件索引的元数据，两个代理键索引的元数据
-	}
-
-	/**
-	 * 初始化  最多1小时
-	 */
-	public void construct(Collection<String> orderFiles,
-			Collection<String> buyerFiles, Collection<String> goodFiles,
-			Collection<String> storeFolders) throws IOException,
-			InterruptedException {
 		//orderIdIndexList = new ArrayList<DiskHashTable<Long, Long>>();
 		//orderBuyerIdIndexList = new ArrayList<DiskHashTable<Long, List<Long>>>();
 		//orderGoodIdIndexList = new ArrayList<DiskHashTable<Long, List<Long>>>();
@@ -85,6 +101,31 @@ public class OrderSystemImpl implements OrderSystem {
 		
 		//buyeridIndexList = new ArrayList<DiskHashTable<Long, Long>>();
 		//goodIdIndexList = new ArrayList<DiskHashTable<Long, Long>>();
+	}
+
+	/**
+	 * 
+	 * 读每种类型的文件  直接写到小文件里  处理逻辑由单独线程处理
+	 *
+	 */
+	public void construct(Collection<String> orderFiles,
+			Collection<String> buyerFiles, Collection<String> goodFiles,
+			Collection<String> storeFolders) throws IOException,
+			InterruptedException {
+		// 将存储目录存起来 之后建小文件及索引文件的时候用
+		RaceConfig.storeFolders = (String[]) storeFolders.toArray();
+		
+		long startTime = System.currentTimeMillis();
+		
+		ConstructSystem constructSystem = new ConstructSystem(orderIdIndexList, orderBuyerIdIndexList,
+				orderGoodIdIndexList, orderCountableIndexList,
+				orderFileList, buyerFileList, goodFileList, orderAttrList, buyerAttrList, 
+				goodAttrList, buyerIdSurrKeyFile, goodIdSurrKeyFile,
+				buyerIdIndexList, goodIdIndexList,buyerIdSurrKeyIndex,goodIdSurrKeyIndex);
+		constructSystem.startHandling(buyerFiles, goodFiles, orderFiles, storeFolders, 1);
+		
+		long endTime = System.currentTimeMillis();
+		System.out.println("construct time:" + (endTime - startTime) / 1000);
 	}
 	
 	public DiskHashTable getHashDiskTable( String filePath, long offSet) {

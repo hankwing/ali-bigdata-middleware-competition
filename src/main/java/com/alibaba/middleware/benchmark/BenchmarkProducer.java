@@ -32,7 +32,7 @@ public class BenchmarkProducer {
 	public static String orderTableFileName = "order_records.txt";
 	public static String orderTableDatabaseFileName = "order_records_database.txt";
 	
-	public static long buyerTableRecordsNum = 2000000;
+	public static long buyerTableRecordsNum = 6000000;
 	public static long goodTableRecordsNum = 2000000;
 	public static long orderTableRecordsNum = 200000000;
 	

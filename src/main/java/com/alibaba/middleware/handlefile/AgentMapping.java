@@ -3,23 +3,23 @@ package com.alibaba.middleware.handlefile;
 import java.util.HashMap;
 
 public class AgentMapping {
-	HashMap<String, Integer> agentMapping;
-	private int count;
+	HashMap<String, Long> agentMapping;
+	Long count;
 	public AgentMapping() {
-		agentMapping = new HashMap<String, Integer>();
-		count = 0;
+		agentMapping = new HashMap<String, Long>();
+		count = new Long(0);
 	}
 
 	public synchronized void addEntry(String key) {
-		agentMapping.put(key, new Integer(count));
+		agentMapping.put(key, new Long(count));
 		count++;
 	}
 
-	public int getCount() {
+	public Long getCount() {
 		return count;
 	}
 
-	public Integer getValue(String key){
+	public Long getValue(String key){
 		return agentMapping.get(key);
 	}
 }
