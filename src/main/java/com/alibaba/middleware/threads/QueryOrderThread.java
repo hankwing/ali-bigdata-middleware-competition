@@ -26,8 +26,14 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
     }
 
     /**
-     * 第一个查询
-     */
+	 * 查询订单号为orderid的指定字段
+	 * 
+	 * @param orderId
+	 *            订单号
+	 * @param keys
+	 *            待查询的字段，如果为null，则查询所有字段，如果为空，则排除所有字段
+	 * @return 查询结果，如果该订单不存在，返回null
+	 */
     @Override
     public ResultImpl call() {
     	ResultImpl result = null;
@@ -76,14 +82,7 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 			}
 			
 		}
-		else {
-			return null;
-		}
-		try{
-			result = new ResultImpl(orderId, resultKV.getKVs(keys));
-		} catch (RuntimeException e) {
-			return null;
-		}
+		result = new ResultImpl(orderId, resultKV.getKVs(keys));
 		
         return result;
     }

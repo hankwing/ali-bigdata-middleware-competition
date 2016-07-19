@@ -107,6 +107,7 @@ public class OrderSystemImpl implements OrderSystem {
 				orderfiles.add("prerun_data/order.0.0");
 				orderfiles.add("prerun_data/order.1.1");
 				orderfiles.add("prerun_data/order.2.2");
+				orderfiles.add("prerun_data/order.0.3");
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
@@ -206,9 +207,9 @@ public class OrderSystemImpl implements OrderSystem {
 		buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
 		goodIdSurrKeyFile = new FilePathWithIndex();
 
-		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
-		//threadPool.addMonitor(jvmMonitorThread);
-		//threadPool.startMonitors();
+		JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
+		threadPool.addMonitor(jvmMonitorThread);
+		threadPool.startMonitors();
 	}
 
 	/**

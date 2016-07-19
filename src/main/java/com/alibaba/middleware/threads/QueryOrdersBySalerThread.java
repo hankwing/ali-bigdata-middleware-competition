@@ -2,6 +2,7 @@ package com.alibaba.middleware.threads;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystem;
 import com.alibaba.middleware.race.ResultImpl;
@@ -52,6 +53,18 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
     public Iterator<Result> call() throws Exception {
         // TODO
 		// 根据商品ID找到多条订单信息 再筛选出keys 结果集按照订单id插入排序
+		List<String> orderKeys = new ArrayList<String>();
+		List<String> buyerKeys = new ArrayList<String>();
+		List<String> goodKeys = new ArrayList<String>();
+		for (String key : keys) {
+			if (system.orderAttrList.contains(key)) {
+				orderKeys.add(key);
+			} else if (system.buyerAttrList.contains(key)) {
+				buyerKeys.add(key);
+			} else if (system.goodAttrList.contains(key)) {
+				goodKeys.add(key);
+			}
+		}
 		
 		TreeMap<Long, Result> results = new TreeMap<Long, Result>();
 		Integer surrId = goodid.hashCode();
@@ -79,14 +92,19 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						Row row = RecordsUtils.getRecordsByKeysFromFile(
 								filePath.getFilePath(), keys, offset);
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
+							
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
-							try{
-								results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
-							} catch (RuntimeException e) {
-								// 有不存在的字段 直接返回Null
-								
-								return null;
+							if(!buyerKeys.isEmpty()) {
+								// need query buyerTable
+								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+										row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			
 							}
+							if( !goodKeys.isEmpty()) {
+								// need query goodTable
+								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+										row.get(RaceConfig.goodId).valueAsString(), goodKeys));
+							}
+							results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
 						}				
 						
 					}

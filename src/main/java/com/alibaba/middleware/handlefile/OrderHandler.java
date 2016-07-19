@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
@@ -216,6 +217,7 @@ public class OrderHandler {
 								orderBuyerIdHashTable);
 						orderGoodIdIndexList.put(indexFileName,
 								orderGoodIdHashTable);
+						BucketCachePool.getInstance().removeAllBucket();
 						orderFileList.add(smallFile);
 						countDownLatch.countDown();
 						break;

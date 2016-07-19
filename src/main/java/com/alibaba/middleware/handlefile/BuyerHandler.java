@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.index.DiskHashTable;
@@ -155,6 +156,7 @@ public class BuyerHandler{
 			        }
 					FilePathWithIndex smallFile = new FilePathWithIndex();
 					smallFile.setFilePath(indexFileName);
+					BucketCachePool.getInstance().removeAllBucket();
 					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
 					buyerFileList.add(smallFile);
 					buyerIdIndexList.put(indexFileName, buyerIdHashTable);
