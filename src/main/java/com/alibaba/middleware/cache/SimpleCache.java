@@ -2,6 +2,7 @@ package com.alibaba.middleware.cache;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -39,13 +40,18 @@ public class SimpleCache<K, V> implements Cache<K, V> {
 
     @Override
     public V getFromCache(K key) {
-        lock.writeLock().lock();
+        lock.readLock().lock();
         V value;
         try {
             value = cacheMap.get(key);
         } finally {
-            lock.writeLock().unlock();
+            lock.readLock().unlock();
         }
         return value;
+    }
+
+    // unsafe, just for test
+    public int getCacheSize() {
+        return cacheMap.size();
     }
 }

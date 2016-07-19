@@ -242,7 +242,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		try {
 			if( fileBucket == null) {
 				readWriteLock.readLock().lock();
-				streamIn = new FileInputStream(bucketFilePath);
+				FileInputStream streamIn = new FileInputStream(bucketFilePath);
 
 				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
 				streamIn.getChannel().position(bucketAddressList.get(bucketKey));
