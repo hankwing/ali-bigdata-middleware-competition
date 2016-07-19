@@ -43,7 +43,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	private transient ObjectOutputStream offsetOos = null;
 	private transient BufferedOutputStream bufferedFout;
 	private transient FileOutputStream fos;
-	private transient FileInputStream streamIn;
+	//private transient FileInputStream streamIn;
 	private transient ObjectInputStream bucketReader;
 	private transient long lastOffset = 0;
 	private transient ReadWriteLock readWriteLock = null;
@@ -172,6 +172,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		long thisOffset = 0;
 		try {
 			//timer.cancel();
+			readWriteLock.writeLock().lock();
 			if (bufferedFout == null || offsetOos == null) {
 				byteArrayOs = new ByteArrayOutputStream();
 				
@@ -217,6 +218,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			oos.writeObject(this);
 			oos.close();
 			fos.write(byteArrayOs.toByteArray());
+			readWriteLock.writeLock().unlock();
 
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -242,7 +244,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		try {
 			if( fileBucket == null) {
 				readWriteLock.readLock().lock();
-				streamIn = new FileInputStream(bucketFilePath);
+				FileInputStream streamIn = new FileInputStream(bucketFilePath);
 
 				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
 				streamIn.getChannel().position(bucketAddressList.get(bucketKey));
@@ -404,9 +406,6 @@ public class DiskHashTable<K,T> implements Serializable {
 			}
 			if (bufferedFout != null) {
 				bufferedFout.close();
-			}
-			if (streamIn != null) {
-				streamIn.close();
 			}
 			if (bucketReader != null) {
 				bucketReader.close();

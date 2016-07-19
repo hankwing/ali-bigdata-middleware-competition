@@ -128,8 +128,12 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 		if( sum == 0) {
 			return null;
 		}
-		else {
-			return new KeyValueImpl(key, String.valueOf(sum));
+		else if( sum % 1 == 0) {
+			// 返回long 值
+			return new KeyValueImpl(key, String.valueOf(sum.longValue()));
+		}
+		else{
+			return new KeyValueImpl(key, sum.toString());
 		}
     }
 }
