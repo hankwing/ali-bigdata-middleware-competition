@@ -29,23 +29,15 @@ public class SimpleCache<K, V> implements Cache<K, V> {
 
     @Override
     public void putInCache(K key, V value) {
-        lock.writeLock().lock();
-        try {
-            cacheMap.put(key, value);
-        } finally {
-            lock.writeLock().unlock();
-        }
+    	synchronized(cacheMap) {
+    		cacheMap.put(key, value);
+         }
     }
 
     @Override
     public V getFromCache(K key) {
-        lock.writeLock().lock();
-        V value;
-        try {
-            value = cacheMap.get(key);
-        } finally {
-            lock.writeLock().unlock();
+    	synchronized(cacheMap) {
+            return cacheMap.get(key);
         }
-        return value;
     }
 }

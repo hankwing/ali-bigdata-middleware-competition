@@ -71,6 +71,7 @@ public class OrderSystemImpl implements OrderSystem {
 
 	private ThreadPool threadPool = ThreadPool.getInstance();
     private ExecutorService queryExe = threadPool.getQueryExe();
+    
 
 	/**
 	 * 测试类 construct测试construct方法
