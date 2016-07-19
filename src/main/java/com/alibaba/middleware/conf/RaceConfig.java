@@ -14,12 +14,12 @@ public class RaceConfig implements Serializable{
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
 	
-	public static int handleThreadNumber = 3;				// 读写线程数
+	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int QueueNumber = 10000;					// 一个缓冲队列的大小
 	/**
 	 * Thread pool config
 	 * */
-	
+	public static int rowCacheNumber = 5000000;					// 在内存里最多保留几个row数据
 	public static int monitorThreadNum = 1;
     public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;

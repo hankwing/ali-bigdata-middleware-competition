@@ -1,5 +1,6 @@
 package com.alibaba.middleware.cache;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,30 +19,46 @@ import com.alibaba.middleware.race.Row;
  */
 public class SimpleCache {
     private final int capacity;
-    private LinkedHashMap<Long, List<Row>> orderCacheMap;
-    private LinkedHashMap<Integer, List<Row>> buyerCacheMap;
-    private LinkedHashMap<Integer, List<Row>> goodCacheMap;
+    private LinkedHashMap<Long, Row> orderCacheMap;
+    private LinkedHashMap<Integer, List<Row>> orderBuyerIdCacheMap;
+    private LinkedHashMap<Integer, List<Row>> orderGoodIdCacheMap;
+    private LinkedHashMap<Integer, Row> buyerCacheMap;
+    private LinkedHashMap<Integer, Row> goodCacheMap;
     private ReadWriteLock lock;
 
     public SimpleCache(final int capacity) {
         this.capacity = capacity;
-        orderCacheMap = new LinkedHashMap<Long, List<Row>>(capacity/2, 0.95f, true) {
+        orderCacheMap = new LinkedHashMap<Long, Row>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, List<Row>> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Long, Row> eldest) {
                 return size() > capacity;
             }
         };
         
-        buyerCacheMap = new LinkedHashMap<Integer, List<Row>>(capacity/2, 0.95f, true) {
+        orderBuyerIdCacheMap = new LinkedHashMap<Integer, List<Row>>(capacity/2, 0.95f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<Integer, List<Row>> eldest) {
                 return size() > capacity;
             }
         };
         
-        goodCacheMap = new LinkedHashMap<Integer, List<Row>>(capacity/2, 0.95f, true) {
+        orderBuyerIdCacheMap = new LinkedHashMap<Integer, List<Row>>(capacity/2, 0.95f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<Integer, List<Row>> eldest) {
+                return size() > capacity;
+            }
+        };
+        
+        buyerCacheMap = new LinkedHashMap<Integer, Row>(capacity/2, 0.95f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Integer, Row> eldest) {
+                return size() > capacity;
+            }
+        };
+        
+        goodCacheMap = new LinkedHashMap<Integer, Row>(capacity/2, 0.95f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Integer, Row> eldest) {
                 return size() > capacity;
             }
         };
@@ -69,36 +86,122 @@ public class SimpleCache {
         return value;
     }*/
     
-    /*public void putInCache(long key, Row value, TableName tableType) {
+    public void putInCache(Object key, Row value, TableName tableType) {
     	switch( tableType) {
     	case OrderTable:
     		synchronized(orderCacheMap) {
     			
-    			orderCacheMap.put(key, value);
+    			orderCacheMap.put((Long) key, value);
              }
     		break;
     	case BuyerTable:
-    		synchronized(orderCacheMap) {
-    			orderCacheMap.put(key, value);
+    		synchronized(buyerCacheMap) {
+    			buyerCacheMap.put((Integer) key, value);
              }
     		break;
     	case GoodTable:
-    		synchronized(orderCacheMap) {
-    			orderCacheMap.put(key, value);
+    		synchronized(goodCacheMap) {
+    			goodCacheMap.put((Integer) key, value);
+             }
+    		break;
+    	}
+    	
+    }
+    
+    /**
+     * 插入order表里的以buyerid或goodid为key的row缓存数据
+     * @param key
+     * @param orderId
+     * @param value
+     * @param tableType
+     */
+    public void putInListCache(Integer key,Long orderId, Row value, TableName tableType) {
+    	switch( tableType) {
+    	case OrderTable:
+    		break;
+    	case BuyerTable:
+    		synchronized(orderBuyerIdCacheMap ) {
+    			List<Row> result = orderBuyerIdCacheMap.get(key);
+    			Row temp = null;
+    			synchronized(orderCacheMap ) {
+    				// 插入一条数据到orderBuyer的时候，先看数据在orderCache里出现了没有
+    				temp = orderCacheMap.get(orderId);
+    			}
+    			
+    			if( temp != null) {
+    				// 在orderCache里找到了
+    				value = temp;
+    			}
+    			if( result == null) {
+    				result = new ArrayList<Row>();
+    				orderBuyerIdCacheMap.put(key, result);
+    			}
+    			result.add(value);
+             }
+    		break;
+    	case GoodTable:
+    		synchronized(orderGoodIdCacheMap ) {
+    			List<Row> result = orderGoodIdCacheMap.get(key);
+    			Row temp = null;
+    			synchronized(orderCacheMap ) {
+    				// 插入一条数据到orderBuyer的时候，先看数据在orderCache里出现了没有
+    				temp = orderCacheMap.get(orderId);
+    			}
+    			
+    			if( temp != null) {
+    				// 在orderCache里找到了
+    				value = temp;
+    			}
+    			if( result == null) {
+    				result = new ArrayList<Row>();
+    				orderGoodIdCacheMap.put(key, result);
+    			}
+    			result.add(value);
              }
     		break;
     	}
     	
     }
 
-    public V getFromCache(K key) {
-    	synchronized(cacheMap) {
-            return cacheMap.get(key);
-        }
+    public Row getFromCache(Object key, TableName tableType) {
+    	switch( tableType) {
+    	case OrderTable:
+    		synchronized(orderCacheMap) {
+    			return orderCacheMap.get(key);
+             }
+    	case BuyerTable:
+    		synchronized(buyerCacheMap) {
+    			return buyerCacheMap.get(key);
+             }
+    	case GoodTable:
+    		synchronized(goodCacheMap) {
+    			return goodCacheMap.get(key);
+             }
+    	}
+    	return null;
+    }
+    
+    public List<Row> getRowListFromCache(Integer key, TableName tableType) {
+    	List<Row> results = null;
+    	switch( tableType) {
+    	case BuyerTable:
+    		synchronized(buyerCacheMap) {
+    			results =  orderBuyerIdCacheMap.get(key);
+             }
+    	case GoodTable:
+    		synchronized(goodCacheMap) {
+    			results =  orderGoodIdCacheMap.get(key);
+             }
+		case OrderTable:
+			break;
+		default:
+			break;
+    	}
+    	return results;
     }
 
     // unsafe, just for test
-    public int getCacheSize() {
+    /*public int getCacheSize() {
         return cacheMap.size();
     }*/
 }

@@ -39,22 +39,8 @@ public class Test {
 	
 	public static void main(String[] args) {
 
-		
-		Double sum = 0.0;
-		Long a1 = 3L;
-		sum += a1;
-		
-		OrderedList<String> set = new OrderedList<String>();
-		set.orderedAdd("a");
-		set.orderedAdd("g");
-		set.orderedAdd("c");
-		set.orderedAdd("z");
-		set.orderedAdd("e");
-		set.orderedAdd("h");
-		set.orderedAdd("g");
-		set.orderedAdd("i");
-		System.out.println( Arrays.binarySearch(set.toArray(), "i"));
-		
+		Double a = 2312381422194192.0;
+		System.out.println(String.format("%.10f", a));
 		/*
 		 * TreeMap<String, HashMap<String, Long>> treeMap = new TreeMap<String,
 		 * HashMap<String,Long>>(new ComparableKeys(2));

@@ -41,6 +41,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 	 * @param key
 	 *            求和字段
 	 * @return 求和结果
+     * @throws TypeException 
 	 */
     @SuppressWarnings("unchecked")
 	@Override
@@ -50,7 +51,8 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 		
     	List<String> keys = new ArrayList<String>();
     	boolean isFound = false;
-    	Double sum = 0.0;
+    	Long longSum = 0L;
+    	Double doubleSum = 0.0;
     	keys.add(key);
     	List<String> orderKeys = new ArrayList<String>();
 		List<String> buyerKeys = new ArrayList<String>();
@@ -85,20 +87,44 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 					System.out.println("records offset:"
 							+ resultNum);
 					for( Long offset: hashTable.get(surrId)) {
-						Double orderId = 0.0;
+						long longValue = 0;
+						Double doubleValue = 0.0;
+						boolean isLong = true;
 						Row row = RecordsUtils.getRecordsByKeysFromFile(
 								filePath.getFilePath(), keys, offset);
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
 							
 							if(!buyerKeys.isEmpty()) {
-								// need query buyerTable
+								// need query buyerTable 
 								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-										row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			
+										row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));	
 							}
 							if( !goodKeys.isEmpty()) {
-								// need query goodTable
+								// 此时说明此key就在buyerTable中
 								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
 										row.get(RaceConfig.goodId).valueAsString(), goodKeys));
+								try {
+									isFound = true;
+									longValue = row.getKV(key).valueAsLong();
+								} catch (TypeException e) {
+									// TODO Auto-generated catch block
+									// 不是long型的
+									try {
+										isLong = false;
+										doubleValue = row.getKV(key).valueAsDouble();
+									} catch (TypeException e2) {
+										// TODO Auto-generated catch block
+										// 不是Double型的 返回Null
+										return null;
+									}
+								}
+								if( isLong) {
+									return new KeyValueImpl(key, String.valueOf(longValue * resultNum));
+								}
+								else {
+									return new KeyValueImpl(
+											key, String.format("%.10f", doubleValue * resultNum));
+								}
 							}
 							
 							try{
@@ -111,13 +137,26 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 							// 该记录存在该key
 							try {
 								isFound = true;
-								orderId = row.getKV(key).valueAsDouble();
+								longValue = row.getKV(key).valueAsLong();
 							} catch (TypeException e) {
 								// TODO Auto-generated catch block
-								// 不是Double型的，当然也不是long型的
-								return null;
+								// 不是long型的
+								try {
+									isLong = false;
+									doubleValue = row.getKV(key).valueAsDouble();
+								} catch (TypeException e2) {
+									// TODO Auto-generated catch block
+									// 不是Double型的 返回Null
+									return null;
+								}
 							}
-							sum += orderId;
+							if( isLong) {
+								longSum += longValue;
+							}
+							else {
+								doubleSum += doubleValue;
+							}
+							
 							//results.put(orderId, new ResultImpl(orderId, row));
 						}
 					}
@@ -127,15 +166,16 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			}
 		}
 		
-		if( sum == 0 && !isFound) {
+		if( longSum == 0 && doubleSum == 0 && !isFound) {
 			return null;
 		}
-		else if( sum % 1 == 0) {
+		else if( doubleSum == 0) {
 			// 返回long 值
-			return new KeyValueImpl(key, String.valueOf(sum.longValue()));
+			return new KeyValueImpl(key, String.valueOf(longSum));
 		}
 		else{
-			return new KeyValueImpl(key, sum.toString());
+			Double doubleReturn = doubleSum + longSum;
+			return new KeyValueImpl(key, String.format("%.10f", doubleReturn));
 		}
     }
 }

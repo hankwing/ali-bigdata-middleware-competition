@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import com.alibaba.middleware.cache.BucketCachePool;
+import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -71,7 +72,7 @@ public class OrderSystemImpl implements OrderSystem {
 
 	private ThreadPool threadPool = ThreadPool.getInstance();
     private ExecutorService queryExe = threadPool.getQueryExe();
-    
+    private SimpleCache rowCache = null;
 
 	/**
 	 * 测试类 construct测试construct方法
@@ -211,6 +212,7 @@ public class OrderSystemImpl implements OrderSystem {
 		JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
 		threadPool.addMonitor(jvmMonitorThread);
 		threadPool.startMonitors();
+		rowCache = new SimpleCache(RaceConfig.rowCacheNumber);
 	}
 
 	/**
@@ -373,7 +375,14 @@ public class OrderSystemImpl implements OrderSystem {
 						hashTable.restore();
 						objectinputstream.close();
 					}
+					Row cacheResult = rowCache.getFromCache(id, tableName);
+					if( cacheResult != null) {
+						// find the data from 
+						result = cacheResult;
+						break;
+					}
 					List<Long> results = hashTable.get(id);
+					
 					if (results.size() != 0) {
 						// find the records offset
 						// 不管key是什么，都得载入固定order表里的固定key
@@ -384,6 +393,7 @@ public class OrderSystemImpl implements OrderSystem {
 									filePath.getFilePath(), keys, offset);
 							if( temp.getKV(idName).valueAsString().equals(idString)) {
 								result = temp;
+								rowCache.putInCache(id, result, tableName);			//放入缓冲区
 								break;
 							}
 						}
@@ -405,6 +415,12 @@ public class OrderSystemImpl implements OrderSystem {
 								filePath.getBuyerIdIndex());
 						buyerIdIndexList.put(filePath.getFilePath(), hashTable);
 					}
+					Row cacheResult = rowCache.getFromCache(surrId, tableName);
+					if( cacheResult != null) {
+						// find the data from 
+						result = cacheResult;
+						break;
+					}
 					List<Long> results = hashTable.get(surrId);
 					if (results.size() != 0) {
 						// find the records offset
@@ -415,6 +431,7 @@ public class OrderSystemImpl implements OrderSystem {
 									filePath.getFilePath(), keys, offset);
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;
+								rowCache.putInCache(surrId, result, tableName);
 								break;
 							}
 						}
@@ -434,6 +451,12 @@ public class OrderSystemImpl implements OrderSystem {
 								filePath.getGoodIdIndex());
 						goodIdIndexList.put(filePath.getFilePath(), hashTable);
 					}
+					Row cacheResult = rowCache.getFromCache(goodSurrId, tableName);
+					if( cacheResult != null) {
+						// find the data from 
+						result = cacheResult;
+						break;
+					}
 					List<Long> results = hashTable.get(goodSurrId);
 					if (results.size() != 0) {
 						// find the records offset
@@ -444,6 +467,7 @@ public class OrderSystemImpl implements OrderSystem {
 									filePath.getFilePath(), keys, offset);
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;
+								rowCache.putInCache(goodSurrId, result, tableName);
 								break;
 							}
 						}
@@ -464,6 +488,7 @@ public class OrderSystemImpl implements OrderSystem {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 		return result;
 	}
 
