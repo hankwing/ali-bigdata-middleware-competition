@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -41,19 +43,19 @@ public class OrderSystemImpl implements OrderSystem {
 	// 存订单表里的orderId索引<文件名（尽量短名）,内存里缓存的索引DiskHashTable>
 	public ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList = null;
 	// 订单表里的buyerId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderBuyerIdIndexList = null;
+	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderBuyerIdIndexList = null;
 	// 订单表里的goodId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList = null;
+	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderGoodIdIndexList = null;
 	// 订单表里的可计算字段索引Map
-	public ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList = null;
+	public ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList = null;
 	// buyerId里的buyerId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList = null;
+	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList = null;
 	// goodId里的goodId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList = null;
+	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList = null;
 
-	public List<FilePathWithIndex> orderFileList = null; // 保存order表所有文件的名字
-	public List<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
-	public List<FilePathWithIndex> goodFileList = null; // 保存good表所有文件的名字
+	public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; // 保存order表所有文件的名字
+	public CopyOnWriteArrayList<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
+	public CopyOnWriteArrayList<FilePathWithIndex> goodFileList = null; // 保存good表所有文件的名字
 
 	public HashSet<String> orderAttrList = null; // 保存order表的所有字段名称
 	public HashSet<String> buyerAttrList = null; // 保存buyer表的所有字段名称
@@ -61,8 +63,10 @@ public class OrderSystemImpl implements OrderSystem {
 
 	public FilePathWithIndex buyerIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
 	public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
-	public DiskHashTable<String, Long> buyerIdSurrKeyIndex = null; // 缓存buyerId事实键与代理键
-	public DiskHashTable<String, Long> goodIdSurrKeyIndex = null; // 缓存goodId事实键与代理键
+	//public DiskHashTable<String, Long> buyerIdSurrKeyIndex = null; // 缓存buyerId事实键与代理键
+	//public DiskHashTable<String, Long> goodIdSurrKeyIndex = null; // 缓存goodId事实键与代理键
+	//public HashMap<Integer,Integer>  buyerIdSurrKeyIndex = null;
+	//public HashMap<Integer,Integer>  goodIdSurrKeyIndex = null;
 
     private ExecutorService queryExe = ThreadPool.getInstance().getQueryExe();
 
@@ -147,7 +151,7 @@ public class OrderSystemImpl implements OrderSystem {
 				for( int i = 1; i < rawCommand.length; i++ ) {
 					keys.add(rawCommand[i]);
 				}
-				Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, null);
+				Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, keys);
 				while(results.hasNext()) {
 					System.out.println("values:" + results.next());
 				}
@@ -175,19 +179,19 @@ public class OrderSystemImpl implements OrderSystem {
 		// 存订单表里的orderId索引<文件名（尽量短名）,内存里缓存的索引DiskHashTable>
 		orderIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Long, Long>>();
 		// 订单表里的buyerId代理键索引
-		orderBuyerIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>>();
+		orderBuyerIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
 		// 订单表里的goodId代理键索引
-		orderGoodIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>>();
+		orderGoodIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
 		// 订单表里的可计算字段索引Map
-		orderCountableIndexList = new ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>>();
+		orderCountableIndexList = new ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>>();
 		// buyerId里的buyerId代理键索引
-		buyerIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Long, Long>>();
+		buyerIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
 		// goodId里的goodId代理键索引
-		goodIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Long, Long>>();
+		goodIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
 
-		orderFileList = new ArrayList<FilePathWithIndex>(); // 保存order表所有文件的名字
-		buyerFileList = new ArrayList<FilePathWithIndex>(); // 保存buyer表所有文件的名字
-		goodFileList = new ArrayList<FilePathWithIndex>(); // 保存good表所有文件的名字
+		orderFileList = new CopyOnWriteArrayList<FilePathWithIndex>(); // 保存order表所有文件的名字
+		buyerFileList = new CopyOnWriteArrayList<FilePathWithIndex>(); // 保存buyer表所有文件的名字
+		goodFileList = new CopyOnWriteArrayList<FilePathWithIndex>(); // 保存good表所有文件的名字
 
 		orderAttrList = new HashSet<String>(); // 保存order表的所有字段名称
 		buyerAttrList = new HashSet<String>(); // 保存buyer表的所有字段名称
@@ -209,7 +213,7 @@ public class OrderSystemImpl implements OrderSystem {
 		// 将存储目录存起来 之后建小文件及索引文件的时候用
 		RaceConfig.storeFolders = storeFolders.toArray(new String[0]);
 		
-		buyerIdSurrKeyIndex = new DiskHashTable<String,Long>(
+		/* = new DiskHashTable<String,Long>(
 				RaceConfig.storeFolders[0] + 
 				RaceConfig.buyerSurrFileName,
 				RaceConfig.storeFolders[0] +
@@ -219,7 +223,9 @@ public class OrderSystemImpl implements OrderSystem {
 				RaceConfig.storeFolders[0] +
 				RaceConfig.goodSurrFileName,
 				RaceConfig.storeFolders[0] +
-				RaceConfig.goodSurrFileName, Long.class);
+				RaceConfig.goodSurrFileName, Long.class);*/
+		//buyerIdSurrKeyIndex = new HashMap<Integer,Integer>();
+		//goodIdSurrKeyIndex = new HashMap<Integer,Integer>();
 		long startTime = System.currentTimeMillis();
 
 		ConstructSystem constructSystem = new ConstructSystem(orderIdIndexList,
@@ -227,7 +233,7 @@ public class OrderSystemImpl implements OrderSystem {
 				orderCountableIndexList, orderFileList, buyerFileList,
 				goodFileList, orderAttrList, buyerAttrList, goodAttrList,
 				buyerIdSurrKeyFile, goodIdSurrKeyFile, buyerIdIndexList,
-				goodIdIndexList, buyerIdSurrKeyIndex, goodIdSurrKeyIndex);
+				goodIdIndexList);
 		constructSystem.startHandling(buyerFiles, goodFiles, orderFiles,
 				storeFolders, RaceConfig.handleThreadNumber);
 
@@ -274,18 +280,18 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @param id
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
+	/*@SuppressWarnings("unchecked")
 	public long getSurrogateKey(String id, IdName idName) {
 		long surrogateKey = 0;
 		switch (idName) {
 		case OrderId:
 			break;
 		case BuyerId:
-			if (buyerIdSurrKeyIndex == null) {
-				buyerIdSurrKeyIndex = getHashDiskTable(
-						buyerIdSurrKeyFile.getFilePath(),
-						buyerIdSurrKeyFile.getSurrogateIndex());
-			}
+			//if (buyerIdSurrKeyIndex == null) {
+			//	buyerIdSurrKeyIndex = getHashDiskTable(
+			//			buyerIdSurrKeyFile.getFilePath(),
+			//			buyerIdSurrKeyFile.getSurrogateIndex());
+			//}
 			List<Long> buyerIdresult = buyerIdSurrKeyIndex.get(id);
 			if( buyerIdresult.size() != 0) {
 				surrogateKey = buyerIdresult.get(0);
@@ -306,7 +312,7 @@ public class OrderSystemImpl implements OrderSystem {
 		}
 
 		return surrogateKey;
-	}
+	}*/
 
 	/**
 	 * 根据orderid查找索引返回记录 无记录则返回null
@@ -314,9 +320,10 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public Row getRowById(TableName tableName, IdName idName, Object id,
+	public Row getRowById(TableName tableName, String idName, Object id,
 			Collection<String> keys) {
 		Row result = new Row();
+		String idString = String.valueOf(id);
 		try {
 			switch (tableName) {
 			case OrderTable:
@@ -326,23 +333,23 @@ public class OrderSystemImpl implements OrderSystem {
 					if (hashTable == null) {
 						FileInputStream streamIn = new FileInputStream(
 								filePath.getFilePath());
-						switch (idName) {
-						case OrderId:
+						if( idName.equals(RaceConfig.orderId)) {
 							streamIn.getChannel().position(
 									filePath.getOrderIdIndex());
-							break;
-						case BuyerId:
+						}
+						else if(idName.equals(RaceConfig.buyerId)) {
 							// 这里要将id转化成代理键
-							id = getSurrogateKey(String.valueOf(id), idName);
+							//id = getSurrogateKey(String.valueOf(id), idName);
+							id = String.valueOf(id).hashCode();
 							streamIn.getChannel().position(
 									filePath.getOrderBuyerIdIndex());
-							break;
-						case GoodId:
+						}
+						else if(idName.equals(RaceConfig.goodId)) {
 							// 这里要将id转化成代理键
-							id = getSurrogateKey(String.valueOf(id), idName);
+							//id = getSurrogateKey(String.valueOf(id), idName);
+							id = String.valueOf(id).hashCode();
 							streamIn.getChannel().position(
 									filePath.getOrderGoodIdIndex());
-							break;
 						}
 
 						ObjectInputStream objectinputstream = new ObjectInputStream(
@@ -350,63 +357,85 @@ public class OrderSystemImpl implements OrderSystem {
 
 						hashTable = (DiskHashTable<Long, Long>) objectinputstream
 								.readObject();
+						orderIdIndexList.put(filePath.getFilePath(), hashTable);
 						hashTable.restore();
 						objectinputstream.close();
 					}
-					if (hashTable.get(id).size() != 0) {
+					List<Long> results = hashTable.get(id);
+					if (results.size() != 0) {
 						// find the records offset
 						// 不管key是什么，都得载入固定order表里的固定key
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).get(0));*/
-						orderIdIndexList.put(filePath.getFilePath(), hashTable);
-						result = RecordsUtils.getRecordsByKeysFromFile(
-								filePath.getFilePath(), keys, hashTable.get(id).get(0));
-						break; // 找到了就退出 因为orderId不会重复
+						for( Long offset : results) {
+							Row temp = RecordsUtils.getRecordsByKeysFromFile(
+									filePath.getFilePath(), keys, offset);
+							if( temp.getKV(idName).valueAsString().equals(idString)) {
+								result = temp;
+								break;
+							}
+						}
+						break;
+						
 					}
 
 				}
 				break;
 			case BuyerTable:
 				// 将事实键转为代理键
-				id = getSurrogateKey(String.valueOf(id), idName);
+				Integer surrId = String.valueOf(id).hashCode();
 				for (FilePathWithIndex filePath : buyerFileList) {
-					DiskHashTable<Long, Long> hashTable = buyerIdIndexList
+					DiskHashTable<Integer, List<Long>> hashTable = buyerIdIndexList
 							.get(filePath.getFilePath());
 					if (hashTable == null) {
-						buyerIdSurrKeyIndex = getHashDiskTable(
+						hashTable = getHashDiskTable(
 								filePath.getFilePath(),
 								filePath.getBuyerIdIndex());
+						buyerIdIndexList.put(filePath.getFilePath(), hashTable);
 					}
-					if (hashTable.get(id).size() != 0) {
+					List<Long> results = hashTable.get(surrId);
+					if (results.size() != 0) {
 						// find the records offset
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).size());*/
-						buyerIdIndexList.put(filePath.getFilePath(), hashTable);
-						result = RecordsUtils.getRecordsByKeysFromFile(
-								filePath.getFilePath(), keys, hashTable.get(id).get(0));
-						break; // 找到了就退出 因为buyerId不会重复
+						for( Long offset : results) {
+							Row temp = RecordsUtils.getRecordsByKeysFromFile(
+									filePath.getFilePath(), keys, offset);
+							if( temp.getKV(idName).valueAsString().equals(id)) {
+								result = temp;
+								break;
+							}
+						}
+						break;
 					}
 
 				}
 				break;
 			case GoodTable:
-				id = getSurrogateKey(String.valueOf(id), idName);
+				Integer goodSurrId = String.valueOf(id).hashCode();
 				for (FilePathWithIndex filePath : goodFileList) {
-					DiskHashTable<Long, Long> hashTable = goodIdIndexList
+					DiskHashTable<Integer, List<Long>> hashTable = goodIdIndexList
 							.get(filePath.getFilePath());
 					if (hashTable == null) {
-						buyerIdSurrKeyIndex = getHashDiskTable(
+						hashTable = getHashDiskTable(
 								filePath.getFilePath(),
 								filePath.getGoodIdIndex());
+						goodIdIndexList.put(filePath.getFilePath(), hashTable);
 					}
-					if (hashTable.get(id).size() != 0) {
+					List<Long> results = hashTable.get(goodSurrId);
+					if (results.size() != 0) {
 						// find the records offset
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).size());*/
-						goodIdIndexList.put(filePath.getFilePath(), hashTable);
-						result = RecordsUtils.getRecordsByKeysFromFile(
-								filePath.getFilePath(), keys, hashTable.get(id).get(0));
-						break; // 找到了就退出 因为buyerId不会重复
+						for( Long offset : results) {
+							Row temp = RecordsUtils.getRecordsByKeysFromFile(
+									filePath.getFilePath(), keys, offset);
+							if( temp.getKV(idName).valueAsString().equals(id)) {
+								result = temp;
+								break;
+							}
+						}
+						break;
 					}
 
 				}

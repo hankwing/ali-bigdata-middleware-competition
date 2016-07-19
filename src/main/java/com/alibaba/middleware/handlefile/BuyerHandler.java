@@ -29,8 +29,8 @@ public class BuyerHandler{
 	BufferedReader reader;
 	//阻塞队列用于存索引
 	LinkedBlockingQueue<IndexItem> indexQueue;
-	DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
-	ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList = null;
+	//DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
+	ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList = null;
 	List<FilePathWithIndex> buyerFileList = null;
 	HashSet<String> buyerAttrList = null;
 	FilePathWithIndex buyerIdSurrKeyFile = null;
@@ -39,13 +39,13 @@ public class BuyerHandler{
 
 	public BuyerHandler(List<FilePathWithIndex> buyerFileList, 
 			HashSet<String> buyerAttrList, FilePathWithIndex buyerIdSurrKeyFile, 
-			ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList, 
-			DiskHashTable<String, Long> buyerIdSurrKeyIndex, int threadIndex, CountDownLatch latch) {
+			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList, 
+			int threadIndex, CountDownLatch latch) {
 		this.latch = latch;
 		this.buyerFileList = buyerFileList;
 		this.buyerAttrList = buyerAttrList;
 		this.buyerIdSurrKeyFile = buyerIdSurrKeyFile;
-		this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
+		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		this.buyerIdIndexList = buyerIdIndexList;
 		this.threadIndex = threadIndex;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
@@ -93,9 +93,10 @@ public class BuyerHandler{
 	public class BuyerIndexConstructor implements Runnable {
 
 		String indexFileName = null;
-		DiskHashTable<Long, Long> buyerIdHashTable = null;
+		DiskHashTable<Integer, List<Long>> buyerIdHashTable = null;
 		boolean isEnd = false;
-		long surrKey = 1;
+		HashSet<String> tempAttrList = new HashSet<String>();
+		//long surrKey = 1;
 		
 		public BuyerIndexConstructor( ) {
 			
@@ -117,7 +118,7 @@ public class BuyerHandler{
 						if( indexFileName == null) {
 							// 第一次建立索引文件
 							indexFileName = record.getFileName();
-							buyerIdHashTable = new DiskHashTable<Long,Long>(
+							buyerIdHashTable = new DiskHashTable<Integer,List<Long>>(
 									indexFileName + RaceConfig.buyerIndexFileSuffix ,indexFileName, Long.class);
 
 						}
@@ -130,7 +131,7 @@ public class BuyerHandler{
 							buyerFileList.add(smallFile);
 							
 							indexFileName = record.getFileName();
-							buyerIdHashTable = new DiskHashTable<Long,Long>(
+							buyerIdHashTable = new DiskHashTable<Integer,List<Long>>(
 									record.getFileName() + RaceConfig.buyerIndexFileSuffix, indexFileName, Long.class);
 							
 						}
@@ -138,18 +139,20 @@ public class BuyerHandler{
 					
 					Row recordRow = Row
 							.createKVMapFromLine(record.recordsData);
-					buyerAttrList.addAll(recordRow.keySet());
+					tempAttrList.addAll(recordRow.keySet());			// 添加属性
 					String buyerid = recordRow.getKV(RaceConfig.buyerId).valueAsString();
-					buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
-					buyerIdHashTable.put(surrKey, record.getOffset());
-					surrKey ++;
+					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
+					buyerIdHashTable.put(buyerid.hashCode(), record.getOffset());
+					//surrKey ++;
 				}
 				else if(isEnd ) {
 					// 说明队列为空
 					// 将代理键索引写出去  并保存相应数据   将buyerid索引写出去  并保存相应数据
 					//buyerIdSurrKeyFile.setFilePath(RaceConfig.buyerSurrFileName);
 					//buyerIdSurrKeyFile.setSurrogateIndex(buyerIdSurrKeyIndex.writeAllBuckets());
-					
+					synchronized (buyerAttrList) {
+						buyerAttrList.addAll(tempAttrList);
+			        }
 					FilePathWithIndex smallFile = new FilePathWithIndex();
 					smallFile.setFilePath(indexFileName);
 					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());

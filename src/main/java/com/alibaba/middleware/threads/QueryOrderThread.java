@@ -34,13 +34,13 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 		Row resultKV = new Row();
 		resultKV.putKV(RaceConfig.orderId, orderId);
 		if (keys == null) {
-			Row orderIdRow = system.getRowById(TableName.OrderTable, IdName.OrderId,
+			Row orderIdRow = system.getRowById(TableName.OrderTable,RaceConfig.orderId,
 					orderId, keys);
 			if( !orderIdRow.isEmpty() ) {
 				resultKV.putAll(orderIdRow);
-				resultKV.putAll(system.getRowById(TableName.BuyerTable, IdName.BuyerId,
+				resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
 						resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
-				resultKV.putAll(system.getRowById(TableName.GoodTable, IdName.GoodId,
+				resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
 						resultKV.get(RaceConfig.goodId).valueAsString(), keys));
 			}
 			else {
@@ -62,13 +62,13 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 					goodKeys.add(key);
 				}
 			}
-			Row orderIdRow = system.getRowById(TableName.OrderTable, IdName.OrderId,
+			Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,
 					orderId, orderKeys);
 			if( !orderIdRow.isEmpty() ) {
 				resultKV.putAll(orderIdRow);
-				resultKV.putAll(system.getRowById(TableName.BuyerTable, IdName.BuyerId,
+				resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
 						resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKeys));
-				resultKV.putAll(system.getRowById(TableName.GoodTable, IdName.GoodId,
+				resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
 						resultKV.get(RaceConfig.goodId).valueAsString(), goodKeys));
 			}
 			else {
