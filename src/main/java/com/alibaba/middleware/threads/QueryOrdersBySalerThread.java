@@ -56,13 +56,20 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 		List<String> orderKeys = new ArrayList<String>();
 		List<String> buyerKeys = new ArrayList<String>();
 		List<String> goodKeys = new ArrayList<String>();
-		for (String key : keys) {
-			if (system.orderAttrList.contains(key)) {
-				orderKeys.add(key);
-			} else if (system.buyerAttrList.contains(key)) {
-				buyerKeys.add(key);
-			} else if (system.goodAttrList.contains(key)) {
-				goodKeys.add(key);
+		if( keys == null ) {
+			orderKeys = null;
+			buyerKeys = null;
+			goodKeys = null;
+		}
+		else {
+			for (String key : keys) {
+				if (system.orderAttrList.contains(key)) {
+					orderKeys.add(key);
+				} else if (system.buyerAttrList.contains(key)) {
+					buyerKeys.add(key);
+				} else if (system.goodAttrList.contains(key)) {
+					goodKeys.add(key);
+				}
 			}
 		}
 		
@@ -94,16 +101,12 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
 							
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
-							if(!buyerKeys.isEmpty()) {
 								// need query buyerTable
-								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-										row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			
-							}
-							if( !goodKeys.isEmpty()) {
-								// need query goodTable
-								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-										row.get(RaceConfig.goodId).valueAsString(), goodKeys));
-							}
+							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+									row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			
+							// need query goodTable
+							row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+									row.get(RaceConfig.goodId).valueAsString(), goodKeys));
 							results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
 						}				
 						

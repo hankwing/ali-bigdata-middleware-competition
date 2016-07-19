@@ -2,6 +2,7 @@ package com.alibaba.middleware.threads;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystem.Result;
 import com.alibaba.middleware.race.OrderSystemImpl;
@@ -75,15 +76,22 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 						Row row = RecordsUtils.getRecordsByKeysFromFile(
 								filePath.getFilePath(), null, offset);
 						long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
+						long orderid = row.getKV(RaceConfig.orderId).valueAsLong();
 						if( row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) &&
 								createTime >= startTime && createTime < endTime) {
 							// 判断买家id是否符合  并且时间范围符合要求
+							
+							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+									row.get(RaceConfig.buyerId).valueAsString(), null));			
+							// need query goodTable
+							row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+									row.get(RaceConfig.goodId).valueAsString(), null));
 							List<Result> smallResults = results.get(createTime);
 							if(smallResults == null) {
 								smallResults = new ArrayList<Result>();
 								results.put(createTime, smallResults);
 							}
-							smallResults.add(new ResultImpl(createTime, row));
+							smallResults.add(new ResultImpl(orderid, row));
 						}
 						
 					}
