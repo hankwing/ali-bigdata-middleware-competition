@@ -80,7 +80,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		for (int i = 0; i < 10; i++) {
 			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
 			bucketList.put(i, newBucket );
-			BucketCachePool.getInstance().addBucket(newBucket);
+			//BucketCachePool.getInstance().addBucket(newBucket);
 		}
 		/*timer = new Timer();
 		timer.schedule(new TimerTask() {
@@ -115,7 +115,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * 
 	 * @param bucketKey
 	 */
-	public synchronized void writeBucket(int bucketKey) {
+	public void writeBucket(int bucketKey) {
 
 		try {
 			
@@ -132,11 +132,12 @@ public class DiskHashTable<K,T> implements Serializable {
 					// 第一次打开桶文件 需要写入头数据
 					offsetOos = new ObjectOutputStream(byteArrayOs);
 				}
-
+				readWriteLock.writeLock().lock();					// 加写锁
 				bufferedFout = new BufferedOutputStream(fos);
 				offset = fos.getChannel().position();
 				bufferedFout.write(byteArrayOs.toByteArray());
 				bufferedFout.flush();
+				readWriteLock.writeLock().unlock();					// 解写锁
 
 			}
 			byteArrayOs.reset();
@@ -145,9 +146,13 @@ public class DiskHashTable<K,T> implements Serializable {
 			bucketAddressList.put(bucketKey, offset);
 
 			offsetOos.writeObject(bucketList.remove(bucketKey));
+				
+			readWriteLock.writeLock().lock();						// 加写锁
 			
 			bufferedFout.write(byteArrayOs.toByteArray());
 			bufferedFout.flush();
+			readWriteLock.writeLock().unlock();						// 解写锁
+			
 			offsetOos.reset();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -203,9 +208,9 @@ public class DiskHashTable<K,T> implements Serializable {
 			bufferedFout.flush();
 			bufferedFout.close();
 			
-			bucketList.clear();
 			// write this HashTable to dataFile and return offset
-			byteArrayOs.reset();
+			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map
+			
 			fos = new FileOutputStream(dataFilePath, true);
 			ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
 			thisOffset = byteArrayOs.size();
@@ -318,7 +323,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
 				HashBucket<K,T> newBucket = new HashBucket<K,T>(this, bucketNum, classType);
-				BucketCachePool.getInstance().addBucket(newBucket);
+				//BucketCachePool.getInstance().addBucket(newBucket);
 				bucketNum++;
 				bucketList.put(bucketNum - 1, newBucket);
 				
@@ -368,11 +373,12 @@ public class DiskHashTable<K,T> implements Serializable {
 	public int getBucketIndex(K key) {
 
 		int bucketIndex = Math.abs(key.hashCode());
-		if( bucketIndex < Math.pow(10, usedBits)) {
+		double temp = Math.pow(10, usedBits);
+		if( bucketIndex < temp) {
 			return bucketIndex;
 		}
 		else {
-			return (int) (bucketIndex % Math.pow(10, usedBits));
+			return (int) (bucketIndex % temp);
 		}
 	}
 	

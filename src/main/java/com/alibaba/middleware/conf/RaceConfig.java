@@ -71,7 +71,7 @@ public class RaceConfig implements Serializable{
 	public static int columnFileCapacity = 10000;
 
 	
-	public static long smallFileCapacity = 10000000;
+	public static long smallFileCapacity = 3000000;
 	
 	public static String[] storeFolders = null;
 	public static String buyerFileNamePrex = "/buyer_";
