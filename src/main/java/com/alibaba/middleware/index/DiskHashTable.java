@@ -80,7 +80,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		for (int i = 0; i < 10; i++) {
 			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
 			bucketList.put(i, newBucket );
-			BucketCachePool.getInstance().addBucket(newBucket);
+			//BucketCachePool.getInstance().addBucket(newBucket);
 		}
 		/*timer = new Timer();
 		timer.schedule(new TimerTask() {
@@ -306,7 +306,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param value
 	 * @return
 	 */
-	public synchronized boolean put(K key, long value) {
+	public boolean put(K key, long value) {
 
 		HashBucket<K,T> bucket = null;
 		int bucketIndex = getBucketIndex(key);
@@ -323,7 +323,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
 				HashBucket<K,T> newBucket = new HashBucket<K,T>(this, bucketNum, classType);
-				BucketCachePool.getInstance().addBucket(newBucket);
+				//BucketCachePool.getInstance().addBucket(newBucket);
 				bucketNum++;
 				bucketList.put(bucketNum - 1, newBucket);
 				
