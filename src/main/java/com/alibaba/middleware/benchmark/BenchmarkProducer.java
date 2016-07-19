@@ -23,18 +23,18 @@ import com.alibaba.middleware.conf.RaceConfig;
  */
 public class BenchmarkProducer {
 
-	public static String buyerTableFileName = "benchmark/buyer_records2.txt";
+	public static String buyerTableFileName = "benchmark/buyer_records.txt";
 	public static String buyerTableDatabaseFileName = "buyer_records_database.txt";
 	
-	public static String goodTableFileName = "benchmark/good_records2.txt";
+	public static String goodTableFileName = "benchmark/good_records.txt";
 	public static String goodTableDatabaseFileName = "good_records_database.txt";
 	
-	public static String orderTableFileName = "benchmark/order_records2.txt";
+	public static String orderTableFileName = "benchmark/order_records.txt";
 	public static String orderTableDatabaseFileName = "order_records_database.txt";
 	
-	public static long buyerTableRecordsNum = 1000000;
-	public static long goodTableRecordsNum = 1000000;
-	public static long orderTableRecordsNum = 5000000;
+	public static long buyerTableRecordsNum = 5000000;
+	public static long goodTableRecordsNum = 5000000;
+	public static long orderTableRecordsNum = 10000000;
 	
 	public static String buyerTableReAttr[] = {"buyerid","contactphone","recieveaddress"};
 	public static String buerTableOpAttr[] = 

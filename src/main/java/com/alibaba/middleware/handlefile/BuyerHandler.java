@@ -153,7 +153,7 @@ public class BuyerHandler{
 					FilePathWithIndex smallFile = new FilePathWithIndex();
 					smallFile.setFilePath(indexFileName);
 					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
-					buyerFileList.add(smallFile);				
+					buyerFileList.add(smallFile);
 					buyerIdIndexList.put(indexFileName, buyerIdHashTable);
 					latch.countDown();
 					break;

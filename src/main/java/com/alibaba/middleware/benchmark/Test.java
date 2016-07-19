@@ -16,10 +16,14 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.FileLock;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.index.ComparableKeys;
@@ -32,11 +36,25 @@ import com.alibaba.middleware.index.ComparableKeys;
  */
 public class Test {
 
+	
 	public static void main(String[] args) {
 
+		
 		Double sum = 0.0;
 		Long a1 = 3L;
 		sum += a1;
+		
+		OrderedList<String> set = new OrderedList<String>();
+		set.orderedAdd("a");
+		set.orderedAdd("g");
+		set.orderedAdd("c");
+		set.orderedAdd("z");
+		set.orderedAdd("e");
+		set.orderedAdd("h");
+		set.orderedAdd("g");
+		set.orderedAdd("i");
+		System.out.println( Arrays.binarySearch(set.toArray(), "i"));
+		
 		/*
 		 * TreeMap<String, HashMap<String, Long>> treeMap = new TreeMap<String,
 		 * HashMap<String,Long>>(new ComparableKeys(2));
@@ -256,5 +274,29 @@ public class Test {
 			return keyString.equals(otherKey.keyString);
 		}*/
 
+	}
+	
+	public static class OrderedList<T extends Comparable<T>> extends LinkedList<T> {
+
+	    private static final long serialVersionUID = 1L;
+
+
+	    public boolean orderedAdd(T element) {      
+	        ListIterator<T> itr = listIterator();
+	        while(true) {
+	            if (itr.hasNext() == false) {
+	                itr.add(element);
+	                return(true);
+	            }
+
+	            T elementInList = itr.next();
+	            if (elementInList.compareTo(element) > 0) {
+	                itr.previous();
+	                itr.add(element);
+	                //System.out.println("Adding");
+	                return(true);
+	            }
+	        }
+	    }
 	}
 }
