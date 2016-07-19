@@ -54,10 +54,10 @@ public class JVMMonitorThread extends SchedulerThread {
     public void run() {
         try {
             if (!isReadyToStop) {
-                System.out.println(getFreeMem() / 2014 + "MB");
-                if (getFreeMem() < (getTotalMem() * memFactor)) {
+                if (getFreeMem() < (getMaxMem() * memFactor)) {
+                    //System.out.println(getFreeMem() / 2014 + "MB");
                     if (gcCounter < gcCounterThreshold) {
-                        System.out.println("GC...");
+                        //System.out.println("GC...");
                         System.gc();
                         gcCounter++;
                     } else {
@@ -67,7 +67,7 @@ public class JVMMonitorThread extends SchedulerThread {
                     }
                 }
             }
-            System.out.println("Stop");
+//            System.out.println("Stop");
         } catch (OutOfMemoryError e) {
             System.out.println("Out of memory, remove bucket...");
             bucketCachePool.removeBuckets(removeBucketNum);

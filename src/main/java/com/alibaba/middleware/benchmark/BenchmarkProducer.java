@@ -31,11 +31,11 @@ public class BenchmarkProducer {
 	
 	public static String orderTableFileName = "benchmark/order_records.txt";
 	public static String orderTableDatabaseFileName = "order_records_database.txt";
-	
+
 	public static long buyerTableRecordsNum = 500000;
 	public static long goodTableRecordsNum = 500000;
 	public static long orderTableRecordsNum = 1000000;
-	
+
 	public static String buyerTableReAttr[] = {"buyerid","contactphone","recieveaddress"};
 	public static String buerTableOpAttr[] = 
 		{"app_buyer_112_0","app_buyer_41_0","app_buyer_76_0","app_buyer_74_0"};

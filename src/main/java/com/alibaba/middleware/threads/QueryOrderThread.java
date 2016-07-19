@@ -47,7 +47,6 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 				// 没有找到对应orderid的记录
 				return null;
 			}
-			
 		} else if ( !keys.isEmpty()) {
 			// 查询指定字段
 			List<String> orderKeys = new ArrayList<String>();
