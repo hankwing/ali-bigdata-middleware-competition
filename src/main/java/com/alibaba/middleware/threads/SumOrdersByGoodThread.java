@@ -49,6 +49,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
     	//KeyValueImpl result = new KeyValueImpl()
 		
     	List<String> keys = new ArrayList<String>();
+    	boolean isFound = false;
     	Double sum = 0.0;
     	keys.add(key);
     	List<String> orderKeys = new ArrayList<String>();
@@ -109,6 +110,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 							
 							// 该记录存在该key
 							try {
+								isFound = true;
 								orderId = row.getKV(key).valueAsDouble();
 							} catch (TypeException e) {
 								// TODO Auto-generated catch block
@@ -125,7 +127,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			}
 		}
 		
-		if( sum == 0) {
+		if( sum == 0 && !isFound) {
 			return null;
 		}
 		else if( sum % 1 == 0) {

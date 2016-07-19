@@ -54,7 +54,9 @@ public class JVMMonitorThread extends SchedulerThread {
     public void run() {
         try {
             if (!isReadyToStop) {
-                if (getFreeMem() < (getMaxMem() * memFactor)) {
+                if (getTotalMem() < (getMaxMem() * memFactor)) {
+                    // TOTAL MEM IS TOO LITTLE, DO NOTHING
+                } else if (getFreeMem() < (getMaxMem() * memFactor)) {
                     System.out.println(getFreeMem() / 2014 + "MB");
                     if (gcCounter < gcCounterThreshold) {
                         System.out.println("GC...");
