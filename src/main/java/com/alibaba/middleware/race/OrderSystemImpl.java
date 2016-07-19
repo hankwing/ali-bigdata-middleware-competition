@@ -147,7 +147,7 @@ public class OrderSystemImpl implements OrderSystem {
 				for( int i = 1; i < rawCommand.length; i++ ) {
 					keys.add(rawCommand[i]);
 				}
-				Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, keys);
+				Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, null);
 				while(results.hasNext()) {
 					System.out.println("values:" + results.next());
 				}
@@ -286,7 +286,11 @@ public class OrderSystemImpl implements OrderSystem {
 						buyerIdSurrKeyFile.getFilePath(),
 						buyerIdSurrKeyFile.getSurrogateIndex());
 			}
-			surrogateKey = buyerIdSurrKeyIndex.get(id).get(0);
+			List<Long> buyerIdresult = buyerIdSurrKeyIndex.get(id);
+			if( buyerIdresult.size() != 0) {
+				surrogateKey = buyerIdresult.get(0);
+			}
+			
 			break;
 		case GoodId:
 			if (goodIdSurrKeyIndex == null) {
@@ -294,7 +298,10 @@ public class OrderSystemImpl implements OrderSystem {
 						goodIdSurrKeyFile.getFilePath(),
 						goodIdSurrKeyFile.getSurrogateIndex());
 			}
-			surrogateKey = goodIdSurrKeyIndex.get(id).get(0);
+			List<Long> goodIdresult = goodIdSurrKeyIndex.get(id);
+			if( goodIdresult.size() != 0) {
+				surrogateKey = goodIdresult.get(0);
+			}
 			break;
 		}
 
@@ -309,7 +316,7 @@ public class OrderSystemImpl implements OrderSystem {
 	@SuppressWarnings("unchecked")
 	public Row getRowById(TableName tableName, IdName idName, Object id,
 			Collection<String> keys) {
-		Row result = null;
+		Row result = new Row();
 		try {
 			switch (tableName) {
 			case OrderTable:

@@ -50,46 +50,51 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
     	Double sum = 0.0;
     	keys.add(key);
 		long surrId = system.getSurrogateKey(goodid, IdName.GoodId);
-		for (FilePathWithIndex filePath : system.orderFileList) {
-			DiskHashTable<Long, List<Long>> hashTable = system.orderGoodIdIndexList
-					.get(filePath.getFilePath());
-			if (hashTable == null) {
-				hashTable = system.getHashDiskTable(filePath.getFilePath(),
-						filePath.getOrderGoodIdIndex());
-			}
-			long resultNum = hashTable.get(surrId).size();
-			if (resultNum != 0) {
-				// find the records offset
-				// 找到后，按照降序插入TreeMap中
-				System.out.println("records offset:"
-						+ resultNum);
-				system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
-				for( Long offset: hashTable.get(surrId)) {
-					Double orderId = 0.0;
-					Row row = RecordsUtils.getRecordsByKeysFromFile(
-							filePath.getFilePath(), keys, offset);
-					try{
-						row.getKV(key).valueAsString();
-					} catch (RuntimeException e) {
-						// 该条记录不存在这个key
-						continue;
-					} 
-					
-					// 该记录存在该key
-					try {
-						orderId = row.getKV(key).valueAsDouble();
-					} catch (TypeException e) {
-						// TODO Auto-generated catch block
-						// 不是Double型的，当然也不是long型的
-						return null;
+		if( surrId == 0) {
+			return null;
+		}
+		else {
+			for (FilePathWithIndex filePath : system.orderFileList) {
+				DiskHashTable<Long, List<Long>> hashTable = system.orderGoodIdIndexList
+						.get(filePath.getFilePath());
+				if (hashTable == null) {
+					hashTable = system.getHashDiskTable(filePath.getFilePath(),
+							filePath.getOrderGoodIdIndex());
+				}
+				long resultNum = hashTable.get(surrId).size();
+				if (resultNum != 0) {
+					// find the records offset
+					// 找到后，按照降序插入TreeMap中
+					System.out.println("records offset:"
+							+ resultNum);
+					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
+					for( Long offset: hashTable.get(surrId)) {
+						Double orderId = 0.0;
+						Row row = RecordsUtils.getRecordsByKeysFromFile(
+								filePath.getFilePath(), keys, offset);
+						try{
+							row.getKV(key).valueAsString();
+						} catch (RuntimeException e) {
+							// 该条记录不存在这个key
+							continue;
+						} 
+						
+						// 该记录存在该key
+						try {
+							orderId = row.getKV(key).valueAsDouble();
+						} catch (TypeException e) {
+							// TODO Auto-generated catch block
+							// 不是Double型的，当然也不是long型的
+							return null;
+						}
+						sum += orderId;
+						//results.put(orderId, new ResultImpl(orderId, row));
+						
 					}
-					sum += orderId;
-					//results.put(orderId, new ResultImpl(orderId, row));
 					
 				}
-				
-			}
 
+			}
 		}
 		
 		if( sum == 0) {

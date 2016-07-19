@@ -51,40 +51,47 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 		TreeMap<Long, List<Result>> results = new TreeMap<Long, List<Result>>(
 				Collections.reverseOrder());
 		long surrId = system.getSurrogateKey(buyerid, IdName.BuyerId);
-		for (FilePathWithIndex filePath : system.orderFileList) {
-			DiskHashTable<Long, List<Long>> hashTable = system.orderBuyerIdIndexList.get(filePath
-					.getFilePath());
-			if (hashTable == null) {
-				hashTable = system.getHashDiskTable(filePath.getFilePath(),
-						filePath.getOrderBuyerIdIndex());
-			}
-			long resultNum = hashTable.get(surrId).size();
-			if (resultNum != 0) {
-				// find the records offset
-				// 找到后，按照降序插入TreeMap中
-				system.orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
-				System.out.println("records offset:"
-						+ resultNum);
-				for( Long offset: hashTable.get(surrId)) {
-					
-					Row row = RecordsUtils.getRecordsByKeysFromFile(
-							filePath.getFilePath(), null, offset);
-					long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
-					if( createTime >= startTime && createTime < endTime) {
-						// 判断时间
-						List<Result> smallResults = results.get(createTime);
-						if(smallResults == null) {
-							smallResults = new ArrayList<Result>();
-							results.put(createTime, smallResults);
+		if( surrId == 0) {
+			//不存在该买家
+			return null;
+		}
+		else {
+			for (FilePathWithIndex filePath : system.orderFileList) {
+				DiskHashTable<Long, List<Long>> hashTable = system.orderBuyerIdIndexList.get(filePath
+						.getFilePath());
+				if (hashTable == null) {
+					hashTable = system.getHashDiskTable(filePath.getFilePath(),
+							filePath.getOrderBuyerIdIndex());
+				}
+				long resultNum = hashTable.get(surrId).size();
+				if (resultNum != 0) {
+					// find the records offset
+					// 找到后，按照降序插入TreeMap中
+					system.orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
+					System.out.println("records offset:"
+							+ resultNum);
+					for( Long offset: hashTable.get(surrId)) {
+						
+						Row row = RecordsUtils.getRecordsByKeysFromFile(
+								filePath.getFilePath(), null, offset);
+						long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
+						if( createTime >= startTime && createTime < endTime) {
+							// 判断时间
+							List<Result> smallResults = results.get(createTime);
+							if(smallResults == null) {
+								smallResults = new ArrayList<Result>();
+								results.put(createTime, smallResults);
+							}
+							smallResults.add(new ResultImpl(createTime, row));
 						}
-						smallResults.add(new ResultImpl(createTime, row));
+						
 					}
 					
 				}
-				
-			}
 
+			}
 		}
+		
 		List<Result> returnResults = new ArrayList<Result>();
 		for(List<Result> r : results.values() ) {
 			returnResults.addAll(r);

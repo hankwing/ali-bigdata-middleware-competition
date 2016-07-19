@@ -55,14 +55,30 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 					goodKeys.add(key);
 				}
 			}
-			resultKV.putAll(system.getRowById(TableName.OrderTable, IdName.OrderId,
-					orderId, orderKeys));
-			resultKV.putAll(system.getRowById(TableName.BuyerTable, IdName.BuyerId,
-					resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKeys));
-			resultKV.putAll(system.getRowById(TableName.GoodTable, IdName.GoodId,
-					resultKV.get(RaceConfig.goodId).valueAsString(), goodKeys));
+			Row orderIdRow = system.getRowById(TableName.OrderTable, IdName.OrderId,
+					orderId, orderKeys);
+			if( !orderIdRow.isEmpty() ) {
+				resultKV.putAll(orderIdRow);
+				resultKV.putAll(system.getRowById(TableName.BuyerTable, IdName.BuyerId,
+						resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKeys));
+				resultKV.putAll(system.getRowById(TableName.GoodTable, IdName.GoodId,
+						resultKV.get(RaceConfig.goodId).valueAsString(), goodKeys));
+			}
+			else {
+				// 没有找到对应orderid的记录
+				return null;
+			}
+			
 		}
-		result = new ResultImpl(orderId, resultKV);
+		else {
+			return null;
+		}
+		try{
+			result = new ResultImpl(orderId, resultKV.getKVs(keys));
+		} catch (RuntimeException e) {
+			return null;
+		}
+		
         return result;
     }
 
