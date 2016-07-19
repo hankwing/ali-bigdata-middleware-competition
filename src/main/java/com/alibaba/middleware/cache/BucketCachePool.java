@@ -46,6 +46,13 @@ public class BucketCachePool {
         }
         return false;
     }
+    
+    /**
+     * 将管理的桶清空
+     */
+    public synchronized void removeAllBucket() {
+    	bucketCache = new LinkedList<HashBucket>();
+    }
 
     private void removeBucket(HashBucket bucket) {
         lock.lock();

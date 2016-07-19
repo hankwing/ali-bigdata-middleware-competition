@@ -6,9 +6,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 
@@ -26,19 +28,19 @@ public class ConstructSystem {
 	// 存订单表里的orderId索引<文件名（尽量短名）,内存里缓存的索引DiskHashTable>
 	public ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList = null;
 	// 订单表里的buyerId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderBuyerIdIndexList = null;
+	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderBuyerIdIndexList = null;
 	// 订单表里的goodId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList = null;
+	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderGoodIdIndexList = null;
 	// 订单表里的可计算字段索引Map
-	public ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList = null;
+	public ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList = null;
 	// buyerId里的buyerId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList = null;
+	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList = null;
 	// goodId里的goodId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList = null;
+	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList = null;
 
-	public List<FilePathWithIndex> orderFileList = null; // 保存order表所有文件的名字
-	public List<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
-	public List<FilePathWithIndex> goodFileList = null; // 保存good表所有文件的名字
+	public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; // 保存order表所有文件的名字
+	public CopyOnWriteArrayList<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
+	public CopyOnWriteArrayList<FilePathWithIndex> goodFileList = null; // 保存good表所有文件的名字
 
 	public HashSet<String> orderAttrList = null; // 保存order表的所有字段名称
 	public HashSet<String> buyerAttrList = null; // 保存buyer表的所有字段名称
@@ -46,8 +48,8 @@ public class ConstructSystem {
 
 	public FilePathWithIndex buyerIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
 	public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
-	public DiskHashTable<String, Long> buyerIdSurrKeyIndex = null; // 缓存buyerId事实键与代理键
-	public DiskHashTable<String, Long> goodIdSurrKeyIndex = null; // 缓存goodId事实键与代理键
+	//public DiskHashTable<String, Long> buyerIdSurrKeyIndex = null; // 缓存buyerId事实键与代理键
+	//public DiskHashTable<String, Long> goodIdSurrKeyIndex = null; // 缓存goodId事实键与代理键
 	
 	HashMap<String, Boolean> computableItems;
 
@@ -64,10 +66,15 @@ public class ConstructSystem {
 
 		public void run() {
 			// TODO Auto-generated method stub
+			if( !files.isEmpty()) {
+				BuyerHandler buyerHandler = new BuyerHandler( buyerFileList, buyerAttrList,
+						buyerIdSurrKeyFile, buyerIdIndexList, threadIndex, countDownLatch);
+				buyerHandler.handeBuyerFiles(files);
+			}
+			else {
+				countDownLatch.countDown();
+			}
 			
-			BuyerHandler buyerHandler = new BuyerHandler( buyerFileList, buyerAttrList,
-					buyerIdSurrKeyFile, buyerIdIndexList,buyerIdSurrKeyIndex, threadIndex, countDownLatch);
-			buyerHandler.handeBuyerFiles(files);
 			//countDownLatch.countDown();
 		}
 	}
@@ -85,9 +92,15 @@ public class ConstructSystem {
 
 		public void run() {
 			// TODO Auto-generated method stub
-			GoodHandler goodHandler = new GoodHandler( goodFileList, goodAttrList,
-					goodIdSurrKeyFile, goodIdIndexList,goodIdSurrKeyIndex, threadIndex, countDownLatch);
-			goodHandler.HandleGoodFiles(files);
+			if( !files.isEmpty()) {
+				GoodHandler goodHandler = new GoodHandler( goodFileList, goodAttrList,
+						goodIdSurrKeyFile, goodIdIndexList, threadIndex, countDownLatch);
+				goodHandler.HandleGoodFiles(files);
+			}
+			else {
+				countDownLatch.countDown();
+			}
+			
 		}
 	}
 
@@ -104,26 +117,30 @@ public class ConstructSystem {
 
 		public void run() {
 			// TODO Auto-generated method stub
-			OrderHandler orderHandler = new OrderHandler(orderIdIndexList, orderBuyerIdIndexList,
-					orderGoodIdIndexList, orderCountableIndexList, orderFileList, orderAttrList,
-					buyerIdSurrKeyIndex, goodIdSurrKeyIndex,threadIndex, countDownLatch);
-			orderHandler.HandleOrderFiles(files);
+			if( !files.isEmpty()) {
+				OrderHandler orderHandler = new OrderHandler(orderIdIndexList, orderBuyerIdIndexList,
+						orderGoodIdIndexList, orderCountableIndexList, orderFileList, orderAttrList,
+						threadIndex, countDownLatch);
+				orderHandler.HandleOrderFiles(files);
+			}
+			else {
+				countDownLatch.countDown();
+			}
 			//countDownLatch.countDown();
 		}
 	}
 
 	public ConstructSystem(ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
-			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderBuyerIdIndexList, 
-			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList, 
-			ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList, 
-			List<FilePathWithIndex> orderFileList, List<FilePathWithIndex> buyerFileList, 
-			List<FilePathWithIndex> goodFileList, HashSet<String> orderAttrList, 
+			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderBuyerIdIndexList, 
+			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderGoodIdIndexList, 
+			ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList, 
+			CopyOnWriteArrayList <FilePathWithIndex> orderFileList, 
+			CopyOnWriteArrayList <FilePathWithIndex> buyerFileList, 
+			CopyOnWriteArrayList <FilePathWithIndex> goodFileList, HashSet<String> orderAttrList, 
 			HashSet<String> buyerAttrList, HashSet<String> goodAttrList, 
 			FilePathWithIndex buyerIdSurrKeyFile, FilePathWithIndex goodIdSurrKeyFile, 
-			ConcurrentHashMap<String, DiskHashTable<Long, Long>> buyerIdIndexList, 
-			ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList, 
-			DiskHashTable<String, Long> buyerIdSurrKeyIndex,
-			DiskHashTable<String, Long> goodIdSurrKeyIndex) {
+			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList, 
+			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList) {
 		// TODO Auto-generated constructor stub
 		this.orderIdIndexList = orderIdIndexList;
 		this.buyerIdIndexList = buyerIdIndexList;
@@ -139,8 +156,8 @@ public class ConstructSystem {
 		this.buyerIdSurrKeyFile = buyerIdSurrKeyFile;
 		this.goodIdSurrKeyFile = goodIdSurrKeyFile;
 		this.goodIdIndexList = goodIdIndexList;
-		this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
-		this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
+		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
+		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 	}
 
 	/**
@@ -199,10 +216,17 @@ public class ConstructSystem {
 	private List<String> getGroupFiles(Collection<String> files, int group,
 			int readers) {
 		// 分给多个读线程
-		List<String> fileList = new ArrayList<String>(files);
 		List<String> list = new ArrayList<String>();
-		for (int i = group; i < fileList.size(); i += readers) {
-			list.add(fileList.get(i));
+		for( String file: files) {
+			if( file.startsWith(RaceConfig.storeFolders[group])) {
+				list.add(file);
+			}
+		}
+		if( list.isEmpty() ) {
+			List<String> fileList = new ArrayList<String>(files);
+			for (int i = group; i < fileList.size(); i += readers) {
+				list.add(fileList.get(i));
+			}
 		}
 		return list;
 	}

@@ -2,6 +2,7 @@ package com.alibaba.middleware.threads;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystem;
 import com.alibaba.middleware.race.ResultImpl;
@@ -52,18 +53,39 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
     public Iterator<Result> call() throws Exception {
         // TODO
 		// 根据商品ID找到多条订单信息 再筛选出keys 结果集按照订单id插入排序
+		List<String> orderKeys = new ArrayList<String>();
+		List<String> buyerKeys = new ArrayList<String>();
+		List<String> goodKeys = new ArrayList<String>();
+		if( keys == null ) {
+			orderKeys = null;
+			buyerKeys = null;
+			goodKeys = null;
+		}
+		else {
+			for (String key : keys) {
+				if (system.orderAttrList.contains(key)) {
+					orderKeys.add(key);
+				} else if (system.buyerAttrList.contains(key)) {
+					buyerKeys.add(key);
+				} else if (system.goodAttrList.contains(key)) {
+					goodKeys.add(key);
+				}
+			}
+		}
+		
 		TreeMap<Long, Result> results = new TreeMap<Long, Result>();
-		long surrId = system.getSurrogateKey(goodid, IdName.GoodId);
+		Integer surrId = goodid.hashCode();
 		if( surrId == 0) {
 			return null;
 		}
 		else {
 			for (FilePathWithIndex filePath : system.orderFileList) {
-				DiskHashTable<Long, List<Long>> hashTable = system.orderGoodIdIndexList
+				DiskHashTable<Integer, List<Long>> hashTable = system.orderGoodIdIndexList
 						.get(filePath.getFilePath());
 				if (hashTable == null) {
 					hashTable = system.getHashDiskTable(filePath.getFilePath(),
 							filePath.getOrderGoodIdIndex());
+					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
 				}
 				long resultNum = hashTable.get(surrId).size();
 				if (resultNum != 0) {
@@ -71,19 +93,22 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 					// 找到后，按照降序插入TreeMap中
 					System.out.println("records offset:"
 							+ resultNum);
-					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
+					
 					for( Long offset: hashTable.get(surrId)) {
-						
+
 						Row row = RecordsUtils.getRecordsByKeysFromFile(
 								filePath.getFilePath(), keys, offset);
-						long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
-						try{
-							results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
-						} catch (RuntimeException e) {
-							// 有不存在的字段 直接返回Null
+						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
 							
-							return null;
-						}
+							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
+								// need query buyerTable
+							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+									row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			
+							// need query goodTable
+							row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+									row.get(RaceConfig.goodId).valueAsString(), goodKeys));
+							results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
+						}				
 						
 					}
 					

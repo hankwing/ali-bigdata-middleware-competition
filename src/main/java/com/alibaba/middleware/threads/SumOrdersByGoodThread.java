@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.KeyValueImpl;
 import com.alibaba.middleware.race.OrderSystem.TypeException;
@@ -45,21 +46,36 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 	@Override
     public KeyValueImpl call() {
         // TODO
-    	//KeyValueImpl result = new KeyValueImpl();
+    	//KeyValueImpl result = new KeyValueImpl()
+		
     	List<String> keys = new ArrayList<String>();
     	Double sum = 0.0;
     	keys.add(key);
-		long surrId = system.getSurrogateKey(goodid, IdName.GoodId);
+    	List<String> orderKeys = new ArrayList<String>();
+		List<String> buyerKeys = new ArrayList<String>();
+		List<String> goodKeys = new ArrayList<String>();
+		for (String key : keys) {
+			if (system.orderAttrList.contains(key)) {
+				orderKeys.add(key);
+			} else if (system.buyerAttrList.contains(key)) {
+				buyerKeys.add(key);
+			} else if (system.goodAttrList.contains(key)) {
+				goodKeys.add(key);
+			}
+		}
+		
+		Integer surrId = goodid.hashCode();
 		if( surrId == 0) {
 			return null;
 		}
 		else {
 			for (FilePathWithIndex filePath : system.orderFileList) {
-				DiskHashTable<Long, List<Long>> hashTable = system.orderGoodIdIndexList
+				DiskHashTable<Integer, List<Long>> hashTable = system.orderGoodIdIndexList
 						.get(filePath.getFilePath());
 				if (hashTable == null) {
 					hashTable = system.getHashDiskTable(filePath.getFilePath(),
 							filePath.getOrderGoodIdIndex());
+					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
 				}
 				long resultNum = hashTable.get(surrId).size();
 				if (resultNum != 0) {
@@ -67,29 +83,41 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 					// 找到后，按照降序插入TreeMap中
 					System.out.println("records offset:"
 							+ resultNum);
-					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
 					for( Long offset: hashTable.get(surrId)) {
 						Double orderId = 0.0;
 						Row row = RecordsUtils.getRecordsByKeysFromFile(
 								filePath.getFilePath(), keys, offset);
-						try{
-							row.getKV(key).valueAsString();
-						} catch (RuntimeException e) {
-							// 该条记录不存在这个key
-							continue;
-						} 
-						
-						// 该记录存在该key
-						try {
-							orderId = row.getKV(key).valueAsDouble();
-						} catch (TypeException e) {
-							// TODO Auto-generated catch block
-							// 不是Double型的，当然也不是long型的
-							return null;
+						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
+							
+							if(!buyerKeys.isEmpty()) {
+								// need query buyerTable
+								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+										row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			
+							}
+							if( !goodKeys.isEmpty()) {
+								// need query goodTable
+								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+										row.get(RaceConfig.goodId).valueAsString(), goodKeys));
+							}
+							
+							try{
+								row.getKV(key).valueAsString();
+							} catch (RuntimeException e) {
+								// 该条记录不存在这个key
+								continue;
+							} 
+							
+							// 该记录存在该key
+							try {
+								orderId = row.getKV(key).valueAsDouble();
+							} catch (TypeException e) {
+								// TODO Auto-generated catch block
+								// 不是Double型的，当然也不是long型的
+								return null;
+							}
+							sum += orderId;
+							//results.put(orderId, new ResultImpl(orderId, row));
 						}
-						sum += orderId;
-						//results.put(orderId, new ResultImpl(orderId, row));
-						
 					}
 					
 				}
@@ -100,8 +128,12 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 		if( sum == 0) {
 			return null;
 		}
-		else {
-			return new KeyValueImpl(key, String.valueOf(sum));
+		else if( sum % 1 == 0) {
+			// 返回long 值
+			return new KeyValueImpl(key, String.valueOf(sum.longValue()));
+		}
+		else{
+			return new KeyValueImpl(key, sum.toString());
 		}
     }
 }

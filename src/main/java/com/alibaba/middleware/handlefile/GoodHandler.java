@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
@@ -24,8 +25,8 @@ public class GoodHandler{
 	BufferedReader reader;
 	LinkedBlockingQueue<IndexItem> indexQueue;
 
-	DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
-	ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList = null;
+	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
+	ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList = null;
 	List<FilePathWithIndex> goodFileList = null;
 	HashSet<String> goodAttrList = null;
 	FilePathWithIndex goodIdSurrKeyFile = null;
@@ -34,13 +35,13 @@ public class GoodHandler{
 
 	public GoodHandler(List<FilePathWithIndex> goodFileList, 
 			HashSet<String> goodAttrList, FilePathWithIndex goodIdSurrKeyFile, 
-			ConcurrentHashMap<String, DiskHashTable<Long, Long>> goodIdIndexList, 
-			DiskHashTable<String, Long> goodIdSurrKeyIndex, int threadIndex,CountDownLatch latch) {
+			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList, 
+			 int threadIndex,CountDownLatch latch) {
 		this.latch = latch;
 		this.goodFileList = goodFileList;
 		this.goodAttrList = goodAttrList;
 		this.goodIdSurrKeyFile = goodIdSurrKeyFile;
-		this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
+		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 		this.goodIdIndexList = goodIdIndexList;
 		this.threadIndex = threadIndex;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
@@ -81,9 +82,10 @@ public class GoodHandler{
 		public class GoodIndexConstructor implements Runnable {
 
 			String indexFileName = null;
-			DiskHashTable<Long, Long> goodIdHashTable = null;
+			DiskHashTable<Integer, List<Long>> goodIdHashTable = null;
 			boolean isEnd = false;
-			long surrKey = 1;
+			HashSet<String> tempAttrList = new HashSet<String>();
+			//long surrKey = 1;
 			
 			public GoodIndexConstructor( ) {
 				
@@ -105,7 +107,7 @@ public class GoodHandler{
 							if( indexFileName == null) {
 								// 第一次建立索引文件
 								indexFileName = record.getFileName();
-								goodIdHashTable = new DiskHashTable<Long,Long>(
+								goodIdHashTable = new DiskHashTable<Integer,List<Long>>(
 										indexFileName + RaceConfig.goodIndexFileSuffix,indexFileName, Long.class);
 
 							}
@@ -113,36 +115,38 @@ public class GoodHandler{
 								// 保存当前goodId的索引  并写入索引List
 								FilePathWithIndex smallFile = new FilePathWithIndex();
 								smallFile.setFilePath(indexFileName);
-								
-								//buyerIdIndexList.put(indexFileName, buyerIdHashTable);
 								smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
 								goodIdIndexList.put(indexFileName, goodIdHashTable);
 								goodFileList.add(smallFile);
 								
 								indexFileName = record.getFileName();
-								goodIdHashTable = new DiskHashTable<Long,Long>(
+								goodIdHashTable = new DiskHashTable<Integer,List<Long>>(
 										record.getFileName() + RaceConfig.goodIndexFileSuffix, indexFileName, Long.class);
 								
 							}
 						}
 						Row recordRow = Row
 								.createKVMapFromLine(record.recordsData);
-						goodAttrList.addAll(recordRow.keySet());
+						tempAttrList.addAll(recordRow.keySet());
 						String goodid = recordRow.getKV(RaceConfig.goodId).valueAsString();
 						
-						goodIdSurrKeyIndex.put(goodid, surrKey);					// 建立代理键索引
-						goodIdHashTable.put(surrKey, record.getOffset());
-						surrKey ++;
+						//goodIdSurrKeyIndex.put(goodid, surrKey);					// 建立代理键索引
+						goodIdHashTable.put(goodid.hashCode(), record.getOffset());
+						//surrKey ++;
 					}
 					else if(isEnd ) {
 						// 说明队列为空
 						// 将代理键索引写出去  并保存相应数据   将gooderid索引写出去  并保存相应数据
 						//goodIdSurrKeyFile.setFilePath(RaceConfig.goodSurrFileName);
 						//goodIdSurrKeyFile.setSurrogateIndex(goodIdSurrKeyIndex.writeAllBuckets());
+						synchronized (goodAttrList) {
+							goodAttrList.addAll(tempAttrList);
+				        }
 						
 						FilePathWithIndex smallFile = new FilePathWithIndex();
 						smallFile.setFilePath(indexFileName);
 						smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+						BucketCachePool.getInstance().removeAllBucket();
 						goodFileList.add(smallFile);
 						goodIdIndexList.put(indexFileName, goodIdHashTable);
 						latch.countDown();

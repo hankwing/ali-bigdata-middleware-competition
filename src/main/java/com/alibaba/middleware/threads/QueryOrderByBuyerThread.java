@@ -2,6 +2,7 @@ package com.alibaba.middleware.threads;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystem.Result;
 import com.alibaba.middleware.race.OrderSystemImpl;
@@ -50,24 +51,24 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
     	// 根据买家ID在索引里找到结果 再判断结果是否介于startTime和endTime之间 结果集合按照createTime插入排序
 		TreeMap<Long, List<Result>> results = new TreeMap<Long, List<Result>>(
 				Collections.reverseOrder());
-		long surrId = system.getSurrogateKey(buyerid, IdName.BuyerId);
+		Integer surrId = buyerid.hashCode();
 		if( surrId == 0) {
 			//不存在该买家
 			return null;
 		}
 		else {
 			for (FilePathWithIndex filePath : system.orderFileList) {
-				DiskHashTable<Long, List<Long>> hashTable = system.orderBuyerIdIndexList.get(filePath
+				DiskHashTable<Integer, List<Long>> hashTable = system.orderBuyerIdIndexList.get(filePath
 						.getFilePath());
 				if (hashTable == null) {
 					hashTable = system.getHashDiskTable(filePath.getFilePath(),
 							filePath.getOrderBuyerIdIndex());
+					system.orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
 				}
 				long resultNum = hashTable.get(surrId).size();
 				if (resultNum != 0) {
 					// find the records offset
 					// 找到后，按照降序插入TreeMap中
-					system.orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
 					System.out.println("records offset:"
 							+ resultNum);
 					for( Long offset: hashTable.get(surrId)) {
@@ -75,14 +76,22 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 						Row row = RecordsUtils.getRecordsByKeysFromFile(
 								filePath.getFilePath(), null, offset);
 						long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
-						if( createTime >= startTime && createTime < endTime) {
-							// 判断时间
+						long orderid = row.getKV(RaceConfig.orderId).valueAsLong();
+						if( row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) &&
+								createTime >= startTime && createTime < endTime) {
+							// 判断买家id是否符合  并且时间范围符合要求
+							
+							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+									row.get(RaceConfig.buyerId).valueAsString(), null));			
+							// need query goodTable
+							row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+									row.get(RaceConfig.goodId).valueAsString(), null));
 							List<Result> smallResults = results.get(createTime);
 							if(smallResults == null) {
 								smallResults = new ArrayList<Result>();
 								results.put(createTime, smallResults);
 							}
-							smallResults.add(new ResultImpl(createTime, row));
+							smallResults.add(new ResultImpl(orderid, row));
 						}
 						
 					}

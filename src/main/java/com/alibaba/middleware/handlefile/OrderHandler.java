@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
@@ -28,11 +29,11 @@ public class OrderHandler {
 	BufferedReader reader;
 	LinkedBlockingQueue<IndexItem> indexQueue;
 	ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList = null;
-	ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderBuyerIdIndexList = null;
-	ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList = null;
-	ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList = null;
-	DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
-	DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
+	ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderBuyerIdIndexList = null;
+	ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderGoodIdIndexList = null;
+	ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList = null;
+	//DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
+	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
 	List<FilePathWithIndex> orderFileList = null;
 	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
@@ -40,12 +41,11 @@ public class OrderHandler {
 
 	public OrderHandler(
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
-			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderBuyerIdIndexList,
-			ConcurrentHashMap<String, DiskHashTable<Long, List<Long>>> orderGoodIdIndexList,
-			ConcurrentHashMap<String, List<DiskHashTable<Long, List<Long>>>> orderCountableIndexList,
+			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderBuyerIdIndexList,
+			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderGoodIdIndexList,
+			ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList,
 			List<FilePathWithIndex> orderFileList, HashSet<String> orderAttrList,
-			DiskHashTable<String, Long> buyerIdSurrKeyIndex,
-			DiskHashTable<String, Long> goodIdSurrKeyIndex, int thread, CountDownLatch countDownLatch) {
+			 int thread, CountDownLatch countDownLatch) {
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = orderIdIndexList;
 		this.orderBuyerIdIndexList = orderBuyerIdIndexList;
@@ -53,8 +53,8 @@ public class OrderHandler {
 		this.orderCountableIndexList = orderCountableIndexList;
 		this.orderFileList = orderFileList;
 		this.orderAttrList = orderAttrList;
-		this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
-		this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
+		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
+		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 		threadIndex = thread;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		orderfile = new WriteFile(indexQueue,
@@ -97,9 +97,10 @@ public class OrderHandler {
 
 		String indexFileName = null;
 		DiskHashTable<Long, Long> orderIdHashTable = null;
-		DiskHashTable<Long, List<Long>> orderBuyerIdHashTable = null;
-		DiskHashTable<Long, List<Long>> orderGoodIdHashTable = null;
+		DiskHashTable<Integer, List<Long>> orderBuyerIdHashTable = null;
+		DiskHashTable<Integer, List<Long>> orderGoodIdHashTable = null;
 		boolean isEnd = false;
+		HashSet<String> tempAttrList = new HashSet<String>();
 
 		public GoodIndexConstructor() {
 
@@ -124,11 +125,11 @@ public class OrderHandler {
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
 										indexFileName, Long.class);
-								orderBuyerIdHashTable = new DiskHashTable<Long, List<Long>>(
+								orderBuyerIdHashTable = new DiskHashTable<Integer, List<Long>>(
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
 										indexFileName, List.class);
-								orderGoodIdHashTable = new DiskHashTable<Long, List<Long>>(
+								orderGoodIdHashTable = new DiskHashTable<Integer, List<Long>>(
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
 										indexFileName, List.class);
@@ -161,11 +162,11 @@ public class OrderHandler {
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
 										indexFileName, Long.class);
-								orderBuyerIdHashTable = new DiskHashTable<Long, List<Long>>(
+								orderBuyerIdHashTable = new DiskHashTable<Integer, List<Long>>(
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
 										indexFileName, List.class);
-								orderGoodIdHashTable = new DiskHashTable<Long, List<Long>>(
+								orderGoodIdHashTable = new DiskHashTable<Integer, List<Long>>(
 										indexFileName
 												+ RaceConfig.orderIndexFileSuffix,
 										indexFileName, List.class);
@@ -175,26 +176,31 @@ public class OrderHandler {
 
 						Row recordRow = Row
 								.createKVMapFromLine(record.recordsData);
-						orderAttrList.addAll(recordRow.keySet());
+						tempAttrList.addAll(recordRow.keySet());
 						long orderid = recordRow.get(RaceConfig.orderId)
 								.valueAsLong();
 
 						// 获取代理键
-						long agentBuyerId = buyerIdSurrKeyIndex
+						/*long agentBuyerId = buyerIdSurrKeyIndex
 								.get(recordRow.get(RaceConfig.buyerId).valueAsString()).get(0);
 						long agentGoodId = goodIdSurrKeyIndex.get(
 								recordRow.get(RaceConfig.goodId).valueAsString())
-								.get(0);
+								.get(0);*/
 
-						// 建立三个索引
+						// 建立三个索引  buyerid 和 goodid 的hashcode当作代理键
 						orderIdHashTable.put(orderid, record.getOffset());
-						orderBuyerIdHashTable.put(agentBuyerId,
+						orderBuyerIdHashTable.put(
+								recordRow.get(RaceConfig.buyerId).valueAsString().hashCode(),
 								record.getOffset());
-						orderGoodIdHashTable.put(agentGoodId,
+						orderGoodIdHashTable.put(
+								recordRow.get(RaceConfig.goodId).valueAsString().hashCode(),
 								record.getOffset());
 
 					} else if (isEnd) {
 						// 保存当前goodId的索引 并写入索引List
+						synchronized (orderAttrList) {
+							orderAttrList.addAll(tempAttrList);
+				        }
 						FilePathWithIndex smallFile = new FilePathWithIndex();
 						smallFile.setFilePath(indexFileName);
 						// buyerIdIndexList.put(indexFileName,
@@ -211,6 +217,7 @@ public class OrderHandler {
 								orderBuyerIdHashTable);
 						orderGoodIdIndexList.put(indexFileName,
 								orderGoodIdHashTable);
+						BucketCachePool.getInstance().removeAllBucket();
 						orderFileList.add(smallFile);
 						countDownLatch.countDown();
 						break;

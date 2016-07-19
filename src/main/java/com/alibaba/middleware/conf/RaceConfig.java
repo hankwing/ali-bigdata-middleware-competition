@@ -13,8 +13,8 @@ public class RaceConfig implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
-	// 读写线程数
-	public static int handleThreadNumber = 1;
+	
+	public static int handleThreadNumber = 3;				// 读写线程数
 	public static int QueueNumber = 10000;					// 一个缓冲队列的大小
 	/**
 	 * Thread pool config
@@ -24,8 +24,8 @@ public class RaceConfig implements Serializable{
     public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	// JVMMonitorThread
-    public static int monitorInitDelayInMills = 2;
-    public static int monitorFixedDelayInMills = 5;
+    public static int monitorInitDelayInMills = 20 * 1000;			// 20s后开始检测内存
+    public static int monitorFixedDelayInMills = 10 * 1000;			// 每10s检测一次内存
 	public static float memFactor = 0.1f;
 	public static int gcCounterThreshold = 2;
 	public static int removeBucketNum = 100;
@@ -71,7 +71,7 @@ public class RaceConfig implements Serializable{
 	public static int columnFileCapacity = 10000;
 
 	
-	public static long smallFileCapacity = 3000000;
+	public static long smallFileCapacity = 2000000;
 	
 	public static String[] storeFolders = null;
 	public static String buyerFileNamePrex = "/buyer_";

@@ -27,9 +27,9 @@ public class Row extends HashMap<String, KeyValueImpl> {
 
 	public KeyValueImpl getKV(String key) {
 		KeyValueImpl kv = this.get(key);
-		if (kv == null) {
-			throw new RuntimeException(key + " is not exist");
-		}
+		//if (kv == null) {
+		//	throw new RuntimeException(key + " is not exist");
+		//}
 		return kv;
 	}
 
@@ -47,7 +47,10 @@ public class Row extends HashMap<String, KeyValueImpl> {
 		}
 		else {
 			for( String key : keys) {
-				row.put(key, getKV(key));
+				if( getKV(key) != null) {
+					row.put(key, getKV(key));
+				}
+				
 			}
 			return row;
 		}
