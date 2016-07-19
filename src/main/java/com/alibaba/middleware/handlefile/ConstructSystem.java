@@ -10,6 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 
@@ -65,10 +66,15 @@ public class ConstructSystem {
 
 		public void run() {
 			// TODO Auto-generated method stub
+			if( !files.isEmpty()) {
+				BuyerHandler buyerHandler = new BuyerHandler( buyerFileList, buyerAttrList,
+						buyerIdSurrKeyFile, buyerIdIndexList, threadIndex, countDownLatch);
+				buyerHandler.handeBuyerFiles(files);
+			}
+			else {
+				countDownLatch.countDown();
+			}
 			
-			BuyerHandler buyerHandler = new BuyerHandler( buyerFileList, buyerAttrList,
-					buyerIdSurrKeyFile, buyerIdIndexList, threadIndex, countDownLatch);
-			buyerHandler.handeBuyerFiles(files);
 			//countDownLatch.countDown();
 		}
 	}
@@ -86,9 +92,15 @@ public class ConstructSystem {
 
 		public void run() {
 			// TODO Auto-generated method stub
-			GoodHandler goodHandler = new GoodHandler( goodFileList, goodAttrList,
-					goodIdSurrKeyFile, goodIdIndexList, threadIndex, countDownLatch);
-			goodHandler.HandleGoodFiles(files);
+			if( !files.isEmpty()) {
+				GoodHandler goodHandler = new GoodHandler( goodFileList, goodAttrList,
+						goodIdSurrKeyFile, goodIdIndexList, threadIndex, countDownLatch);
+				goodHandler.HandleGoodFiles(files);
+			}
+			else {
+				countDownLatch.countDown();
+			}
+			
 		}
 	}
 
@@ -105,10 +117,15 @@ public class ConstructSystem {
 
 		public void run() {
 			// TODO Auto-generated method stub
-			OrderHandler orderHandler = new OrderHandler(orderIdIndexList, orderBuyerIdIndexList,
-					orderGoodIdIndexList, orderCountableIndexList, orderFileList, orderAttrList,
-					threadIndex, countDownLatch);
-			orderHandler.HandleOrderFiles(files);
+			if( !files.isEmpty()) {
+				OrderHandler orderHandler = new OrderHandler(orderIdIndexList, orderBuyerIdIndexList,
+						orderGoodIdIndexList, orderCountableIndexList, orderFileList, orderAttrList,
+						threadIndex, countDownLatch);
+				orderHandler.HandleOrderFiles(files);
+			}
+			else {
+				countDownLatch.countDown();
+			}
 			//countDownLatch.countDown();
 		}
 	}
@@ -199,10 +216,17 @@ public class ConstructSystem {
 	private List<String> getGroupFiles(Collection<String> files, int group,
 			int readers) {
 		// 分给多个读线程
-		List<String> fileList = new ArrayList<String>(files);
 		List<String> list = new ArrayList<String>();
-		for (int i = group; i < fileList.size(); i += readers) {
-			list.add(fileList.get(i));
+		for( String file: files) {
+			if( file.startsWith(RaceConfig.storeFolders[group])) {
+				list.add(file);
+			}
+		}
+		if( list.isEmpty() ) {
+			List<String> fileList = new ArrayList<String>(files);
+			for (int i = group; i < fileList.size(); i += readers) {
+				list.add(fileList.get(i));
+			}
 		}
 		return list;
 	}

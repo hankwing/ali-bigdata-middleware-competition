@@ -13,8 +13,8 @@ public class RaceConfig implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
-	// 读写线程数
-	public static int handleThreadNumber = 1;
+	
+	public static int handleThreadNumber = 3;				// 读写线程数
 	public static int QueueNumber = 10000;					// 一个缓冲队列的大小
 	/**
 	 * Thread pool config
@@ -71,7 +71,7 @@ public class RaceConfig implements Serializable{
 	public static int columnFileCapacity = 10000;
 
 	
-	public static long smallFileCapacity = 3000000;
+	public static long smallFileCapacity = 2000000;
 	
 	public static String[] storeFolders = null;
 	public static String buyerFileNamePrex = "/buyer_";

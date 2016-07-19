@@ -95,13 +95,18 @@ public class OrderSystemImpl implements OrderSystem {
 				// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 
 				List<String> buyerfiles = new ArrayList<String>();
-				buyerfiles.add("benchmark/buyer_records.txt");
+				buyerfiles.add("prerun_data/buyer.0.0");
+				buyerfiles.add("prerun_data/buyer.1.1");
 
 				List<String> goodfiles = new ArrayList<String>();
-				goodfiles.add("benchmark/good_records.txt");
+				goodfiles.add("prerun_data/good.0.0");
+				goodfiles.add("prerun_data/good.1.1");
+				goodfiles.add("prerun_data/good.2.2");
 
 				List<String> orderfiles = new ArrayList<String>();
-				orderfiles.add("benchmark/order_records.txt");
+				orderfiles.add("prerun_data/order.0.0");
+				orderfiles.add("prerun_data/order.1.1");
+				orderfiles.add("prerun_data/order.2.2");
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
