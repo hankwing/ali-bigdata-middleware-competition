@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.KeyValueImpl;
 import com.alibaba.middleware.race.OrderSystem.TypeException;
@@ -45,10 +46,24 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 	@Override
     public KeyValueImpl call() {
         // TODO
-    	//KeyValueImpl result = new KeyValueImpl();
+    	//KeyValueImpl result = new KeyValueImpl()
+		
     	List<String> keys = new ArrayList<String>();
     	Double sum = 0.0;
     	keys.add(key);
+    	List<String> orderKeys = new ArrayList<String>();
+		List<String> buyerKeys = new ArrayList<String>();
+		List<String> goodKeys = new ArrayList<String>();
+		for (String key : keys) {
+			if (system.orderAttrList.contains(key)) {
+				orderKeys.add(key);
+			} else if (system.buyerAttrList.contains(key)) {
+				buyerKeys.add(key);
+			} else if (system.goodAttrList.contains(key)) {
+				goodKeys.add(key);
+			}
+		}
+		
 		Integer surrId = goodid.hashCode();
 		if( surrId == 0) {
 			return null;
@@ -73,6 +88,18 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 						Row row = RecordsUtils.getRecordsByKeysFromFile(
 								filePath.getFilePath(), keys, offset);
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
+							
+							if(!buyerKeys.isEmpty()) {
+								// need query buyerTable
+								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+										row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			
+							}
+							if( !goodKeys.isEmpty()) {
+								// need query goodTable
+								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+										row.get(RaceConfig.goodId).valueAsString(), goodKeys));
+							}
+							
 							try{
 								row.getKV(key).valueAsString();
 							} catch (RuntimeException e) {

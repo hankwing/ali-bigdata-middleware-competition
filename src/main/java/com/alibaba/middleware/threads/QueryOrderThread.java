@@ -26,6 +26,7 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
     }
 
     /**
+     * 第一个查询
 	 * 查询订单号为orderid的指定字段
 	 * 
 	 * @param orderId
