@@ -11,6 +11,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.lang.instrument.Instrumentation;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
@@ -36,11 +37,29 @@ import com.alibaba.middleware.index.ComparableKeys;
  */
 public class Test {
 
-	
-	public static void main(String[] args) {
+	// Currently free JVM memory from allocated
+    public static long getFreeMem() {
+        return (Runtime.getRuntime().freeMemory() / 1024);
+    }
 
-		Double a = 2312381422194192.0;
-		System.out.println(String.format("%.10f", a));
+    // Max JVM memory
+    public static long getMaxMem() {
+        return (Runtime.getRuntime().maxMemory() / 1024);
+    }
+
+    // Currently allocated JVM memory
+    public static long getTotalMem() {
+        return Runtime.getRuntime().totalMemory();
+    }
+    
+	public static void main(String[] args) {
+		System.out.println(getFreeMem());
+		System.out.println(getMaxMem());
+		System.out.println(getTotalMem());
+		System.out.println(getFreeMem());
+		 
+		 
+		
 		/*
 		 * TreeMap<String, HashMap<String, Long>> treeMap = new TreeMap<String,
 		 * HashMap<String,Long>>(new ComparableKeys(2));
