@@ -80,6 +80,8 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 						if( row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) &&
 								createTime >= startTime && createTime < endTime) {
 							// 判断买家id是否符合  并且时间范围符合要求
+							// 将结果放入缓冲区中
+							//system.rowCache.putInListCache(surrId, orderid, row, TableName.BuyerTable);
 							
 							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
 									row.get(RaceConfig.buyerId).valueAsString(), null));			

@@ -45,7 +45,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 	 */
     @SuppressWarnings("unchecked")
 	@Override
-    public KeyValueImpl call() {
+    public KeyValueImpl call() throws TypeException {
         // TODO
     	//KeyValueImpl result = new KeyValueImpl()
 		
@@ -87,12 +87,16 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 					System.out.println("records offset:"
 							+ resultNum);
 					for( Long offset: hashTable.get(surrId)) {
+						long orderid = 0;
 						long longValue = 0;
 						Double doubleValue = 0.0;
 						boolean isLong = true;
 						Row row = RecordsUtils.getRecordsByKeysFromFile(
 								filePath.getFilePath(), keys, offset);
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
+							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
+							// 放入缓冲区
+							//system.rowCache.putInListCache(surrId, orderId, row, TableName.GoodTable);
 							
 							if(!buyerKeys.isEmpty()) {
 								// need query buyerTable 

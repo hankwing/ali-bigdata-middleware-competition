@@ -72,7 +72,7 @@ public class OrderSystemImpl implements OrderSystem {
 
 	private ThreadPool threadPool = ThreadPool.getInstance();
     private ExecutorService queryExe = threadPool.getQueryExe();
-    private SimpleCache rowCache = null;
+    public SimpleCache rowCache = null;
 
 	/**
 	 * 测试类 construct测试construct方法
@@ -350,20 +350,6 @@ public class OrderSystemImpl implements OrderSystem {
 						if( idName.equals(RaceConfig.orderId)) {
 							streamIn.getChannel().position(
 									filePath.getOrderIdIndex());
-						}
-						else if(idName.equals(RaceConfig.buyerId)) {
-							// 这里要将id转化成代理键
-							//id = getSurrogateKey(String.valueOf(id), idName);
-							id = String.valueOf(id).hashCode();
-							streamIn.getChannel().position(
-									filePath.getOrderBuyerIdIndex());
-						}
-						else if(idName.equals(RaceConfig.goodId)) {
-							// 这里要将id转化成代理键
-							//id = getSurrogateKey(String.valueOf(id), idName);
-							id = String.valueOf(id).hashCode();
-							streamIn.getChannel().position(
-									filePath.getOrderGoodIdIndex());
 						}
 
 						ObjectInputStream objectinputstream = new ObjectInputStream(

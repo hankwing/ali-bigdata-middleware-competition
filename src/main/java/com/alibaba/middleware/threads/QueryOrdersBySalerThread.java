@@ -101,6 +101,8 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
 							
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
+							// 放入缓冲区
+							//system.rowCache.putInListCache(surrId, orderId, row, TableName.GoodTable);
 								// need query buyerTable
 							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
 									row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			

@@ -42,7 +42,7 @@ public class SimpleCache {
             }
         };
         
-        orderBuyerIdCacheMap = new LinkedHashMap<Integer, List<Row>>(capacity/2, 0.95f, true) {
+        orderGoodIdCacheMap = new LinkedHashMap<Integer, List<Row>>(capacity/2, 0.95f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<Integer, List<Row>> eldest) {
                 return size() > capacity;
@@ -87,7 +87,7 @@ public class SimpleCache {
     }*/
     
     public void putInCache(Object key, Row value, TableName tableType) {
-    	switch( tableType) {
+    	/*switch( tableType) {
     	case OrderTable:
     		synchronized(orderCacheMap) {
     			
@@ -104,7 +104,7 @@ public class SimpleCache {
     			goodCacheMap.put((Integer) key, value);
              }
     		break;
-    	}
+    	}*/
     	
     }
     
@@ -115,7 +115,7 @@ public class SimpleCache {
      * @param value
      * @param tableType
      */
-    public void putInListCache(Integer key,Long orderId, Row value, TableName tableType) {
+    /*public void putInListCache(Integer key,Long orderId, Row value, TableName tableType) {
     	switch( tableType) {
     	case OrderTable:
     		break;
@@ -161,7 +161,7 @@ public class SimpleCache {
     		break;
     	}
     	
-    }
+    }*/
 
     public Row getFromCache(Object key, TableName tableType) {
     	switch( tableType) {
@@ -181,7 +181,7 @@ public class SimpleCache {
     	return null;
     }
     
-    public List<Row> getRowListFromCache(Integer key, TableName tableType) {
+    /*public List<Row> getRowListFromCache(Integer key, TableName tableType) {
     	List<Row> results = null;
     	switch( tableType) {
     	case BuyerTable:
@@ -198,7 +198,7 @@ public class SimpleCache {
 			break;
     	}
     	return results;
-    }
+    }*/
 
     // unsafe, just for test
     /*public int getCacheSize() {
