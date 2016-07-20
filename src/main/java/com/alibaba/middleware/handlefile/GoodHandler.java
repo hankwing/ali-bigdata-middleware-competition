@@ -145,7 +145,8 @@ public class GoodHandler{
 						
 						FilePathWithIndex smallFile = new FilePathWithIndex();
 						smallFile.setFilePath(indexFileName);
-						smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+						//smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+						smallFile.setGoodIdIndex(0);
 						BucketCachePool.getInstance().removeAllBucket();
 						goodFileList.add(smallFile);
 						goodIdIndexList.put(indexFileName, goodIdHashTable);
