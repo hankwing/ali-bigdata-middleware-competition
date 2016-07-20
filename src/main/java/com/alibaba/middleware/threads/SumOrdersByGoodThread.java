@@ -87,7 +87,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 					System.out.println("records offset:"
 							+ resultNum);
 					for( Long offset: hashTable.get(surrId)) {
-						long orderid = 0;
+						boolean isGoodKey = false;
 						long longValue = 0;
 						Double doubleValue = 0.0;
 						boolean isLong = true;
@@ -107,7 +107,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 						}
 						
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
-							orderid = row.getKV(RaceConfig.orderId).valueAsLong();
+							
 							// 放入缓冲区
 							if( !isCacheHit ) {
 								system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
@@ -127,14 +127,50 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 								try {
 									KeyValueImpl keyValue = row.getKV(key);
 									if( keyValue != null) {
+										isGoodKey = true;
 										isFound = true;
-										longValue = row.getKV(key).valueAsLong();
+										longValue = row.getKV(key).valueAsLong() * resultNum;
 									}
 									else {
 										// 不存在这个key 直接退出
 										return null;
 									}
 									
+								} catch (TypeException e) {
+									// TODO Auto-generated catch block
+									// 不是long型的
+									try {
+										isLong = false;
+										doubleValue = row.getKV(key).valueAsDouble() * resultNum;
+									} catch (TypeException e2) {
+										// TODO Auto-generated catch block
+										// 不是Double型的 返回Null
+										return null;
+									}
+								}
+							}
+							
+							KeyValueImpl keyValue = row.getKV(key);
+							if( keyValue == null) {
+								// // 该条记录不存在这个key
+								continue;
+							}
+							else if( isGoodKey) {
+								// 在good表里找到了这个key
+								if( isLong) {
+									longSum += longValue;
+									break;
+								}
+								else {
+									doubleSum += doubleValue;
+									break;
+								}
+							}
+							else {
+								// 该记录存在该key
+								try {
+									isFound = true;
+									longValue = row.getKV(key).valueAsLong();
 								} catch (TypeException e) {
 									// TODO Auto-generated catch block
 									// 不是long型的
@@ -147,37 +183,8 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 										return null;
 									}
 								}
-								if( isLong) {
-									return new KeyValueImpl(key, String.valueOf(longValue * resultNum));
-								}
-								else {
-									return new KeyValueImpl(
-											key, String.format("%.12f", doubleValue * resultNum));
-								}
 							}
 							
-							KeyValueImpl keyValue = row.getKV(key);
-							if( keyValue == null) {
-								// // 该条记录不存在这个key
-								continue;
-							}
-							
-							// 该记录存在该key
-							try {
-								isFound = true;
-								longValue = row.getKV(key).valueAsLong();
-							} catch (TypeException e) {
-								// TODO Auto-generated catch block
-								// 不是long型的
-								try {
-									isLong = false;
-									doubleValue = row.getKV(key).valueAsDouble();
-								} catch (TypeException e2) {
-									// TODO Auto-generated catch block
-									// 不是Double型的 返回Null
-									return null;
-								}
-							}
 							if( isLong) {
 								longSum += longValue;
 							}
