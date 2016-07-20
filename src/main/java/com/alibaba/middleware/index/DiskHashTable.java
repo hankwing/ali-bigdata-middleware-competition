@@ -207,7 +207,7 @@ public class DiskHashTable<K,T> implements Serializable {
 
 			}
 			bufferedFout.flush();
-			bufferedFout.close();
+			//bufferedFout.close();
 			
 			// write this HashTable to dataFile and return offset
 			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map
