@@ -133,7 +133,7 @@ public class GoodHandler{
 								.createKVMapFromLine(record.recordsData);
 						// 添加到缓冲区
 						rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
-								, recordRow, TableName.GoodTable);
+								, record.recordsData, TableName.GoodTable);
 						tempAttrList.addAll(recordRow.keySet());
 						String goodid = recordRow.getKV(RaceConfig.goodId).valueAsString();
 						

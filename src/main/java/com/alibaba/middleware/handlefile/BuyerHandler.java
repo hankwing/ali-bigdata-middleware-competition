@@ -145,7 +145,7 @@ public class BuyerHandler{
 							.createKVMapFromLine(record.recordsData);
 					// 添加到缓冲区
 					rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
-							, recordRow, TableName.BuyerTable);
+						, record.recordsData, TableName.BuyerTable);
 					tempAttrList.addAll(recordRow.keySet());			// 添加属性
 					String buyerid = recordRow.getKV(RaceConfig.buyerId).valueAsString();
 					

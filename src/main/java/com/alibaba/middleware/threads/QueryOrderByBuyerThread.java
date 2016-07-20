@@ -81,11 +81,11 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 											filePath.getFilePath(), null, offset);
 						}
 						else {
-							row = RecordsUtils.getRecordsByKeysFromFile(
-									filePath.getFilePath(), null, offset);
+							String line =  RecordsUtils.getStringFromFile(filePath.getFilePath(), offset);
+							row = Row.createKVMapFromLine(line);
 							// 放入缓冲区
 							system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
-									, row, TableName.OrderTable);
+									, line, TableName.OrderTable);
 						}
 						
 						long createTime = row.getKV(RaceConfig.createTime).valueAsLong();

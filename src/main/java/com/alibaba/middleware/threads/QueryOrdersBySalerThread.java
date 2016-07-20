@@ -104,10 +104,10 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 											filePath.getFilePath(), null, offset);
 						}
 						else {
-							row = RecordsUtils.getRecordsByKeysFromFile(
-									filePath.getFilePath(), null, offset);
+							String line =  RecordsUtils.getStringFromFile(filePath.getFilePath(), offset);
+							row = Row.createKVMapFromLine(line);
 							system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
-									, row, TableName.OrderTable);
+									, line, TableName.OrderTable);
 						}
 						
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {

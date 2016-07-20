@@ -93,6 +93,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 						boolean isLong = true;
 						// 现在缓冲区里找
 						boolean isCacheHit = false;
+						String line = null;
 						Row row = system.rowCache.getFromCache(offset + filePath.getFilePath().hashCode(),
 								TableName.OrderTable);
 						if(row != null) {
@@ -102,8 +103,8 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 											filePath.getFilePath(), null, offset);
 						}
 						else {
-							row = RecordsUtils.getRecordsByKeysFromFile(
-									filePath.getFilePath(), null, offset);
+							line =  RecordsUtils.getStringFromFile(filePath.getFilePath(), offset);
+							row = Row.createKVMapFromLine(line);
 						}
 						
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
@@ -111,7 +112,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 							// 放入缓冲区
 							if( !isCacheHit ) {
 								system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
-										, row, TableName.OrderTable);
+										, line, TableName.OrderTable);
 							}
 							
 							if(!buyerKeys.isEmpty()) {

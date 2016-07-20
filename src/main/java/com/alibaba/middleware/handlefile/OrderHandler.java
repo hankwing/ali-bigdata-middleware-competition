@@ -182,7 +182,7 @@ public class OrderHandler {
 								.createKVMapFromLine(record.recordsData);
 						// 添加到缓冲区
 						rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
-								, recordRow, TableName.OrderTable);
+								, record.recordsData, TableName.OrderTable);
 						tempAttrList.addAll(recordRow.keySet());
 						long orderid = recordRow.get(RaceConfig.orderId)
 								.valueAsLong();

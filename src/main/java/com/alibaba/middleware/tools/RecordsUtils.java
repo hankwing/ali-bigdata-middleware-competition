@@ -105,6 +105,28 @@ public class RecordsUtils {
 	}
 	
 	/**
+	 * 从文件里一次读取一行数据出来
+	 * @param fileName
+	 * @param offset
+	 * @return
+	 */
+	public static String getStringFromFile(String fileName,Long offset){
+		String result = null;
+		try {
+				BufferedReader reader = new BufferedReader(new FileReader(fileName));
+				reader.skip(offset);
+				result = reader.readLine();
+				reader.close();
+
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		
+		return result;
+	}
+	
+	/**
 	 * 获得一条记录的主键
 	 * @param record
 	 * @return

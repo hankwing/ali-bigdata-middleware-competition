@@ -372,6 +372,7 @@ public class OrderSystemImpl implements OrderSystem {
 								+ hashTable.get(id).get(0));*/
 						for( Long offset : results) {
 							boolean isFound = false;
+							String line = null;
 							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
 									tableName);
 							if(temp != null) {
@@ -381,15 +382,16 @@ public class OrderSystemImpl implements OrderSystem {
 												filePath.getFilePath(), null, offset);
 							}
 							else {
-								temp = RecordsUtils.getRecordsByKeysFromFile(
-										filePath.getFilePath(), null, offset);
+								line = RecordsUtils.getStringFromFile(filePath.getFilePath(),
+										offset);
+								temp = Row.createKVMapFromLine(line);
 							}
 							if( temp.getKV(idName).valueAsString().equals(idString)) {
 								// 二次确认row是我们要找的
 								result = temp;
 								if( !isFound ) {
 									rowCache.putInCache(offset + filePath.getFilePath().hashCode(),
-											result, tableName);			//放入缓冲区
+											line, tableName);			//放入缓冲区
 								}
 								
 								
@@ -420,6 +422,7 @@ public class OrderSystemImpl implements OrderSystem {
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).size());*/
 						for( Long offset : results) {
+							String line = null;
 							boolean isFound = false;
 							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
 									tableName);
@@ -430,14 +433,15 @@ public class OrderSystemImpl implements OrderSystem {
 												filePath.getFilePath(), null, offset);
 							}
 							else {
-								temp = RecordsUtils.getRecordsByKeysFromFile(
-										filePath.getFilePath(), null, offset);
+								line = RecordsUtils.getStringFromFile(filePath.getFilePath(),
+										offset);
+								temp = Row.createKVMapFromLine(line);
 							}
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;
 								if( !isFound ) {
 									rowCache.putInCache(offset + filePath.getFilePath().hashCode(),
-											result, tableName);			//放入缓冲区
+											line, tableName);			//放入缓冲区
 								}
 								break;
 							}
@@ -474,6 +478,7 @@ public class OrderSystemImpl implements OrderSystem {
 								+ hashTable.get(id).size());*/
 						for( Long offset : results) {
 							boolean isFound = false;
+							String line = null;
 							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
 									tableName);
 							if(temp != null) {
@@ -483,14 +488,15 @@ public class OrderSystemImpl implements OrderSystem {
 												filePath.getFilePath(), null, offset);
 							}
 							else {
-								temp = RecordsUtils.getRecordsByKeysFromFile(
-										filePath.getFilePath(), null, offset);
+								line = RecordsUtils.getStringFromFile(filePath.getFilePath(),
+										offset);
+								temp = Row.createKVMapFromLine(line);
 							}
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;
 								if( !isFound ) {
 									rowCache.putInCache(offset + filePath.getFilePath().hashCode(),
-											result, tableName);			//放入缓冲区
+											line, tableName);			//放入缓冲区
 								}
 								break;
 							}
