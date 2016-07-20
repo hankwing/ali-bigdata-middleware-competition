@@ -69,18 +69,24 @@ public class Row extends HashMap<String, KeyValueImpl> {
 	 * @return
 	 */
 	public static Row createKVMapFromLine(String line) {
-		String[] kvs = line.split("\t");
-		Row kvMap = new Row();
-		for (String rawkv : kvs) {
-			int p = rawkv.indexOf(':');
-			String key = rawkv.substring(0, p);
-			String value = rawkv.substring(p + 1);
-			if (key.length() == 0 || value.length() == 0) {
-				throw new RuntimeException("Bad data:" + line);
+		if( line != null) {
+			Row kvMap = new Row();
+			String[] kvs = line.split("\t");
+			
+			for (String rawkv : kvs) {
+				int p = rawkv.indexOf(':');
+				String key = rawkv.substring(0, p);
+				String value = rawkv.substring(p + 1);
+				if (key.length() == 0 || value.length() == 0) {
+					throw new RuntimeException("Bad data:" + line);
+				}
+				KeyValueImpl kv = new KeyValueImpl(key, value);
+				kvMap.put(kv.key(), kv);
 			}
-			KeyValueImpl kv = new KeyValueImpl(key, value);
-			kvMap.put(kv.key(), kv);
+			return kvMap;
 		}
-		return kvMap;
+		else {
+			return null;
+		}
 	}
 }

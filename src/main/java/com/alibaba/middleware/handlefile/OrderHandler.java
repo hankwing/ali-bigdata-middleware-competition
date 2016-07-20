@@ -14,8 +14,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.BucketCachePool;
+import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.Row;
@@ -38,6 +40,7 @@ public class OrderHandler {
 	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch countDownLatch = null;
+	private SimpleCache rowCache = null;
 
 	public OrderHandler(
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
@@ -45,7 +48,9 @@ public class OrderHandler {
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderGoodIdIndexList,
 			ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList,
 			List<FilePathWithIndex> orderFileList, HashSet<String> orderAttrList,
-			int thread, CountDownLatch countDownLatch) {
+			 int thread, CountDownLatch countDownLatch) {
+		rowCache = SimpleCache.getInstance();
+
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = orderIdIndexList;
 		this.orderBuyerIdIndexList = orderBuyerIdIndexList;
@@ -175,6 +180,9 @@ public class OrderHandler {
 
 						Row recordRow = Row
 								.createKVMapFromLine(record.recordsData);
+						// 添加到缓冲区
+						rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
+								, record.recordsData, TableName.OrderTable);
 						tempAttrList.addAll(recordRow.keySet());
 						long orderid = recordRow.get(RaceConfig.orderId)
 								.valueAsLong();
@@ -204,12 +212,15 @@ public class OrderHandler {
 						smallFile.setFilePath(indexFileName);
 						// buyerIdIndexList.put(indexFileName,
 						// buyerIdHashTable);
-						smallFile.setOrderIdIndex(orderIdHashTable
+						/*smallFile.setOrderIdIndex(orderIdHashTable
 								.writeAllBuckets());
 						smallFile.setOrderBuyerIdIndex(orderBuyerIdHashTable
 								.writeAllBuckets());
 						smallFile.setOrderGoodIdIndex(orderGoodIdHashTable
-								.writeAllBuckets());
+								.writeAllBuckets());*/
+						smallFile.setOrderIdIndex(0);
+						smallFile.setOrderBuyerIdIndex(0);
+						smallFile.setOrderGoodIdIndex(0);
 
 						orderIdIndexList.put(indexFileName, orderIdHashTable);
 						orderBuyerIdIndexList.put(indexFileName,

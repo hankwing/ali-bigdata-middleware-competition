@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.race.Row;
 
@@ -19,34 +20,41 @@ import com.alibaba.middleware.race.Row;
  */
 public class SimpleCache {
     private final int capacity;
-    private LinkedHashMap<Long, Row> orderCacheMap;
-    private LinkedHashMap<Long, Row> buyerCacheMap;
-    private LinkedHashMap<Long, Row> goodCacheMap;
+    private LinkedHashMap<Long, String> orderCacheMap;
+    private LinkedHashMap<Long,String> buyerCacheMap;
+    private LinkedHashMap<Long, String> goodCacheMap;
     //private LinkedHashMap<Integer, List<Row>> orderBuyerIdCacheMap;
     //private LinkedHashMap<Integer, List<Row>> orderGoodIdCacheMap;
     //private LinkedHashMap<Integer, Row> buyerCacheMap;
     //private LinkedHashMap<Integer, Row> goodCacheMap;
     private ReadWriteLock lock;
+    private static SimpleCache instance = null;
+    
+    public static SimpleCache getInstance() {
+        if (instance == null)
+            instance = new SimpleCache( RaceConfig.rowCacheNumber);
+        return instance;
+    }
 
     public SimpleCache(final int capacity) {
         this.capacity = capacity;
-        orderCacheMap = new LinkedHashMap<Long, Row>(capacity/2, 0.95f, true) {
+        orderCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, Row> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
                 return size() > capacity;
             }
         };
         
-        buyerCacheMap = new LinkedHashMap<Long, Row>(capacity/2, 0.95f, true) {
+        buyerCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, Row> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
                 return size() > capacity;
             }
         };
         
-        goodCacheMap = new LinkedHashMap<Long, Row>(capacity/2, 0.95f, true) {
+        goodCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, Row> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
                 return size() > capacity;
             }
         };
@@ -74,7 +82,7 @@ public class SimpleCache {
         return value;
     }*/
     
-    public void putInCache(Long key, Row value, TableName tableType) {
+    public void putInCache(Long key, String value, TableName tableType) {
     	switch( tableType) {
     	case OrderTable:
     		synchronized(orderCacheMap) {
@@ -155,21 +163,21 @@ public class SimpleCache {
     	switch( tableType) {
     	case OrderTable:
     		synchronized(orderCacheMap) {
-    			return orderCacheMap.get(key);
+    			return Row.createKVMapFromLine(orderCacheMap.get(key));
              }
     	case BuyerTable:
     		synchronized(buyerCacheMap) {
-    			return buyerCacheMap.get(key);
+    			return Row.createKVMapFromLine(buyerCacheMap.get(key));
              }
     	case GoodTable:
     		synchronized(goodCacheMap) {
-    			return goodCacheMap.get(key);
+    			return Row.createKVMapFromLine(goodCacheMap.get(key));
              }
     	}
     	return null;
     }
 
-	public void putInCache(int key, Row row,
+	/*public void putInCache(int key, Row row,
 			TableName tableType) {
 		// TODO Auto-generated method stub
 		switch( tableType) {
@@ -191,7 +199,7 @@ public class SimpleCache {
     		break;
     	}
 		
-	}
+	}*/
     
     /*public List<Row> getRowListFromCache(Integer key, TableName tableType) {
     	List<Row> results = null;

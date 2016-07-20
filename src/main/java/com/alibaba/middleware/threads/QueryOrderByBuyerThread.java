@@ -72,19 +72,20 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 					System.out.println("records offset:"
 							+ resultNum);
 					for( Long offset: hashTable.get(surrId)) {
-						// 现判断在缓冲区里找到了吗
-						boolean isCacheHit = false;
+
 						Row row = system.rowCache.getFromCache(offset + filePath.getFilePath().hashCode(),
 								TableName.OrderTable);
 						if(row != null) {
-							isCacheHit = true;
 							row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
 									row : RecordsUtils.getRecordsByKeysFromFile(
 											filePath.getFilePath(), null, offset);
 						}
 						else {
-							row = RecordsUtils.getRecordsByKeysFromFile(
-									filePath.getFilePath(), null, offset);
+							String line =  RecordsUtils.getStringFromFile(filePath.getFilePath(), offset);
+							row = Row.createKVMapFromLine(line);
+							// 放入缓冲区
+							system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
+									, line, TableName.OrderTable);
 						}
 						
 						long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
@@ -92,11 +93,6 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 						if( row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) &&
 								createTime >= startTime && createTime < endTime) {
 							// 判断买家id是否符合  并且时间范围符合要求
-							// 将结果放入缓冲区中
-							if( !isCacheHit ) {
-								system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
-										, row, TableName.OrderTable);
-							}
 							
 							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
 									row.get(RaceConfig.buyerId).valueAsString(), null));			
