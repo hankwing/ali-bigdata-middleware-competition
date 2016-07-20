@@ -21,13 +21,19 @@ public class OrderSystemImpleTest {
 
     public static void construct() {
         List<String> buyerfiles = new ArrayList<String>();
-        buyerfiles.add("benchmark/buyer_records.txt");
+        buyerfiles.add("benchmark/prerun_data/buyer.0.0");
+        buyerfiles.add("benchmark/prerun_data/buyer.1.1");
 
         List<String> goodfiles = new ArrayList<String>();
-        goodfiles.add("benchmark/good_records.txt");
+        goodfiles.add("benchmark/prerun_data/good.0.0");
+        goodfiles.add("benchmark/prerun_data/good.1.1");
+        goodfiles.add("benchmark/prerun_data/good.2.2");
 
         List<String> orderfiles = new ArrayList<String>();
-        orderfiles.add("benchmark/order_records.txt");
+        orderfiles.add("benchmark/prerun_data/order.0.0");
+        orderfiles.add("benchmark/prerun_data/order.1.1");
+        orderfiles.add("benchmark/prerun_data/order.2.2");
+        orderfiles.add("benchmark/prerun_data/order.0.3");
 
         List<String> storeFolders = new ArrayList<String>();
         // 添加三个盘符
