@@ -18,7 +18,6 @@ public class JVMMonitorThread extends SchedulerThread {
     private boolean isReadyToStop = false;
     private String workerName = "JVMMonitor";
     private BucketCachePool bucketCachePool;
-    private long maxMem = getMaxMem();
     private float memFactor = RaceConfig.memFactor;
     private int gcCounter = 0;
     private int gcCounterThreshold = RaceConfig.gcCounterThreshold;
@@ -54,11 +53,11 @@ public class JVMMonitorThread extends SchedulerThread {
     public void run() {
         try {
             if (!isReadyToStop) {
-                if (getTotalMem() < (getMaxMem() * memFactor)) {
-                    // TOTAL MEM IS TOO LITTLE, DO NOTHING
-                    System.out.println("Total mem: " + getTotalMem());
-                } else if (getFreeMem() < (getMaxMem() * memFactor)) {
-                    System.out.println(getFreeMem() / 2014 + "MB");
+                System.out.println("Now Used mem: " + (getTotalMem() - getFreeMem()) + "MB");
+                System.out.println("Now Max mem: " + Runtime.getRuntime().maxMemory()/mb + "MB");
+                if ((getTotalMem() - getFreeMem()) > getMaxMem() * memFactor) {
+                    System.out.println("Total mem: " + getTotalMem() + "MB");
+                    System.out.println("Free mem: " + getFreeMem() + "MB");
                     if (gcCounter < gcCounterThreshold) {
                         System.out.println("GC...");
                         System.gc();
@@ -80,16 +79,16 @@ public class JVMMonitorThread extends SchedulerThread {
 
     // Currently free JVM memory from allocated
     public long getFreeMem() {
-        return (Runtime.getRuntime().freeMemory() / 1024);
+        return (Runtime.getRuntime().freeMemory()/mb);
     }
 
     // Max JVM memory
     public long getMaxMem() {
-        return (Runtime.getRuntime().maxMemory() / 1024);
+        return (Runtime.getRuntime().maxMemory()/mb);
     }
 
     // Currently allocated JVM memory
     public long getTotalMem() {
-        return Runtime.getRuntime().totalMemory();
+        return (Runtime.getRuntime().totalMemory()/mb);
     }
 }

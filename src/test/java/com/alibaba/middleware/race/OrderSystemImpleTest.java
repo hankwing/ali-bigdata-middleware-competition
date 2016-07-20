@@ -21,19 +21,22 @@ public class OrderSystemImpleTest {
 
     public static void construct() {
         List<String> buyerfiles = new ArrayList<String>();
-        buyerfiles.add("benchmark/prerun_data/buyer.0.0");
-        buyerfiles.add("benchmark/prerun_data/buyer.1.1");
+//        buyerfiles.add("benchmark/prerun_data/buyer.0.0");
+//        buyerfiles.add("benchmark/prerun_data/buyer.1.1");
+        buyerfiles.add("benchmark/buyer_records.txt");
 
         List<String> goodfiles = new ArrayList<String>();
-        goodfiles.add("benchmark/prerun_data/good.0.0");
-        goodfiles.add("benchmark/prerun_data/good.1.1");
-        goodfiles.add("benchmark/prerun_data/good.2.2");
+//        goodfiles.add("benchmark/prerun_data/good.0.0");
+//        goodfiles.add("benchmark/prerun_data/good.1.1");
+//        goodfiles.add("benchmark/prerun_data/good.2.2");
+        goodfiles.add("benchmark/good_records.txt");
 
         List<String> orderfiles = new ArrayList<String>();
-        orderfiles.add("benchmark/prerun_data/order.0.0");
-        orderfiles.add("benchmark/prerun_data/order.1.1");
-        orderfiles.add("benchmark/prerun_data/order.2.2");
-        orderfiles.add("benchmark/prerun_data/order.0.3");
+//        orderfiles.add("benchmark/prerun_data/order.0.0");
+//        orderfiles.add("benchmark/prerun_data/order.1.1");
+//        orderfiles.add("benchmark/prerun_data/order.2.2");
+//        orderfiles.add("benchmark/prerun_data/order.0.3");
+        orderfiles.add("benchmark/order_records.txt");
 
         List<String> storeFolders = new ArrayList<String>();
         // 添加三个盘符
