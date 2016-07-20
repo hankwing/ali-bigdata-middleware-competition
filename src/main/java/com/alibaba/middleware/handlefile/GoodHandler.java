@@ -64,7 +64,7 @@ public class GoodHandler{
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(goodAttrList, record);
-					goodfile.writeLine(record, IndexType.GoodTable);
+					goodfile.writeLine(file, record, IndexType.GoodTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -73,8 +73,7 @@ public class GoodHandler{
 			}
 		}
 		// set end signal
-		goodfile.writeLine("end",IndexType.GoodTable);
-		goodfile.closeFile();
+		goodfile.writeLine(null, "end",IndexType.GoodTable);
 		System.out.println("end good handling!");
 	}
 	

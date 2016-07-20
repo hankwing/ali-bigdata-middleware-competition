@@ -74,7 +74,7 @@ public class BuyerHandler{
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					buyerfile.writeLine(record, IndexType.BuyerTable);
+					buyerfile.writeLine(file, record, IndexType.BuyerTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -84,8 +84,7 @@ public class BuyerHandler{
 		}
 		
 		// set end signal
-		buyerfile.writeLine("end", IndexType.BuyerTable);
-		buyerfile.closeFile();
+		buyerfile.writeLine(null, "end", IndexType.BuyerTable);
 		System.out.println("end buyer handling!");
 	}
 	

@@ -16,14 +16,10 @@ public class WriteFile {
 	 * 文件的偏移量为 offset
 	 * 文件纪录的计数 count
 	 */
-	private long MAX_LINES = RaceConfig.smallFileCapacity;
-	private long offset;
-	private int count;
 
-	private BufferedWriter writer;
-	private String filePerfix;
+	private long offset;
 	private String fileName;
-	private int fileNum;
+
 	private LinkedBlockingQueue<IndexItem> indexQueue = null;
 
 	/**
@@ -35,9 +31,6 @@ public class WriteFile {
 	 */	
 	public WriteFile(LinkedBlockingQueue<IndexItem> indexQueue, String path,String name, long maxLines) {
 		this.offset = 0;
-		this.count = 0;
-		this.fileNum = 0;
-		this.MAX_LINES = maxLines;
 		this.indexQueue = indexQueue;
 
 		//如果文件夹不存在则创建文件夹
@@ -46,54 +39,25 @@ public class WriteFile {
 			file.mkdirs();
 		}
 
-		filePerfix = new String(path + name);
-		try {
-			fileName = filePerfix + String.valueOf(fileNum);
-			this.writer = new BufferedWriter(new FileWriter(fileName));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
-	public void writeLine(String line, IndexType type){
+	public void writeLine(String file,String line, IndexType type){
 		try {
-			if (count == MAX_LINES) {
-				writer.close();
-				//创建新的文件
-				fileNum++;
-				fileName = filePerfix + String.valueOf(fileNum);
-				writer = new BufferedWriter(new FileWriter(fileName));
+			if (fileName == null || !fileName.equals(file)) {
 				offset = 0;
-				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
-			indexQueue.put(new IndexItem(fileName, line, offset, type));
-			
-			writer.write(line+"\n");
+			indexQueue.put(new IndexItem(file, line, offset, type));
 			offset = offset + line.length() + 1;
-			count++;
-		} catch (IOException e) {
-			e.printStackTrace();
+			fileName = file;
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	public void closeFile(){
-		try {
-			writer.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
 	public long getOffset() {
 		return offset;
-	}
-
-	public String getFileName() {
-		return fileName;
 	}
 
 }

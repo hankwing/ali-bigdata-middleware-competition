@@ -57,10 +57,9 @@ public class JVMMonitorThread extends SchedulerThread {
                 if (getTotalMem() < (getMaxMem() * memFactor)) {
                     // TOTAL MEM IS TOO LITTLE, DO NOTHING
                 } else if (getFreeMem() < (getMaxMem() * memFactor)) {
+                	System.out.println("Total mem: "+ getTotalMem());
                     System.out.println(getFreeMem() / 2014 + "MB");
                     if (gcCounter < gcCounterThreshold) {
-                        System.out.println("GC...");
-                        System.gc();
                         gcCounter++;
                     } else {
                         System.out.println("Remove bucket...");

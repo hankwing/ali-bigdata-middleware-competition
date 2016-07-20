@@ -138,7 +138,7 @@ public class OrderSystemImpl implements OrderSystem {
 					keys.add(rawCommand[i]);
 				}
 				System.out.println("values:" + 
-				orderSystem.queryOrder( Long.valueOf(rawCommand[0]), keys));
+				orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
 				
 			}  else if (command.startsWith("lookup2")) {
 				// lookup:xxx 查找某个key值的value
