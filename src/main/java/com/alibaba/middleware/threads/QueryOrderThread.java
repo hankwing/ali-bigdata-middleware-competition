@@ -85,6 +85,15 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 				}
 				
 			}
+			else {
+				Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,
+						orderId, null);
+				if(orderIdRow.isEmpty()) {
+					// 没找到相应订单
+					return null;
+				}
+				
+			}
 		} catch (TypeException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
