@@ -77,21 +77,20 @@ public class SimpleCache {
     public void putInCache(Long key, Row value, TableName tableType) {
     	switch( tableType) {
     	case OrderTable:
-    		//synchronized(orderCacheMap) {
-    		lock.writeLock().lock();
-    			orderCacheMap.put(key, value);
-    			lock.writeLock().unlock();
-             //}
+    		synchronized(orderCacheMap) {
+    			
+    			orderCacheMap.put((Long) key, value);
+             }
     		break;
     	case BuyerTable:
-    		lock.writeLock().lock();
+    		synchronized(buyerCacheMap) {
     			buyerCacheMap.put( key, value);
-    			lock.writeLock().unlock();
+             }
     		break;
     	case GoodTable:
-    		lock.writeLock().lock();
+    		synchronized(goodCacheMap) {
     			goodCacheMap.put( key, value);
-    			lock.writeLock().unlock();
+             }
     		break;
     	}
     	
@@ -153,25 +152,21 @@ public class SimpleCache {
     }*/
 
     public Row getFromCache(long key, TableName tableType) {
-    	Row row = null;
     	switch( tableType) {
     	case OrderTable:
-    		lock.readLock().lock();
-    		row =  orderCacheMap.get(key);
-    		lock.readLock().unlock();
-    		break;
+    		synchronized(orderCacheMap) {
+    			return orderCacheMap.get(key);
+             }
     	case BuyerTable:
-    		lock.readLock().lock();
-    		row =  buyerCacheMap.get(key);
-    		lock.readLock().unlock();
-    		break;
+    		synchronized(buyerCacheMap) {
+    			return buyerCacheMap.get(key);
+             }
     	case GoodTable:
-    		lock.readLock().lock();
-    		row =  goodCacheMap.get(key);
-    		lock.readLock().unlock();
-    		break;
+    		synchronized(goodCacheMap) {
+    			return goodCacheMap.get(key);
+             }
     	}
-    	return row;
+    	return null;
     }
 
 	public void putInCache(int key, Row row,
@@ -179,20 +174,20 @@ public class SimpleCache {
 		// TODO Auto-generated method stub
 		switch( tableType) {
     	case OrderTable:
-    		lock.writeLock().lock();
+    		synchronized(orderCacheMap) {
     			
     			orderCacheMap.put((long) key, row);
-    			lock.writeLock().unlock();
+             }
     		break;
     	case BuyerTable:
-    		lock.writeLock().lock();
+    		synchronized(buyerCacheMap) {
     			buyerCacheMap.put( (long) key, row);
-    			lock.writeLock().unlock();
+             }
     		break;
     	case GoodTable:
-    		lock.writeLock().lock();
+    		synchronized(goodCacheMap) {
     			goodCacheMap.put( (long) key, row);
-    			lock.writeLock().unlock();
+             }
     		break;
     	}
 		
