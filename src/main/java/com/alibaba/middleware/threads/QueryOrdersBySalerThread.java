@@ -95,15 +95,30 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 							+ resultNum);
 					
 					for( Long offset: hashTable.get(surrId)) {
-
-						Row row = RecordsUtils.getRecordsByKeysFromFile(
-								filePath.getFilePath(), keys, offset);
+						// 现在缓冲区里找
+						boolean isCacheHit = false;
+						Row row = system.rowCache.getFromCache(offset + filePath.getFilePath().hashCode(),
+								TableName.GoodTable);
+						if(row != null) {
+							isCacheHit = true;
+							row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
+									row : RecordsUtils.getRecordsByKeysFromFile(
+											filePath.getFilePath(), keys, offset);
+						}
+						else {
+							row = RecordsUtils.getRecordsByKeysFromFile(
+									filePath.getFilePath(), keys, offset);
+						}
+						
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
+							// 放入缓冲区
+							if( !isCacheHit ) {
+								system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
+										, row, TableName.GoodTable);
+							}
 							
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
-							// 放入缓冲区
-							//system.rowCache.putInListCache(surrId, orderId, row, TableName.GoodTable);
-								// need query buyerTable
+							// need query buyerTable
 							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
 									row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			
 							// need query goodTable

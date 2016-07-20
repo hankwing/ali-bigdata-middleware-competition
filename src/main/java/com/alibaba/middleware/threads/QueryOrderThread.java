@@ -3,6 +3,7 @@ package com.alibaba.middleware.threads;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
+import com.alibaba.middleware.race.OrderSystem.TypeException;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.ResultImpl;
 import com.alibaba.middleware.race.Row;
@@ -39,49 +40,54 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
     public ResultImpl call() {
     	ResultImpl result = null;
 		Row resultKV = new Row();
-		resultKV.putKV(RaceConfig.orderId, orderId);
-		if (keys == null) {
-			Row orderIdRow = system.getRowById(TableName.OrderTable,RaceConfig.orderId,
-					orderId, keys);
-			if( !orderIdRow.isEmpty() ) {
-				resultKV.putAll(orderIdRow);
-				resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-						resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
-				resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-						resultKV.get(RaceConfig.goodId).valueAsString(), keys));
-			}
-			else {
-				// 没有找到对应orderid的记录
-				return null;
-			}
-		} else if ( !keys.isEmpty()) {
-			// 查询指定字段
-			List<String> orderKeys = new ArrayList<String>();
-			List<String> buyerKeys = new ArrayList<String>();
-			List<String> goodKeys = new ArrayList<String>();
-			for (String key : keys) {
-				if (system.orderAttrList.contains(key)) {
-					orderKeys.add(key);
-				} else if (system.buyerAttrList.contains(key)) {
-					buyerKeys.add(key);
-				} else if (system.goodAttrList.contains(key)) {
-					goodKeys.add(key);
+		try {
+			resultKV.putKV(RaceConfig.orderId, orderId);
+			if (keys == null) {
+				Row orderIdRow = system.getRowById(TableName.OrderTable,RaceConfig.orderId,
+						orderId, keys);
+				if( !orderIdRow.isEmpty() ) {
+					resultKV.putAll(orderIdRow);
+					resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+							resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
+					resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+							resultKV.get(RaceConfig.goodId).valueAsString(), keys));
 				}
+				else {
+					// 没有找到对应orderid的记录
+					return null;
+				}
+			} else if ( !keys.isEmpty()) {
+				// 查询指定字段
+				List<String> orderKeys = new ArrayList<String>();
+				List<String> buyerKeys = new ArrayList<String>();
+				List<String> goodKeys = new ArrayList<String>();
+				for (String key : keys) {
+					if (system.orderAttrList.contains(key)) {
+						orderKeys.add(key);
+					} else if (system.buyerAttrList.contains(key)) {
+						buyerKeys.add(key);
+					} else if (system.goodAttrList.contains(key)) {
+						goodKeys.add(key);
+					}
+				}
+				Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,
+						orderId, orderKeys);
+				if( !orderIdRow.isEmpty() ) {
+					resultKV.putAll(orderIdRow);
+					resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+							resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKeys));
+					resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+							resultKV.get(RaceConfig.goodId).valueAsString(), goodKeys));
+				}
+				else {
+					// 没有找到对应orderid的记录
+					return null;
+				}
+				
 			}
-			Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,
-					orderId, orderKeys);
-			if( !orderIdRow.isEmpty() ) {
-				resultKV.putAll(orderIdRow);
-				resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-						resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKeys));
-				resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-						resultKV.get(RaceConfig.goodId).valueAsString(), goodKeys));
-			}
-			else {
-				// 没有找到对应orderid的记录
-				return null;
-			}
-			
+		} catch (TypeException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		result = new ResultImpl(orderId, resultKV.getKVs(keys));
 		

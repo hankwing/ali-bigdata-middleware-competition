@@ -332,16 +332,18 @@ public class OrderSystemImpl implements OrderSystem {
 	 * 根据orderid查找索引返回记录 无记录则返回null
 	 * 
 	 * @return
+	 * @throws TypeException 
 	 */
 	@SuppressWarnings("unchecked")
 	public Row getRowById(TableName tableName, String idName, Object id,
-			Collection<String> keys) {
+			Collection<String> keys) throws TypeException {
 		Row result = new Row();
 		String idString = String.valueOf(id);
 		try {
 			switch (tableName) {
 			case OrderTable:
 				for (FilePathWithIndex filePath : orderFileList) {
+					long orderid = Long.valueOf(id.toString());
 					DiskHashTable<Long, Long> hashTable = orderIdIndexList
 							.get(filePath.getFilePath());
 					if (hashTable == null) {
@@ -361,13 +363,7 @@ public class OrderSystemImpl implements OrderSystem {
 						hashTable.restore();
 						objectinputstream.close();
 					}
-					Row cacheResult = rowCache.getFromCache(id, tableName);
-					if( cacheResult != null) {
-						// find the data from 
-						result = cacheResult;
-						break;
-					}
-					List<Long> results = hashTable.get(id);
+					List<Long> results = hashTable.get(orderid);
 					
 					if (results.size() != 0) {
 						// find the records offset
@@ -375,11 +371,28 @@ public class OrderSystemImpl implements OrderSystem {
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).get(0));*/
 						for( Long offset : results) {
-							Row temp = RecordsUtils.getRecordsByKeysFromFile(
-									filePath.getFilePath(), keys, offset);
+							boolean isFound = false;
+							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
+									tableName);
+							if(temp != null) {
+								isFound = true;
+								temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
+										temp : RecordsUtils.getRecordsByKeysFromFile(
+												filePath.getFilePath(), keys, offset);
+							}
+							else {
+								temp = RecordsUtils.getRecordsByKeysFromFile(
+										filePath.getFilePath(), keys, offset);
+							}
 							if( temp.getKV(idName).valueAsString().equals(idString)) {
+								// 二次确认row是我们要找的
 								result = temp;
-								rowCache.putInCache(id, result, tableName);			//放入缓冲区
+								if( !isFound ) {
+									rowCache.putInCache(offset + filePath.getFilePath().hashCode(),
+											result, tableName);			//放入缓冲区
+								}
+								
+								
 								break;
 							}
 						}
@@ -401,23 +414,31 @@ public class OrderSystemImpl implements OrderSystem {
 								filePath.getBuyerIdIndex());
 						buyerIdIndexList.put(filePath.getFilePath(), hashTable);
 					}
-					Row cacheResult = rowCache.getFromCache(surrId, tableName);
-					if( cacheResult != null) {
-						// find the data from 
-						result = cacheResult;
-						break;
-					}
 					List<Long> results = hashTable.get(surrId);
 					if (results.size() != 0) {
 						// find the records offset
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).size());*/
 						for( Long offset : results) {
-							Row temp = RecordsUtils.getRecordsByKeysFromFile(
-									filePath.getFilePath(), keys, offset);
+							boolean isFound = false;
+							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
+									tableName);
+							if(temp != null) {
+								isFound = true;
+								temp = temp.getKV(RaceConfig.buyerId).valueAsString().equals(String.valueOf(id)) ?
+										temp : RecordsUtils.getRecordsByKeysFromFile(
+												filePath.getFilePath(), keys, offset);
+							}
+							else {
+								temp = RecordsUtils.getRecordsByKeysFromFile(
+										filePath.getFilePath(), keys, offset);
+							}
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;
-								rowCache.putInCache(surrId, result, tableName);
+								if( !isFound ) {
+									rowCache.putInCache(offset + filePath.getFilePath().hashCode(),
+											result, tableName);			//放入缓冲区
+								}
 								break;
 							}
 						}
@@ -437,8 +458,11 @@ public class OrderSystemImpl implements OrderSystem {
 								filePath.getGoodIdIndex());
 						goodIdIndexList.put(filePath.getFilePath(), hashTable);
 					}
-					Row cacheResult = rowCache.getFromCache(goodSurrId, tableName);
-					if( cacheResult != null) {
+					Row cacheResult = rowCache.getFromCache((long) (goodSurrId + 
+							filePath.getFilePath().hashCode()), tableName);
+					if( cacheResult != null && 
+							cacheResult.getKV(
+									RaceConfig.goodId).valueAsString().equals(String.valueOf(id))) {
 						// find the data from 
 						result = cacheResult;
 						break;
@@ -449,11 +473,25 @@ public class OrderSystemImpl implements OrderSystem {
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).size());*/
 						for( Long offset : results) {
-							Row temp = RecordsUtils.getRecordsByKeysFromFile(
-									filePath.getFilePath(), keys, offset);
+							boolean isFound = false;
+							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
+									tableName);
+							if(temp != null) {
+								isFound = true;
+								temp = temp.getKV(RaceConfig.goodId).valueAsString().equals(String.valueOf(id)) ?
+										temp : RecordsUtils.getRecordsByKeysFromFile(
+												filePath.getFilePath(), keys, offset);
+							}
+							else {
+								temp = RecordsUtils.getRecordsByKeysFromFile(
+										filePath.getFilePath(), keys, offset);
+							}
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;
-								rowCache.putInCache(goodSurrId, result, tableName);
+								if( !isFound ) {
+									rowCache.putInCache(offset + filePath.getFilePath().hashCode(),
+											result, tableName);			//放入缓冲区
+								}
 								break;
 							}
 						}
