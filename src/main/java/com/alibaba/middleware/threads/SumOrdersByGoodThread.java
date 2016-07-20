@@ -99,11 +99,11 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 							isCacheHit = true;
 							row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
 									row : RecordsUtils.getRecordsByKeysFromFile(
-											filePath.getFilePath(), keys, offset);
+											filePath.getFilePath(), null, offset);
 						}
 						else {
 							row = RecordsUtils.getRecordsByKeysFromFile(
-									filePath.getFilePath(), keys, offset);
+									filePath.getFilePath(), null, offset);
 						}
 						
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
@@ -117,17 +117,17 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 							if(!buyerKeys.isEmpty()) {
 								// need query buyerTable 
 								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-										row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));	
+										row.get(RaceConfig.buyerId).valueAsString(), null));	
 							}
 							if( !goodKeys.isEmpty()) {
-								// 此时说明此key就在buyerTable中
+								// 到good表里找相应的key
 								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-										row.get(RaceConfig.goodId).valueAsString(), goodKeys));
+										row.get(RaceConfig.goodId).valueAsString(), null));
 								
 								try {
-									isFound = true;
 									KeyValueImpl keyValue = row.getKV(key);
 									if( keyValue != null) {
+										isFound = true;
 										longValue = row.getKV(key).valueAsLong();
 									}
 									else {
@@ -152,7 +152,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 								}
 								else {
 									return new KeyValueImpl(
-											key, String.format("%.10f", doubleValue * resultNum));
+											key, String.format("%.12f", doubleValue * resultNum));
 								}
 							}
 							
@@ -203,7 +203,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 		}
 		else{
 			Double doubleReturn = doubleSum + longSum;
-			return new KeyValueImpl(key, String.format("%.10f", doubleReturn));
+			return new KeyValueImpl(key, String.format("%.12f", doubleReturn));
 		}
     }
 }

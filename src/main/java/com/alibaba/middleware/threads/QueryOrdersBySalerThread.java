@@ -103,11 +103,11 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 							isCacheHit = true;
 							row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
 									row : RecordsUtils.getRecordsByKeysFromFile(
-											filePath.getFilePath(), keys, offset);
+											filePath.getFilePath(), null, offset);
 						}
 						else {
 							row = RecordsUtils.getRecordsByKeysFromFile(
-									filePath.getFilePath(), keys, offset);
+									filePath.getFilePath(), null, offset);
 						}
 						
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
@@ -120,10 +120,10 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
 							// need query buyerTable
 							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-									row.get(RaceConfig.buyerId).valueAsString(), buyerKeys));			
+									row.get(RaceConfig.buyerId).valueAsString(), null));			
 							// need query goodTable
 							row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-									row.get(RaceConfig.goodId).valueAsString(), goodKeys));
+									row.get(RaceConfig.goodId).valueAsString(), null));
 							results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
 						}				
 						

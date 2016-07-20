@@ -138,7 +138,7 @@ public class OrderSystemImpl implements OrderSystem {
 					keys.add(rawCommand[i]);
 				}
 				System.out.println("values:" + 
-				orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
+				orderSystem.queryOrder( Long.valueOf(rawCommand[0]), keys));
 				
 			}  else if (command.startsWith("lookup2")) {
 				// lookup:xxx 查找某个key值的value
@@ -378,11 +378,11 @@ public class OrderSystemImpl implements OrderSystem {
 								isFound = true;
 								temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
 										temp : RecordsUtils.getRecordsByKeysFromFile(
-												filePath.getFilePath(), keys, offset);
+												filePath.getFilePath(), null, offset);
 							}
 							else {
 								temp = RecordsUtils.getRecordsByKeysFromFile(
-										filePath.getFilePath(), keys, offset);
+										filePath.getFilePath(), null, offset);
 							}
 							if( temp.getKV(idName).valueAsString().equals(idString)) {
 								// 二次确认row是我们要找的
@@ -427,11 +427,11 @@ public class OrderSystemImpl implements OrderSystem {
 								isFound = true;
 								temp = temp.getKV(RaceConfig.buyerId).valueAsString().equals(String.valueOf(id)) ?
 										temp : RecordsUtils.getRecordsByKeysFromFile(
-												filePath.getFilePath(), keys, offset);
+												filePath.getFilePath(), null, offset);
 							}
 							else {
 								temp = RecordsUtils.getRecordsByKeysFromFile(
-										filePath.getFilePath(), keys, offset);
+										filePath.getFilePath(), null, offset);
 							}
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;
@@ -480,11 +480,11 @@ public class OrderSystemImpl implements OrderSystem {
 								isFound = true;
 								temp = temp.getKV(RaceConfig.goodId).valueAsString().equals(String.valueOf(id)) ?
 										temp : RecordsUtils.getRecordsByKeysFromFile(
-												filePath.getFilePath(), keys, offset);
+												filePath.getFilePath(), null, offset);
 							}
 							else {
 								temp = RecordsUtils.getRecordsByKeysFromFile(
-										filePath.getFilePath(), keys, offset);
+										filePath.getFilePath(), null, offset);
 							}
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;

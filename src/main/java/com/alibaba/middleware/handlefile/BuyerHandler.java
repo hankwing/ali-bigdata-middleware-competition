@@ -25,7 +25,6 @@ import com.alibaba.middleware.tools.RecordsUtils;
 
 public class BuyerHandler{
 
-	AgentMapping agentBuyerMapping;
 	WriteFile buyerfile;
 	BufferedReader reader;
 	//阻塞队列用于存索引
