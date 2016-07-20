@@ -94,7 +94,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 						// 现在缓冲区里找
 						boolean isCacheHit = false;
 						Row row = system.rowCache.getFromCache(offset + filePath.getFilePath().hashCode(),
-								TableName.GoodTable);
+								TableName.OrderTable);
 						if(row != null) {
 							isCacheHit = true;
 							row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
@@ -111,7 +111,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 							// 放入缓冲区
 							if( !isCacheHit ) {
 								system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
-										, row, TableName.GoodTable);
+										, row, TableName.OrderTable);
 							}
 							
 							if(!buyerKeys.isEmpty()) {
@@ -123,9 +123,18 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 								// 此时说明此key就在buyerTable中
 								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
 										row.get(RaceConfig.goodId).valueAsString(), goodKeys));
+								
 								try {
 									isFound = true;
-									longValue = row.getKV(key).valueAsLong();
+									KeyValueImpl keyValue = row.getKV(key);
+									if( keyValue != null) {
+										longValue = row.getKV(key).valueAsLong();
+									}
+									else {
+										// 不存在这个key 直接退出
+										return null;
+									}
+									
 								} catch (TypeException e) {
 									// TODO Auto-generated catch block
 									// 不是long型的
@@ -147,12 +156,11 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 								}
 							}
 							
-							try{
-								row.getKV(key).valueAsString();
-							} catch (RuntimeException e) {
-								// 该条记录不存在这个key
+							KeyValueImpl keyValue = row.getKV(key);
+							if( keyValue == null) {
+								// // 该条记录不存在这个key
 								continue;
-							} 
+							}
 							
 							// 该记录存在该key
 							try {

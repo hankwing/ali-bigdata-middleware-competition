@@ -75,7 +75,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 						// 现判断在缓冲区里找到了吗
 						boolean isCacheHit = false;
 						Row row = system.rowCache.getFromCache(offset + filePath.getFilePath().hashCode(),
-								TableName.BuyerTable);
+								TableName.OrderTable);
 						if(row != null) {
 							isCacheHit = true;
 							row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
@@ -95,7 +95,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 							// 将结果放入缓冲区中
 							if( !isCacheHit ) {
 								system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
-										, row, TableName.BuyerTable);
+										, row, TableName.OrderTable);
 							}
 							
 							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,

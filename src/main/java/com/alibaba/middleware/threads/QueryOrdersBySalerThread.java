@@ -98,7 +98,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						// 现在缓冲区里找
 						boolean isCacheHit = false;
 						Row row = system.rowCache.getFromCache(offset + filePath.getFilePath().hashCode(),
-								TableName.GoodTable);
+								TableName.OrderTable);
 						if(row != null) {
 							isCacheHit = true;
 							row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
@@ -114,7 +114,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 							// 放入缓冲区
 							if( !isCacheHit ) {
 								system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
-										, row, TableName.GoodTable);
+										, row, TableName.OrderTable);
 							}
 							
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
