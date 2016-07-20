@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.race.Row;
 
@@ -27,6 +28,13 @@ public class SimpleCache {
     //private LinkedHashMap<Integer, Row> buyerCacheMap;
     //private LinkedHashMap<Integer, Row> goodCacheMap;
     private ReadWriteLock lock;
+    private static SimpleCache instance = null;
+    
+    public static SimpleCache getInstance() {
+        if (instance == null)
+            instance = new SimpleCache( RaceConfig.rowCacheNumber);
+        return instance;
+    }
 
     public SimpleCache(final int capacity) {
         this.capacity = capacity;
@@ -169,7 +177,7 @@ public class SimpleCache {
     	return null;
     }
 
-	public void putInCache(int key, Row row,
+	/*public void putInCache(int key, Row row,
 			TableName tableType) {
 		// TODO Auto-generated method stub
 		switch( tableType) {
@@ -191,7 +199,7 @@ public class SimpleCache {
     		break;
     	}
 		
-	}
+	}*/
     
     /*public List<Row> getRowListFromCache(Integer key, TableName tableType) {
     	List<Row> results = null;

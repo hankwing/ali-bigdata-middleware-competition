@@ -113,7 +113,6 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
 							// 放入缓冲区
 							
-							
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
 							// need query buyerTable
 							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,

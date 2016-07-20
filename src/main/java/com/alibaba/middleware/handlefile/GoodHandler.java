@@ -11,8 +11,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.BucketCachePool;
+import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.Row;
@@ -32,11 +34,13 @@ public class GoodHandler{
 	FilePathWithIndex goodIdSurrKeyFile = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
+	private SimpleCache rowCache = null;
 
 	public GoodHandler(List<FilePathWithIndex> goodFileList, 
 			HashSet<String> goodAttrList, FilePathWithIndex goodIdSurrKeyFile, 
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList, 
 			 int threadIndex,CountDownLatch latch) {
+		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.goodFileList = goodFileList;
 		this.goodAttrList = goodAttrList;
@@ -127,6 +131,9 @@ public class GoodHandler{
 						}
 						Row recordRow = Row
 								.createKVMapFromLine(record.recordsData);
+						// 添加到缓冲区
+						rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
+								, recordRow, TableName.GoodTable);
 						tempAttrList.addAll(recordRow.keySet());
 						String goodid = recordRow.getKV(RaceConfig.goodId).valueAsString();
 						
