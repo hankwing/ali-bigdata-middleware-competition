@@ -248,20 +248,29 @@ public class DiskHashTable<K,T> implements Serializable {
 				// 需要从文件里读桶 该桶需要缓冲区管理
 				readWriteLock.readLock().lock();
 				//if( streamIn == null) {
-				FileInputStream streamIn = new FileInputStream(bucketFilePath);
-
+				FileInputStream	streamIn = new FileInputStream(bucketFilePath);
+				//}
 				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
 				//}
 				
 				streamIn.getChannel().position(bucketAddressList.get(bucketKey));
 				
 				fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+				
+				// 缓冲一定数量的桶到内存
+				for( int i= bucketKey + 1; i < RaceConfig.bucketNumberOneRead && i < bucketNum ; i++) {
+					HashBucket<K,T> cacheBucket = (HashBucket<K,T>) bucketReader.readObject();
+					cacheBucket.setContext(this);
+					bucketList.put(bucketKey, cacheBucket);
+					bucketCachePool.addBucket(fileBucket);			// 放入缓冲区
+				}
 				readWriteLock.readLock().unlock();
 				
 				fileBucket.setContext(this);
 				//System.out.println("load bucket:" + bucketKey);
 				bucketList.put(bucketKey, fileBucket);
 				bucketCachePool.addBucket(fileBucket);			// 放入缓冲区
+				bucketReader.close();
 				//bucketQueue.put(fileBucket);
 				//bucketReader.close();
 			}

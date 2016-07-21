@@ -17,7 +17,7 @@ public class FilePathWithIndex {
 	public long buyerIdIndex = 0;
 	public long goodIdIndex = 0;
 	public long surrogateIndex = 0;
-	public RandomAccessFile file = null;
+	//public RandomAccessFile file = null;
 
 	
 	public void setSurrogateIndex( long offset) {
@@ -74,18 +74,18 @@ public class FilePathWithIndex {
 	 */
 	public void setFilePath( String filePath) {
 		this.filePath = filePath;
-		try {
+		/*try {
 			file = new RandomAccessFile(filePath, "r");
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 		
 	}
 	
-	public RandomAccessFile getAccessFile() {
+	/*public RandomAccessFile getAccessFile() {
 		return file;
-	}
+	}*/
 	
 	public String getFilePath() {
 		return filePath;

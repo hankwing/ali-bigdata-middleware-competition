@@ -129,9 +129,9 @@ public class GoodHandler{
 						}
 						Row recordRow = Row
 								.createKVMapFromLine(record.recordsData);
-						// 添加到缓冲区
-						//rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
-						//		, record.recordsData, TableName.GoodTable);
+						 //添加到缓冲区
+						rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
+								, record.recordsData, TableName.GoodTable);
 						tempAttrList.addAll(recordRow.keySet());
 						String goodid = recordRow.getKV(RaceConfig.goodId).valueAsString();
 						goodIdHashTable.put(goodid.hashCode(), record.getOffset());

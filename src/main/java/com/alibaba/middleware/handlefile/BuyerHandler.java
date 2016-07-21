@@ -14,6 +14,7 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.FilePathWithIndex;
@@ -135,8 +136,8 @@ public class BuyerHandler{
 					Row recordRow = Row
 							.createKVMapFromLine(record.recordsData);
 					// 添加到缓冲区
-					//rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
-					//	, record.recordsData, TableName.BuyerTable);
+					rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
+						, record.recordsData, TableName.BuyerTable);
 					
 					tempAttrList.addAll(recordRow.keySet());			// 添加属性
 					String buyerid = recordRow.getKV(RaceConfig.buyerId).valueAsString();

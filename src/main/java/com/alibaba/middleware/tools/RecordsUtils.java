@@ -118,9 +118,10 @@ public class RecordsUtils {
 		String result = null;
 		long tempOffset = 0;
 		String tempCache = null;
-		RandomAccessFile fileReader = file.getAccessFile();
-		SimpleCache cache = SimpleCache.getInstance();
+		
 		try {
+			RandomAccessFile fileReader = new RandomAccessFile(file.getFilePath(), "r");
+			SimpleCache cache = SimpleCache.getInstance();
 			fileReader.seek(offset);
 			result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
 					StandardCharsets.UTF_8);
@@ -135,6 +136,7 @@ public class RecordsUtils {
 				cache.putInCache(tempOffset + file.getFilePath().hashCode()
 						, tempCache, tableType);
 			}
+			fileReader.close();
 			
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

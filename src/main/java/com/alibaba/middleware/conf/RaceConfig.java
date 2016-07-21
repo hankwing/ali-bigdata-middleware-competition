@@ -17,7 +17,8 @@ public class RaceConfig implements Serializable{
 	public static int handleThreadNumber = 3;				// 读写线程数
 	public static int QueueNumber = 10000;					// 建索引时的一个缓冲队列的大小
 	
-	public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的大小
+	public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
+	public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
 	public static long smallFileCapacity = 3000000;
 	/**
 	 * Thread pool config
