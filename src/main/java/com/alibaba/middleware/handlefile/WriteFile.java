@@ -70,9 +70,9 @@ public class WriteFile {
 			}
 			// 将数据放入队列中 供建索引的线程建索引
 			indexQueue.put(new IndexItem(fileName, line, offset, type));
-			
-			writer.write(line);
-			offset = offset + line.getBytes().length;
+			String writeLine = line + "\n";
+			writer.write(writeLine);
+			offset = offset + writeLine.getBytes().length;
 			count++;
 		} catch (IOException e) {
 			e.printStackTrace();
