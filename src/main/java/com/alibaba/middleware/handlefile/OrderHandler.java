@@ -82,7 +82,7 @@ public class OrderHandler {
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(orderAttrList, record);
-					orderfile.writeLine(record + "\n", IndexType.OrderTable);
+					orderfile.writeLine(record, IndexType.OrderTable);
 					record = reader.readLine();
 				}
 				reader.close();

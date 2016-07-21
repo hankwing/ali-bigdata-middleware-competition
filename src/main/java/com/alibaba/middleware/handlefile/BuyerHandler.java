@@ -70,7 +70,7 @@ public class BuyerHandler{
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					buyerfile.writeLine(record + "\n", IndexType.BuyerTable);
+					buyerfile.writeLine(record, IndexType.BuyerTable);
 					record = reader.readLine();
 				}
 				reader.close();
