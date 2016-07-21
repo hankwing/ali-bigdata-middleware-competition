@@ -4,6 +4,7 @@ import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.index.HashBucket;
 
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -18,16 +19,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class BucketCachePool {
 
-    private int capacity;
     // Number of hash buckets
     private AtomicInteger bucketCounter = new AtomicInteger(0);
-    private Lock lock = new ReentrantLock();
-    private Queue<HashBucket> bucketCache;
+    //private Lock lock = new ReentrantLock();
+    private LinkedBlockingQueue<HashBucket> bucketCache;
     private static BucketCachePool instance;
 
     private BucketCachePool() {
-        this.capacity = RaceConfig.bucketCachePoolCapacity;
-        bucketCache = new LinkedList<HashBucket>();
+        //this.capacity = RaceConfig.bucketCachePoolCapacity;
+        bucketCache = new LinkedBlockingQueue<HashBucket>();
     }
 
     public static BucketCachePool getInstance() {
@@ -36,37 +36,39 @@ public class BucketCachePool {
         return instance;
     }
 
+    /**
+     * 先不设桶的上限了 反正是根据内存使用来释放桶
+     * @param bucket
+     * @return
+     */
     public boolean addBucket(HashBucket bucket) {
-        if (bucketCounter.get() <= capacity) {
-            lock.lock();
-            bucketCache.add(bucket);
+        //if (bucketCounter.get() <= capacity) {
+            bucketCache.offer(bucket);
             bucketCounter.getAndIncrement();
-            lock.unlock();
             return true;
-        }
-        return false;
+       // }
     }
     
     /**
      * 将管理的桶清空
      */
     public synchronized void removeAllBucket() {
-    	bucketCache = new LinkedList<HashBucket>();
+    	bucketCache = new LinkedBlockingQueue<HashBucket>();
     }
 
     private void removeBucket(HashBucket bucket) {
-        lock.lock();
-        bucket.writeSelf();
-        bucket = null;
-        lock.unlock();
-        bucketCounter.getAndDecrement();
+        if( bucket != null ) {
+        	bucket.writeSelf();
+            bucket = null;
+            bucketCounter.getAndDecrement();
+        }
+        
     }
 
     /**
      * Remove N buckets based on FIFO
      * */
     public void removeBuckets(int num) {
-        lock.lock();
         if (num > bucketCounter.get()) {
             num = bucketCounter.get();
         }
@@ -74,6 +76,5 @@ public class BucketCachePool {
         	System.out.println("remove bucket!!");
             removeBucket(bucketCache.poll());
         }
-        lock.unlock();
     }
 }

@@ -3,10 +3,14 @@ package com.alibaba.middleware.tools;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 
+import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.race.Row;
 
 
@@ -70,7 +74,7 @@ public class RecordsUtils {
 		return value;
 	}
 	
-	public static Row getRecordsByKeysFromFile(String fileName,Collection<String> keys,Long offset){
+	/*public static Row getRecordsByKeysFromFile(String fileName,Collection<String> keys,Long offset){
 		Row row = new Row();
 		try {
 				BufferedReader reader = new BufferedReader(new FileReader(fileName));
@@ -102,7 +106,7 @@ public class RecordsUtils {
 			}
 		
 		return row;
-	}
+	}*/
 	
 	/**
 	 * 从文件里一次读取一行数据出来
@@ -110,20 +114,36 @@ public class RecordsUtils {
 	 * @param offset
 	 * @return
 	 */
-	public static String getStringFromFile(String fileName,Long offset){
+	public static String getStringFromFile(FilePathWithIndex file ,Long offset, TableName tableType){
 		String result = null;
+		long tempOffset = 0;
+		String tempCache = null;
+		RandomAccessFile fileReader = file.getAccessFile();
+		SimpleCache cache = SimpleCache.getInstance();
 		try {
-				BufferedReader reader = new BufferedReader(new FileReader(fileName));
-				reader.skip(offset);
-				result = reader.readLine();
-				reader.close();
-
+			fileReader.seek(offset);
+			result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
+					StandardCharsets.UTF_8);
+			cache.putInCache(offset + file.getFilePath().hashCode()
+					, result, tableType);
+				
+			for( int i = 0; i< RaceConfig.cacheNumberOneRead ; i++ ) {
+				// 每从文件读一次数据即放入缓冲区一定数量大小的String
+				tempOffset = fileReader.getFilePointer();
+				tempCache = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
+						StandardCharsets.UTF_8);
+				cache.putInCache(tempOffset + file.getFilePath().hashCode()
+						, tempCache, tableType);
+			}
+			
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		
 		return result;
+		
+		
 	}
 	
 	/**

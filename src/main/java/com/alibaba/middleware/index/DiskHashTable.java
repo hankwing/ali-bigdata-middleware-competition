@@ -43,10 +43,11 @@ public class DiskHashTable<K,T> implements Serializable {
 	private transient ObjectOutputStream offsetOos = null;
 	private transient BufferedOutputStream bufferedFout;
 	private transient FileOutputStream fos;
-	//private transient FileInputStream streamIn;
+	private transient FileInputStream streamIn;
 	private transient ObjectInputStream bucketReader;
 	private transient long lastOffset = 0;
 	private transient ReadWriteLock readWriteLock = null;
+	private transient BucketCachePool bucketCachePool = null;
 	private Map<Integer, Long> bucketAddressList = null; // 桶对应的物理地址
 	private Class<?> classType = null;
 	
@@ -75,12 +76,12 @@ public class DiskHashTable<K,T> implements Serializable {
 		this.dataFilePath = dataFilePath;
 		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
+		bucketCachePool = BucketCachePool.getInstance();
 
 		//bucketQueue = new LinkedBlockingQueue<HashBucket<T>>(100000);
 		for (int i = 0; i < 10; i++) {
 			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
 			bucketList.put(i, newBucket );
-			BucketCachePool.getInstance().addBucket(newBucket);
 		}
 		/*timer = new Timer();
 		timer.schedule(new TimerTask() {
@@ -108,6 +109,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	public void restore() {
 		bucketList = new HashMap<Integer, HashBucket<K,T>>();
 		readWriteLock = new ReentrantReadWriteLock();
+		bucketCachePool = BucketCachePool.getInstance();
 	}
 
 	/**
@@ -243,20 +245,25 @@ public class DiskHashTable<K,T> implements Serializable {
 		HashBucket<K,T> fileBucket = bucketList.get( bucketKey);
 		try {
 			if( fileBucket == null) {
+				// 需要从文件里读桶 该桶需要缓冲区管理
 				readWriteLock.readLock().lock();
-				FileInputStream streamIn = new FileInputStream(bucketFilePath);
+				if( streamIn == null) {
+					streamIn = new FileInputStream(bucketFilePath);
 
-				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
+					bucketReader = new ObjectInputStream(streamIn);
+				}
+				
 				streamIn.getChannel().position(bucketAddressList.get(bucketKey));
 				
 				fileBucket = (HashBucket<K,T>) bucketReader.readObject();
 				readWriteLock.readLock().unlock();
+				
 				fileBucket.setContext(this);
 				//System.out.println("load bucket:" + bucketKey);
 				bucketList.put(bucketKey, fileBucket);
+				bucketCachePool.addBucket(fileBucket);			// 放入缓冲区
 				//bucketQueue.put(fileBucket);
-				
-				bucketReader.close();
+				//bucketReader.close();
 			}
 
 		} catch (FileNotFoundException e) {
@@ -325,7 +332,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
 				HashBucket<K,T> newBucket = new HashBucket<K,T>(this, bucketNum, classType);
-				BucketCachePool.getInstance().addBucket(newBucket);
+				//BucketCachePool.getInstance().addBucket(newBucket);
 				bucketNum++;
 				bucketList.put(bucketNum - 1, newBucket);
 				

@@ -1,11 +1,13 @@
 package com.alibaba.middleware.benchmark;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -28,6 +30,7 @@ import java.util.TreeSet;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.index.ComparableKeys;
+import com.alibaba.middleware.tools.RecordsUtils;
 
 /**
  * 不用管
@@ -37,28 +40,51 @@ import com.alibaba.middleware.index.ComparableKeys;
  */
 public class Test {
 
-	// Currently free JVM memory from allocated
-    public static long getFreeMem() {
-        return (Runtime.getRuntime().freeMemory() / 1024);
-    }
-
-    // Max JVM memory
-    public static long getMaxMem() {
-        return (Runtime.getRuntime().maxMemory() / 1024);
-    }
-
-    // Currently allocated JVM memory
-    public static long getTotalMem() {
-        return Runtime.getRuntime().totalMemory();
-    }
-    
 	public static void main(String[] args) {
-		System.out.println(getFreeMem());
-		System.out.println(getMaxMem());
-		System.out.println(getTotalMem());
-		System.out.println(getFreeMem());
-		 
-		 
+		
+		String line = null;
+		long offset = 0;
+		long mStartTime = System.currentTimeMillis();
+		/* BufferedReader reader;
+		try {
+			reader = new BufferedReader(new FileReader("benchmark/order_records.txt"));
+			reader.skip(200000);
+			line = reader.readLine();
+			offset = 0;
+			while( line != null) {
+				offset += line.length();
+				
+				
+				line = reader.readLine();
+			}
+			reader.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		long mEndTime = System.currentTimeMillis();
+		System.out.println("test2:" + (mEndTime - mStartTime));*/
+		
+		
+		/* long startTime = System.currentTimeMillis();
+		 RandomAccessFile file;
+		try {
+			file = new RandomAccessFile("folder1/buyer_0","r");
+			offset = 0;
+			 line = RecordsUtils.getStringFromFile(file, offset);
+			 while( line != null ) {
+				 offset = 8000000;
+				 line = RecordsUtils.getStringFromFile(file, offset);
+			 }
+			 long endTime = System.currentTimeMillis();
+			 System.out.println("test1:" + (endTime - startTime));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
 		
 		/*
 		 * TreeMap<String, HashMap<String, Long>> treeMap = new TreeMap<String,

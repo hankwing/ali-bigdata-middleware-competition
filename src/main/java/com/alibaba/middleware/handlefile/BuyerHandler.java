@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -78,7 +77,7 @@ public class BuyerHandler{
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					buyerfile.writeLine(record, IndexType.BuyerTable);
+					buyerfile.writeLine(record + "\n", IndexType.BuyerTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -144,12 +143,11 @@ public class BuyerHandler{
 					Row recordRow = Row
 							.createKVMapFromLine(record.recordsData);
 					// 添加到缓冲区
-					rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
-						, record.recordsData, TableName.BuyerTable);
+					//rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
+					//	, record.recordsData, TableName.BuyerTable);
 					tempAttrList.addAll(recordRow.keySet());			// 添加属性
 					String buyerid = recordRow.getKV(RaceConfig.buyerId).valueAsString();
 					
-					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
 					buyerIdHashTable.put(buyerid.hashCode(), record.getOffset());
 					//surrKey ++;
 				}
@@ -164,8 +162,7 @@ public class BuyerHandler{
 					FilePathWithIndex smallFile = new FilePathWithIndex();
 					smallFile.setFilePath(indexFileName);
 					BucketCachePool.getInstance().removeAllBucket();
-					//smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
-					smallFile.setBuyerIdIndex(0);
+					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
 					buyerFileList.add(smallFile);
 					buyerIdIndexList.put(indexFileName, buyerIdHashTable);
 					latch.countDown();

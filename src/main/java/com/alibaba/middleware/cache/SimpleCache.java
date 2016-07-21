@@ -87,7 +87,7 @@ public class SimpleCache {
     	case OrderTable:
     		synchronized(orderCacheMap) {
     			
-    			orderCacheMap.put((Long) key, value);
+    			orderCacheMap.put( key, value);
              }
     		break;
     	case BuyerTable:

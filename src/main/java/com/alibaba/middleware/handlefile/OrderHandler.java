@@ -81,7 +81,7 @@ public class OrderHandler {
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(orderAttrList, record);
-					orderfile.writeLine(record, IndexType.OrderTable);
+					orderfile.writeLine(record + "\n", IndexType.OrderTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -181,18 +181,11 @@ public class OrderHandler {
 						Row recordRow = Row
 								.createKVMapFromLine(record.recordsData);
 						// 添加到缓冲区
-						rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
-								, record.recordsData, TableName.OrderTable);
+						//rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
+						//		, record.recordsData, TableName.OrderTable);
 						tempAttrList.addAll(recordRow.keySet());
 						long orderid = recordRow.get(RaceConfig.orderId)
 								.valueAsLong();
-
-						// 获取代理键
-						/*long agentBuyerId = buyerIdSurrKeyIndex
-								.get(recordRow.get(RaceConfig.buyerId).valueAsString()).get(0);
-						long agentGoodId = goodIdSurrKeyIndex.get(
-								recordRow.get(RaceConfig.goodId).valueAsString())
-								.get(0);*/
 
 						// 建立三个索引  buyerid 和 goodid 的hashcode当作代理键
 						orderIdHashTable.put(orderid, record.getOffset());
@@ -212,12 +205,12 @@ public class OrderHandler {
 						smallFile.setFilePath(indexFileName);
 						// buyerIdIndexList.put(indexFileName,
 						// buyerIdHashTable);
-						/*smallFile.setOrderIdIndex(orderIdHashTable
+						smallFile.setOrderIdIndex(orderIdHashTable
 								.writeAllBuckets());
 						smallFile.setOrderBuyerIdIndex(orderBuyerIdHashTable
 								.writeAllBuckets());
 						smallFile.setOrderGoodIdIndex(orderGoodIdHashTable
-								.writeAllBuckets());*/
+								.writeAllBuckets());
 						smallFile.setOrderIdIndex(0);
 						smallFile.setOrderBuyerIdIndex(0);
 						smallFile.setOrderGoodIdIndex(0);

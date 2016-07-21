@@ -68,7 +68,7 @@ public class GoodHandler{
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(goodAttrList, record);
-					goodfile.writeLine(record, IndexType.GoodTable);
+					goodfile.writeLine(record + "\n", IndexType.GoodTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -132,12 +132,10 @@ public class GoodHandler{
 						Row recordRow = Row
 								.createKVMapFromLine(record.recordsData);
 						// 添加到缓冲区
-						rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
-								, record.recordsData, TableName.GoodTable);
+						//rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
+						//		, record.recordsData, TableName.GoodTable);
 						tempAttrList.addAll(recordRow.keySet());
 						String goodid = recordRow.getKV(RaceConfig.goodId).valueAsString();
-						
-						//goodIdSurrKeyIndex.put(goodid, surrKey);					// 建立代理键索引
 						goodIdHashTable.put(goodid.hashCode(), record.getOffset());
 						//surrKey ++;
 					}
@@ -152,8 +150,7 @@ public class GoodHandler{
 						
 						FilePathWithIndex smallFile = new FilePathWithIndex();
 						smallFile.setFilePath(indexFileName);
-						//smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
-						smallFile.setGoodIdIndex(0);
+						smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
 						BucketCachePool.getInstance().removeAllBucket();
 						goodFileList.add(smallFile);
 						goodIdIndexList.put(indexFileName, goodIdHashTable);

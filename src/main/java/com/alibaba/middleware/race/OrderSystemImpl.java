@@ -371,35 +371,24 @@ public class OrderSystemImpl implements OrderSystem {
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).get(0));*/
 						for( Long offset : results) {
-							boolean isFound = false;
-							String line = null;
 							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
 									tableName);
 							if(temp != null) {
-								isFound = true;
 								temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-										temp : RecordsUtils.getRecordsByKeysFromFile(
-												filePath.getFilePath(), null, offset);
+										temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+												filePath, offset, TableName.OrderTable));
 							}
 							else {
-								line = RecordsUtils.getStringFromFile(filePath.getFilePath(),
-										offset);
-								temp = Row.createKVMapFromLine(line);
+								temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+										filePath, offset, TableName.OrderTable));
 							}
 							if( temp.getKV(idName).valueAsString().equals(idString)) {
 								// 二次确认row是我们要找的
 								result = temp;
-								if( !isFound ) {
-									rowCache.putInCache(offset + filePath.getFilePath().hashCode(),
-											line, tableName);			//放入缓冲区
-								}
-								
-								
 								break;
 							}
 						}
 						break;
-						
 					}
 
 				}
@@ -422,27 +411,21 @@ public class OrderSystemImpl implements OrderSystem {
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).size());*/
 						for( Long offset : results) {
-							String line = null;
-							boolean isFound = false;
 							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
 									tableName);
 							if(temp != null) {
-								isFound = true;
+								String buyerId = temp.getKV(RaceConfig.buyerId).valueAsString();
+								Integer hashCode = buyerId.hashCode();
 								temp = temp.getKV(RaceConfig.buyerId).valueAsString().equals(String.valueOf(id)) ?
-										temp : RecordsUtils.getRecordsByKeysFromFile(
-												filePath.getFilePath(), null, offset);
+										temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+												filePath, offset, TableName.BuyerTable));
 							}
 							else {
-								line = RecordsUtils.getStringFromFile(filePath.getFilePath(),
-										offset);
-								temp = Row.createKVMapFromLine(line);
+								temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+										filePath, offset, TableName.BuyerTable));
 							}
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;
-								if( !isFound ) {
-									rowCache.putInCache(offset + filePath.getFilePath().hashCode(),
-											line, tableName);			//放入缓冲区
-								}
 								break;
 							}
 						}
@@ -477,27 +460,19 @@ public class OrderSystemImpl implements OrderSystem {
 						/*System.out.println("records offset:"
 								+ hashTable.get(id).size());*/
 						for( Long offset : results) {
-							boolean isFound = false;
-							String line = null;
 							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
 									tableName);
 							if(temp != null) {
-								isFound = true;
 								temp = temp.getKV(RaceConfig.goodId).valueAsString().equals(String.valueOf(id)) ?
-										temp : RecordsUtils.getRecordsByKeysFromFile(
-												filePath.getFilePath(), null, offset);
+										temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+												filePath, offset, TableName.GoodTable));
 							}
 							else {
-								line = RecordsUtils.getStringFromFile(filePath.getFilePath(),
-										offset);
-								temp = Row.createKVMapFromLine(line);
+								temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+										filePath, offset, TableName.GoodTable));
 							}
 							if( temp.getKV(idName).valueAsString().equals(id)) {
 								result = temp;
-								if( !isFound ) {
-									rowCache.putInCache(offset + filePath.getFilePath().hashCode(),
-											line, tableName);			//放入缓冲区
-								}
 								break;
 							}
 						}

@@ -2,8 +2,10 @@ package com.alibaba.middleware.handlefile;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
@@ -49,7 +51,7 @@ public class WriteFile {
 		filePerfix = new String(path + name);
 		try {
 			fileName = filePerfix + String.valueOf(fileNum);
-			this.writer = new BufferedWriter(new FileWriter(fileName));
+			this.writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName)));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -62,15 +64,15 @@ public class WriteFile {
 				//创建新的文件
 				fileNum++;
 				fileName = filePerfix + String.valueOf(fileNum);
-				writer = new BufferedWriter(new FileWriter(fileName));
+				writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName)));
 				offset = 0;
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
 			indexQueue.put(new IndexItem(fileName, line, offset, type));
 			
-			writer.write(line+"\n");
-			offset = offset + line.length() + 1;
+			writer.write(line);
+			offset = offset + line.getBytes().length;
 			count++;
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -100,14 +100,12 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 								TableName.OrderTable);
 						if(row != null) {
 							row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
-									row : RecordsUtils.getRecordsByKeysFromFile(
-											filePath.getFilePath(), null, offset);
+									row : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+											filePath, offset, TableName.OrderTable));
 						}
 						else {
-							String line =  RecordsUtils.getStringFromFile(filePath.getFilePath(), offset);
-							row = Row.createKVMapFromLine(line);
-							system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
-									, line, TableName.OrderTable);
+							row = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+									filePath, offset, TableName.OrderTable));
 						}
 						
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {

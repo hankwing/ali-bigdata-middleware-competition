@@ -77,15 +77,12 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 								TableName.OrderTable);
 						if(row != null) {
 							row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
-									row : RecordsUtils.getRecordsByKeysFromFile(
-											filePath.getFilePath(), null, offset);
+									row : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+											filePath, offset, TableName.OrderTable));
 						}
 						else {
-							String line =  RecordsUtils.getStringFromFile(filePath.getFilePath(), offset);
-							row = Row.createKVMapFromLine(line);
-							// 放入缓冲区
-							system.rowCache.putInCache(offset + filePath.getFilePath().hashCode()
-									, line, TableName.OrderTable);
+							row = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+									filePath, offset, TableName.OrderTable));
 						}
 						
 						long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
