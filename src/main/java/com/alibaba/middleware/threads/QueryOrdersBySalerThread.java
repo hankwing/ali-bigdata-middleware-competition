@@ -91,8 +91,6 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 				if (resultNum != 0) {
 					// find the records offset
 					// 找到后，按照降序插入TreeMap中
-					System.out.println("records offset:"
-							+ resultNum);
 					
 					for( Long offset: hashTable.get(surrId)) {
 						// 现在缓冲区里找

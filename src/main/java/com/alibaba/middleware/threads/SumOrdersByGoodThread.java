@@ -84,8 +84,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 				if (resultNum != 0) {
 					// find the records offset
 					// 找到后，按照降序插入TreeMap中
-					System.out.println("records offset:"
-							+ resultNum);
+					System.out.println("4 case :" + goodid +" " + key);
 					for( Long offset: hashTable.get(surrId)) {
 						boolean isGoodKey = false;
 						long longValue = 0;
