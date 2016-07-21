@@ -167,7 +167,8 @@ public class OrderHandler {
 										orderGoodIdHashTable);
 								orderFileList.add(smallFile);
 
-								indexFileName = record.getDataFileName();
+								dataFileName = record.getDataFileName();
+								indexFileName = record.getIndexFileName();
 								orderIdHashTable = new DiskHashTable<Long, Long>(
 										indexFileName
 										+ RaceConfig.orderIndexFileSuffix,
