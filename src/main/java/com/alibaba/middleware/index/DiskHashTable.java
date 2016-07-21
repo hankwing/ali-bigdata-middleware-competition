@@ -78,27 +78,10 @@ public class DiskHashTable<K,T> implements Serializable {
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
 		bucketCachePool = BucketCachePool.getInstance();
 
-		//bucketQueue = new LinkedBlockingQueue<HashBucket<T>>(100000);
 		for (int i = 0; i < 10; i++) {
 			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
 			bucketList.put(i, newBucket );
 		}
-		/*timer = new Timer();
-		timer.schedule(new TimerTask() {
-
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				int size = bucketQueue.size();
-				readWriteLock.writeLock().lock();
-				while(size -- > 20000) {
-					bucketQueue.poll().writeSelf();
-					
-				}
-				readWriteLock.writeLock().unlock();
-			}
-			
-		}, 5*1000, 10* 1000);*/
 		
 		
 	}
@@ -258,13 +241,13 @@ public class DiskHashTable<K,T> implements Serializable {
 				fileBucket = (HashBucket<K,T>) bucketReader.readObject();
 				
 				// 缓冲一定数量的桶到内存
-				for( int i= bucketKey + 1; i < RaceConfig.bucketNumberOneRead && i < bucketNum ; i++) {
+				/*for( int i= bucketKey + 1; i < RaceConfig.bucketNumberOneRead && i < bucketNum ; i++) {
 					HashBucket<K,T> cacheBucket = (HashBucket<K,T>) bucketReader.readObject();
 					cacheBucket.setContext(this);
 					bucketList.put(bucketKey, cacheBucket);
 					bucketCachePool.addBucket(fileBucket);			// 放入缓冲区
 				}
-				readWriteLock.readLock().unlock();
+				readWriteLock.readLock().unlock();*/
 				
 				fileBucket.setContext(this);
 				//System.out.println("load bucket:" + bucketKey);
