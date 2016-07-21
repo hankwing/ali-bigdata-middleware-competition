@@ -107,10 +107,10 @@ public class GoodHandler{
 							continue;
 						}
 						
-						if( !record.getFileName().equals(indexFileName)) {
+						if( !record.getDataFileName().equals(indexFileName)) {
 							if( indexFileName == null) {
 								// 第一次建立索引文件
-								indexFileName = record.getFileName();
+								indexFileName = record.getDataFileName();
 								goodIdHashTable = new DiskHashTable<Integer,List<Long>>(
 										indexFileName + RaceConfig.goodIndexFileSuffix,indexFileName, Long.class);
 
@@ -123,9 +123,9 @@ public class GoodHandler{
 								goodIdIndexList.put(indexFileName, goodIdHashTable);
 								goodFileList.add(smallFile);
 								
-								indexFileName = record.getFileName();
+								indexFileName = record.getDataFileName();
 								goodIdHashTable = new DiskHashTable<Integer,List<Long>>(
-										record.getFileName() + RaceConfig.goodIndexFileSuffix, indexFileName, Long.class);
+										record.getDataFileName() + RaceConfig.goodIndexFileSuffix, indexFileName, Long.class);
 								
 							}
 						}

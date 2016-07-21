@@ -73,7 +73,6 @@ public class BucketCachePool {
             num = bucketCounter.get();
         }
         for (int i = 0; i < num; i++) {
-        	System.out.println("remove bucket!!");
             removeBucket(bucketCache.poll());
         }
     }
