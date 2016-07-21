@@ -200,7 +200,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 		}
 		else if( doubleSum == 0) {
 			// 返回long 值
-			return new KeyValueImpl(key, String.valueOf(longSum));
+			return new KeyValueImpl(key, longSum.toString());
 		}
 		else{
 			Double doubleReturn = doubleSum + longSum;
