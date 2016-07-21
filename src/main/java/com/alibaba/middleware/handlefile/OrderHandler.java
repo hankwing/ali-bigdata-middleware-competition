@@ -82,7 +82,7 @@ public class OrderHandler {
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(orderAttrList, record);
-					orderfile.writeLine(file, record, IndexType.OrderTable);
+					orderfile.writeLine(file, record, TableName.OrderTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -92,7 +92,7 @@ public class OrderHandler {
 		}
 
 		// set end signal
-		orderfile.writeLine(null, "end", IndexType.OrderTable);
+		orderfile.writeLine(null, null, TableName.OrderTable);
 		System.out.println("end order handling!");
 	}
 
@@ -116,7 +116,7 @@ public class OrderHandler {
 				while (true) {
 					IndexItem record = indexQueue.poll();
 					if (record != null) {
-						if (record.recordsData.equals("end")) {
+						if (record.getRow() == null) {
 							isEnd = true;
 							continue;
 						}
@@ -187,22 +187,18 @@ public class OrderHandler {
 							}
 						}
 
-						Row recordRow = Row
-								.createKVMapFromLine(record.recordsData);
-						// 添加到缓冲区
-						rowCache.putInCache(dataFileName.hashCode() + record.getOffset()
-								, record.recordsData, TableName.OrderTable);
-						tempAttrList.addAll(recordRow.keySet());
-						long orderid = recordRow.get(RaceConfig.orderId)
+						Row rowData = record.getRow();
+						tempAttrList.addAll(rowData.keySet());
+						long orderid = rowData.get(RaceConfig.orderId)
 								.valueAsLong();
 
 						// 建立三个索引  buyerid 和 goodid 的hashcode当作代理键
 						orderIdHashTable.put(orderid, record.getOffset());
 						orderBuyerIdHashTable.put(
-								recordRow.get(RaceConfig.buyerId).valueAsString().hashCode(),
+								rowData.get(RaceConfig.buyerId).valueAsString().hashCode(),
 								record.getOffset());
 						orderGoodIdHashTable.put(
-								recordRow.get(RaceConfig.goodId).valueAsString().hashCode(),
+								rowData.get(RaceConfig.goodId).valueAsString().hashCode(),
 								record.getOffset());
 
 					} else if (isEnd) {

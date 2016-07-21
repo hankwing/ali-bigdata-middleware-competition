@@ -66,7 +66,7 @@ public class GoodHandler{
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(goodAttrList, record);
-					goodfile.writeLine(file, record, IndexType.GoodTable);
+					goodfile.writeLine(file, record, TableName.GoodTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -75,7 +75,7 @@ public class GoodHandler{
 			}
 		}
 		// set end signal
-		goodfile.writeLine(null, "end",IndexType.GoodTable);
+		goodfile.writeLine(null, null,TableName.GoodTable);
 		System.out.println("end good handling!");
 	}
 	
@@ -99,7 +99,7 @@ public class GoodHandler{
 					IndexItem record = indexQueue.poll();
 					
 					if( record != null ) {
-						if( record.recordsData.equals("end")) {
+						if( record.getRow() == null) {
 							isEnd = true;
 							continue;
 						}
@@ -131,13 +131,9 @@ public class GoodHandler{
 								
 							}
 						}
-						Row recordRow = Row
-								.createKVMapFromLine(record.recordsData);
-						 //添加到缓冲区
-						rowCache.putInCache(dataFileName.hashCode() + record.getOffset()
-								, record.recordsData, TableName.GoodTable);
-						tempAttrList.addAll(recordRow.keySet());
-						String goodid = recordRow.getKV(RaceConfig.goodId).valueAsString();
+						Row rowData = record.getRow();
+						tempAttrList.addAll(rowData.keySet());
+						String goodid = rowData.getKV(RaceConfig.goodId).valueAsString();
 						goodIdHashTable.put(goodid.hashCode(), record.getOffset());
 						//surrKey ++;
 					}

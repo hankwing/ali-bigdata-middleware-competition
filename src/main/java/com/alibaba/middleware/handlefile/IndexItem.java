@@ -1,30 +1,30 @@
 package com.alibaba.middleware.handlefile;
 
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
+import com.alibaba.middleware.race.Row;
 
 public class IndexItem {
 
 	//这里dataFileName+offset=Value
 	String dataFileName;
 	String indexFileName;
-	String recordsData = null;
+	//String recordsData = null;
+	Row rowData = null;
 	long offset = 0;
-	IndexType indexType = null;
 
-	public IndexItem(String indexFileName, String dataFileName, String recordsData, long offset, IndexType type) {
+	public IndexItem(String indexFileName, String dataFileName, Row rowData, long offset) {
 		this.indexFileName = indexFileName;
 		this.dataFileName = dataFileName;
-		this.recordsData = recordsData;
+		this.rowData = rowData;
 		this.offset = offset;
-		this.indexType = type;
 	}
 	
 	public long getOffset() {
 		return offset;
 	}
 
-	public String getRecords() {
-		return recordsData;
+	public Row getRow() {
+		return rowData;
 	}
 
 	public String getDataFileName() {
