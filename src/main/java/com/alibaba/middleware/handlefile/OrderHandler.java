@@ -82,7 +82,7 @@ public class OrderHandler {
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(orderAttrList, record);
-					orderfile.writeLine(file, record, IndexType.OrderTable);
+					orderfile.writeLine(record, IndexType.OrderTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -92,7 +92,8 @@ public class OrderHandler {
 		}
 
 		// set end signal
-		orderfile.writeLine(null, "end", IndexType.OrderTable);
+		orderfile.writeLine("end", IndexType.OrderTable);
+		orderfile.closeFile();
 		System.out.println("end order handling!");
 	}
 
@@ -121,10 +122,10 @@ public class OrderHandler {
 							continue;
 						}
 
-						if (!record.getFileName().equals(indexFileName)) {
+						if (!record.getDataFileName().equals(indexFileName)) {
 							if (indexFileName == null) {
 								// 第一次建立索引文件
-								indexFileName = record.getFileName();
+								indexFileName = record.getDataFileName();
 								orderIdHashTable = new DiskHashTable<Long, Long>(
 										indexFileName
 										+ RaceConfig.orderIndexFileSuffix,
@@ -161,7 +162,7 @@ public class OrderHandler {
 										orderGoodIdHashTable);
 								orderFileList.add(smallFile);
 
-								indexFileName = record.getFileName();
+								indexFileName = record.getDataFileName();
 								orderIdHashTable = new DiskHashTable<Long, Long>(
 										indexFileName
 										+ RaceConfig.orderIndexFileSuffix,
