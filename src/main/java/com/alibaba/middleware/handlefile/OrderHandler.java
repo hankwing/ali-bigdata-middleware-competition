@@ -145,14 +145,14 @@ public class OrderHandler {
 								smallFile.setFilePath(dataFileName);
 								// buyerIdIndexList.put(indexFileName,
 								// buyerIdHashTable);
-								/*smallFile.setOrderIdIndex(orderIdHashTable
+								smallFile.setOrderIdIndex(orderIdHashTable
 										.writeAllBuckets());
 								smallFile
 								.setOrderBuyerIdIndex(orderBuyerIdHashTable
 										.writeAllBuckets());
 								smallFile
 								.setOrderGoodIdIndex(orderGoodIdHashTable
-										.writeAllBuckets());*/
+										.writeAllBuckets());
 								smallFile.setOrderIdIndex(0);
 								smallFile
 								.setOrderBuyerIdIndex(0);
@@ -212,12 +212,12 @@ public class OrderHandler {
 						smallFile.setFilePath(dataFileName);
 						// buyerIdIndexList.put(indexFileName,
 						// buyerIdHashTable);
-						/*smallFile.setOrderIdIndex(orderIdHashTable
+						smallFile.setOrderIdIndex(orderIdHashTable
 								.writeAllBuckets());
 						smallFile.setOrderBuyerIdIndex(orderBuyerIdHashTable
 								.writeAllBuckets());
 						smallFile.setOrderGoodIdIndex(orderGoodIdHashTable
-								.writeAllBuckets());*/
+								.writeAllBuckets());
 						smallFile.setOrderIdIndex(0);
 						smallFile.setOrderBuyerIdIndex(0);
 						smallFile.setOrderGoodIdIndex(0);
