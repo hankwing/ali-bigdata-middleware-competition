@@ -425,8 +425,6 @@ public class OrderSystemImpl implements OrderSystem {
 							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
 									tableName);
 							if(temp != null) {
-								String buyerId = temp.getKV(RaceConfig.buyerId).valueAsString();
-								Integer hashCode = buyerId.hashCode();
 								temp = temp.getKV(RaceConfig.buyerId).valueAsString().equals(String.valueOf(id)) ?
 										temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
 												filePath, offset, TableName.BuyerTable));
@@ -455,15 +453,6 @@ public class OrderSystemImpl implements OrderSystem {
 								filePath.getFilePath(),
 								filePath.getGoodIdIndex());
 						goodIdIndexList.put(filePath.getFilePath(), hashTable);
-					}
-					Row cacheResult = rowCache.getFromCache((long) (goodSurrId + 
-							filePath.getFilePath().hashCode()), tableName);
-					if( cacheResult != null && 
-							cacheResult.getKV(
-									RaceConfig.goodId).valueAsString().equals(String.valueOf(id))) {
-						// find the data from 
-						result = cacheResult;
-						break;
 					}
 					List<Long> results = hashTable.get(goodSurrId);
 					if (results.size() != 0) {
