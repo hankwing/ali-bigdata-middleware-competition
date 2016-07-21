@@ -45,8 +45,8 @@ public class Test {
 		String line = null;
 		long offset = 0;
 		long mStartTime = System.currentTimeMillis();
-		Long.parseLong("96939470875213560");
-		System.out.println(Long.parseLong("96939470875213560"));
+		Long.parseLong("1404227317");
+		System.out.println(Long.parseLong("1404227317"));
 		/* BufferedReader reader;
 		try {
 			reader = new BufferedReader(new FileReader("benchmark/order_records.txt"));

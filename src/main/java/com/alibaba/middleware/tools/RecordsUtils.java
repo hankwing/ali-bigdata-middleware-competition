@@ -74,7 +74,7 @@ public class RecordsUtils {
 		return value;
 	}
 	
-	/*public static Row getRecordsByKeysFromFile(String fileName,Collection<String> keys,Long offset){
+	public static Row getRecordsByKeysFromFile(String fileName,Collection<String> keys,Long offset){
 		Row row = new Row();
 		try {
 				BufferedReader reader = new BufferedReader(new FileReader(fileName));
@@ -106,7 +106,7 @@ public class RecordsUtils {
 			}
 		
 		return row;
-	}*/
+	}
 	
 	/**
 	 * 从文件里一次读取一行数据出来
