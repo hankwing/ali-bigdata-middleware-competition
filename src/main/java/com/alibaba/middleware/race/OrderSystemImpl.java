@@ -224,7 +224,7 @@ public class OrderSystemImpl implements OrderSystem {
 		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
 		//threadPool.addMonitor(jvmMonitorThread);
 		//threadPool.startMonitors();
-		//rowCache = SimpleCache.getInstance();
+		rowCache = SimpleCache.getInstance();
 	}
 
 	/**
