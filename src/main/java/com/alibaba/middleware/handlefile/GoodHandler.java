@@ -66,7 +66,7 @@ public class GoodHandler{
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(goodAttrList, record);
-					goodfile.writeLine(record, IndexType.GoodTable);
+					goodfile.writeLine(file, record, IndexType.GoodTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -75,8 +75,7 @@ public class GoodHandler{
 			}
 		}
 		// set end signal
-		goodfile.writeLine("end",IndexType.GoodTable);
-		goodfile.closeFile();
+		goodfile.writeLine(null, "end",IndexType.GoodTable);
 		System.out.println("end good handling!");
 	}
 	
@@ -84,6 +83,7 @@ public class GoodHandler{
 		public class GoodIndexConstructor implements Runnable {
 
 			String indexFileName = null;
+			String dataFileName = null;
 			DiskHashTable<Integer, List<Long>> goodIdHashTable = null;
 			boolean isEnd = false;
 			HashSet<String> tempAttrList = new HashSet<String>();
@@ -94,7 +94,6 @@ public class GoodHandler{
 			}
 
 			public void run() {
-				// TODO Auto-generated method stub
 					
 				while( true) {
 					IndexItem record = indexQueue.poll();
@@ -105,33 +104,37 @@ public class GoodHandler{
 							continue;
 						}
 						
-						if( !record.getDataFileName().equals(indexFileName)) {
+						if( !record.getIndexFileName().equals(indexFileName)) {
 							if( indexFileName == null) {
 								// 第一次建立索引文件
-								indexFileName = record.getDataFileName();
+								dataFileName = record.getDataFileName();
+								indexFileName = record.getIndexFileName();
 								goodIdHashTable = new DiskHashTable<Integer,List<Long>>(
-										indexFileName + RaceConfig.goodIndexFileSuffix,indexFileName, Long.class);
+										indexFileName + RaceConfig.goodIndexFileSuffix,dataFileName, Long.class);
 
 							}
 							else {
 								// 保存当前goodId的索引  并写入索引List
 								FilePathWithIndex smallFile = new FilePathWithIndex();
-								smallFile.setFilePath(indexFileName);
+
+								smallFile.setFilePath(dataFileName);
 								//smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
 								smallFile.setGoodIdIndex(0);
-								goodIdIndexList.put(indexFileName, goodIdHashTable);
+								goodIdIndexList.put(dataFileName, goodIdHashTable);
+
 								goodFileList.add(smallFile);
 								
-								indexFileName = record.getDataFileName();
+								dataFileName = record.getDataFileName();
+								indexFileName = record.getIndexFileName();
 								goodIdHashTable = new DiskHashTable<Integer,List<Long>>(
-										record.getDataFileName() + RaceConfig.goodIndexFileSuffix, indexFileName, Long.class);
+										indexFileName + RaceConfig.goodIndexFileSuffix, dataFileName, Long.class);
 								
 							}
 						}
 						Row recordRow = Row
 								.createKVMapFromLine(record.recordsData);
 						 //添加到缓冲区
-						rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
+						rowCache.putInCache(dataFileName.hashCode() + record.getOffset()
 								, record.recordsData, TableName.GoodTable);
 						tempAttrList.addAll(recordRow.keySet());
 						String goodid = recordRow.getKV(RaceConfig.goodId).valueAsString();
@@ -148,12 +151,14 @@ public class GoodHandler{
 				        }
 						
 						FilePathWithIndex smallFile = new FilePathWithIndex();
-						smallFile.setFilePath(indexFileName);
-						//smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+
+						smallFile.setFilePath(dataFileName);
+						smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+
 						smallFile.setGoodIdIndex(0);
 						BucketCachePool.getInstance().removeAllBucket();
 						goodFileList.add(smallFile);
-						goodIdIndexList.put(indexFileName, goodIdHashTable);
+						goodIdIndexList.put(dataFileName, goodIdHashTable);
 						latch.countDown();
 						break;
 					}

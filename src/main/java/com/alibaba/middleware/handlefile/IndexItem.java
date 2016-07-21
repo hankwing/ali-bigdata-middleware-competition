@@ -11,7 +11,8 @@ public class IndexItem {
 	long offset = 0;
 	IndexType indexType = null;
 
-	public IndexItem(String dataFileName, String recordsData, long offset, IndexType type) {
+	public IndexItem(String indexFileName, String dataFileName, String recordsData, long offset, IndexType type) {
+		this.indexFileName = indexFileName;
 		this.dataFileName = dataFileName;
 		this.recordsData = recordsData;
 		this.offset = offset;
@@ -30,8 +31,8 @@ public class IndexItem {
 		return dataFileName;
 	}
 	
-	public void setIndexFileName(String indexFileName){
-		this.indexFileName = indexFileName;
+	public String getIndexFileName(){
+		return indexFileName;
 	}
 
 }
