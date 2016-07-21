@@ -18,10 +18,11 @@ public class RaceConfig implements Serializable{
 	public static int QueueNumber = 10000;					// 建索引时的一个缓冲队列的大小
 	
 	public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的大小
+	public static long smallFileCapacity = 3000000;
 	/**
 	 * Thread pool config
 	 * */
-	public static int rowCacheNumber = 5000000;					// 在内存里最多保留几个row数据
+	public static int rowCacheNumber = 10000000;					// 在内存里最多保留几个row数据
 	public static int monitorThreadNum = 1;
     public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;
@@ -37,10 +38,7 @@ public class RaceConfig implements Serializable{
 	 * */
 	// JCS Cache Config
 	public static String cacheConfig = "/Users/Jelly/Developer/orderQuerySystem/cache.ccf";
-	public static int hash_index_block_capacity = 10000;
-
-	// BucketCachePool
-	public static int bucketCachePoolCapacity = 10000;
+	public static int hash_index_block_capacity = 10000;			// 一个索引桶里的数据量
 
 	public static String booleanTrueValue = "true";
 	public static String booleanFalseValue = "false";
@@ -67,13 +65,13 @@ public class RaceConfig implements Serializable{
 	/***
 	 * handle file config
 	 */
-	public static int orderFileCapacity = 10000;
+	/*public static int orderFileCapacity = 10000;
 	public static int buyerFileCapacity = 10000;
 	public static int goodFileCapacity = 10000;
-	public static int columnFileCapacity = 10000;
+	public static int columnFileCapacity = 10000;*/
 
 	
-	public static long smallFileCapacity = 2000000;
+	
 	
 	public static String[] storeFolders = null;
 	public static String buyerFileNamePrex = "/buyer_";
