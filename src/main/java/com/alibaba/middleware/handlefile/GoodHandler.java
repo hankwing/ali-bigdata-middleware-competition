@@ -116,10 +116,12 @@ public class GoodHandler{
 							else {
 								// 保存当前goodId的索引  并写入索引List
 								FilePathWithIndex smallFile = new FilePathWithIndex();
+
 								smallFile.setFilePath(dataFileName);
 								//smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
 								smallFile.setGoodIdIndex(0);
 								goodIdIndexList.put(dataFileName, goodIdHashTable);
+
 								goodFileList.add(smallFile);
 								
 								dataFileName = record.getDataFileName();
@@ -149,8 +151,10 @@ public class GoodHandler{
 				        }
 						
 						FilePathWithIndex smallFile = new FilePathWithIndex();
+
 						smallFile.setFilePath(dataFileName);
 						smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+
 						smallFile.setGoodIdIndex(0);
 						BucketCachePool.getInstance().removeAllBucket();
 						goodFileList.add(smallFile);

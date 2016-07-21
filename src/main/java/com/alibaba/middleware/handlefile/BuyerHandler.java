@@ -121,10 +121,12 @@ public class BuyerHandler{
 						else {
 							// 保存当前buyerId的索引  并写入索引List
 							FilePathWithIndex smallFile = new FilePathWithIndex();
+
 							smallFile.setFilePath(dataFileName);
 							//smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
 							smallFile.setBuyerIdIndex(0);
 							buyerIdIndexList.put(dataFileName, buyerIdHashTable);
+
 							buyerFileList.add(smallFile);
 
 							dataFileName = record.getDataFileName();
@@ -159,7 +161,9 @@ public class BuyerHandler{
 					FilePathWithIndex smallFile = new FilePathWithIndex();
 					smallFile.setFilePath(dataFileName);
 					BucketCachePool.getInstance().removeAllBucket();
+
 					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+
 					smallFile.setBuyerIdIndex(0);
 					buyerFileList.add(smallFile);
 					buyerIdIndexList.put(dataFileName, buyerIdHashTable);

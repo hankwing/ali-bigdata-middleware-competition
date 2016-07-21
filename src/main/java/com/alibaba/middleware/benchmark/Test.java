@@ -42,21 +42,18 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-		String line = null;
-		long offset = 0;
-		long mStartTime = System.currentTimeMillis();
-		Long.parseLong("12699");
-		System.out.println(Long.parseLong("12699"));
-		/* BufferedReader reader;
+
+		 BufferedReader reader;
+		 String line = null;
+		 long offset = 0;
+		 long mStartTime = System.currentTimeMillis();
+		 
 		try {
 			reader = new BufferedReader(new FileReader("benchmark/order_records.txt"));
-			reader.skip(200000);
 			line = reader.readLine();
 			offset = 0;
 			while( line != null) {
-				offset += line.length();
-				
-				
+				offset ++;
 				line = reader.readLine();
 			}
 			reader.close();
@@ -68,7 +65,9 @@ public class Test {
 			e.printStackTrace();
 		}
 		long mEndTime = System.currentTimeMillis();
-		System.out.println("test2:" + (mEndTime - mStartTime));*/
+		System.out.println("test2:" + (mEndTime - mStartTime) + "offset:" + offset);
+		
+		
 		
 		
 		/* long startTime = System.currentTimeMillis();

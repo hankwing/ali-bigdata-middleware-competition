@@ -63,8 +63,8 @@ public class OrderSystemImpl implements OrderSystem {
 	public HashSet<String> buyerAttrList = null; // 保存buyer表的所有字段名称
 	public HashSet<String> goodAttrList = null; // 保存good表的所有字段名称
 
-	public FilePathWithIndex buyerIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
-	public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
+	//public FilePathWithIndex buyerIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
+	//public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
 	//public DiskHashTable<String, Long> buyerIdSurrKeyIndex = null; // 缓存buyerId事实键与代理键
 	//public DiskHashTable<String, Long> goodIdSurrKeyIndex = null; // 缓存goodId事实键与代理键
 	//public HashMap<Integer,Integer>  buyerIdSurrKeyIndex = null;
@@ -218,12 +218,12 @@ public class OrderSystemImpl implements OrderSystem {
 		orderAttrList = new HashSet<String>(); // 保存order表的所有字段名称
 		buyerAttrList = new HashSet<String>(); // 保存buyer表的所有字段名称
 		goodAttrList = new HashSet<String>(); // 保存good表的所有字段名称
-		buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
-		goodIdSurrKeyFile = new FilePathWithIndex();
+		//buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
+		//goodIdSurrKeyFile = new FilePathWithIndex();
 
-		JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
-		threadPool.addMonitor(jvmMonitorThread);
-		threadPool.startMonitors();
+		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
+		//threadPool.addMonitor(jvmMonitorThread);
+		//threadPool.startMonitors();
 		rowCache = SimpleCache.getInstance();
 	}
 

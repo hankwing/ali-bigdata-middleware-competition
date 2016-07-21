@@ -27,7 +27,9 @@ public class SimpleCache {
     //private LinkedHashMap<Integer, List<Row>> orderGoodIdCacheMap;
     //private LinkedHashMap<Integer, Row> buyerCacheMap;
     //private LinkedHashMap<Integer, Row> goodCacheMap;
-    private ReadWriteLock lock;
+    private ReadWriteLock orderLock;
+    private ReadWriteLock buyerLock;
+    private ReadWriteLock goodLock;
     private static SimpleCache instance = null;
     
     public static SimpleCache getInstance() {
@@ -59,7 +61,9 @@ public class SimpleCache {
             }
         };
         
-        lock = new ReentrantReadWriteLock(false);
+        orderLock = new ReentrantReadWriteLock(false);
+        buyerLock = new ReentrantReadWriteLock(false);
+        goodLock = new ReentrantReadWriteLock(false);
     }
 
     /*@Override
@@ -85,20 +89,25 @@ public class SimpleCache {
     public void putInCache(Long key, String value, TableName tableType) {
     	switch( tableType) {
     	case OrderTable:
-    		synchronized(orderCacheMap) {
-    			
-    			orderCacheMap.put( key, value);
-             }
+    		//synchronized(orderCacheMap) {
+    		orderLock.writeLock().lock();
+    		orderCacheMap.put( key, value);
+    		orderLock.writeLock().unlock();
+            // }
     		break;
     	case BuyerTable:
-    		synchronized(buyerCacheMap) {
-    			buyerCacheMap.put( key, value);
-             }
+    		//synchronized(buyerCacheMap) {
+    		buyerLock.writeLock().lock();
+    		buyerCacheMap.put( key, value);
+    		buyerLock.writeLock().unlock();
+            // }
     		break;
     	case GoodTable:
-    		synchronized(goodCacheMap) {
-    			goodCacheMap.put( key, value);
-             }
+    		//synchronized(goodCacheMap) {
+    		goodLock.writeLock().lock();
+    		goodCacheMap.put( key, value);
+    		goodLock.writeLock().unlock();
+            // }
     		break;
     	}
     	
@@ -160,21 +169,31 @@ public class SimpleCache {
     }*/
 
     public Row getFromCache(long key, TableName tableType) {
+    	Row row = null;
     	switch( tableType) {
     	case OrderTable:
-    		synchronized(orderCacheMap) {
-    			return Row.createKVMapFromLine(orderCacheMap.get(key));
-             }
+    		//synchronized(orderCacheMap) {
+    		orderLock.readLock().lock();
+    		row = Row.createKVMapFromLine(orderCacheMap.get(key));
+    		orderLock.readLock().unlock();
+    		break;
+            // }
     	case BuyerTable:
-    		synchronized(buyerCacheMap) {
-    			return Row.createKVMapFromLine(buyerCacheMap.get(key));
-             }
+    		//synchronized(buyerCacheMap) {
+    		buyerLock.readLock().lock();
+    		row = Row.createKVMapFromLine(buyerCacheMap.get(key));
+    		buyerLock.readLock().unlock();
+    		break;
+            // }
     	case GoodTable:
-    		synchronized(goodCacheMap) {
-    			return Row.createKVMapFromLine(goodCacheMap.get(key));
-             }
+    		//synchronized(goodCacheMap) {
+    		goodLock.readLock().lock();
+    		row = Row.createKVMapFromLine(goodCacheMap.get(key));
+    		goodLock.readLock().unlock();
+    		break;
+            // }
     	}
-    	return null;
+    	return row;
     }
 
 	/*public void putInCache(int key, Row row,
