@@ -27,7 +27,9 @@ public class SimpleCache {
     //private LinkedHashMap<Integer, List<Row>> orderGoodIdCacheMap;
     //private LinkedHashMap<Integer, Row> buyerCacheMap;
     //private LinkedHashMap<Integer, Row> goodCacheMap;
-    private ReadWriteLock lock;
+    private ReadWriteLock orderLock;
+    private ReadWriteLock buyerLock;
+    private ReadWriteLock goodLock;
     private static SimpleCache instance = null;
     
     public static SimpleCache getInstance() {
@@ -59,7 +61,9 @@ public class SimpleCache {
             }
         };
         
-        lock = new ReentrantReadWriteLock(false);
+        orderLock = new ReentrantReadWriteLock(false);
+        buyerLock = new ReentrantReadWriteLock(false);
+        goodLock = new ReentrantReadWriteLock(false);
     }
 
     /*@Override
@@ -86,23 +90,23 @@ public class SimpleCache {
     	switch( tableType) {
     	case OrderTable:
     		//synchronized(orderCacheMap) {
-    		lock.writeLock().lock();
+    		orderLock.writeLock().lock();
     		orderCacheMap.put( key, value);
-    		lock.readLock().unlock();
+    		orderLock.readLock().unlock();
             // }
     		break;
     	case BuyerTable:
     		//synchronized(buyerCacheMap) {
-    		lock.writeLock().lock();
+    		buyerLock.writeLock().lock();
     		buyerCacheMap.put( key, value);
-    		lock.writeLock().unlock();
+    		buyerLock.writeLock().unlock();
             // }
     		break;
     	case GoodTable:
     		//synchronized(goodCacheMap) {
-    		lock.writeLock().lock();
+    		goodLock.writeLock().lock();
     		goodCacheMap.put( key, value);
-    		lock.writeLock().unlock();
+    		goodLock.writeLock().unlock();
             // }
     		break;
     	}
@@ -169,21 +173,21 @@ public class SimpleCache {
     	switch( tableType) {
     	case OrderTable:
     		//synchronized(orderCacheMap) {
-    		lock.readLock().lock();
+    		orderLock.readLock().lock();
     		row = Row.createKVMapFromLine(orderCacheMap.get(key));
-    		lock.readLock().unlock();
+    		orderLock.readLock().unlock();
             // }
     	case BuyerTable:
     		//synchronized(buyerCacheMap) {
-    		lock.readLock().lock();
+    		buyerLock.readLock().lock();
     		row = Row.createKVMapFromLine(buyerCacheMap.get(key));
-    		lock.readLock().unlock();
+    		buyerLock.readLock().unlock();
             // }
     	case GoodTable:
     		//synchronized(goodCacheMap) {
-    		lock.readLock().lock();
+    		goodLock.readLock().lock();
     		row = Row.createKVMapFromLine(goodCacheMap.get(key));
-    		lock.readLock().unlock();
+    		goodLock.readLock().unlock();
             // }
     	}
     	return row;
