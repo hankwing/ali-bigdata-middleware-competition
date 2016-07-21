@@ -69,7 +69,7 @@ public class WriteFile {
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
-			indexQueue.put(new IndexItem(indexFileName,dataFileName, line, offset, type));
+			indexQueue.put(new IndexItem(indexFileName, dataFileName, line, offset, type));
 			String writeLine = line + "\n";
 			offset = offset + writeLine.getBytes().length;
 			count++;

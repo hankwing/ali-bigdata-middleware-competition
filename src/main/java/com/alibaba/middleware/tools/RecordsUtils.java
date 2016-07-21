@@ -131,10 +131,14 @@ public class RecordsUtils {
 			for( int i = 0; i< RaceConfig.cacheNumberOneRead ; i++ ) {
 				// 每从文件读一次数据即放入缓冲区一定数量大小的String
 				tempOffset = fileReader.getFilePointer();
-				tempCache = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
-						StandardCharsets.UTF_8);
-				cache.putInCache(tempOffset + file.getFilePath().hashCode()
-						, tempCache, tableType);
+				String line = fileReader.readLine();
+				if( line != null) {
+					tempCache = new String(line.getBytes(StandardCharsets.ISO_8859_1), 
+							StandardCharsets.UTF_8);
+					cache.putInCache(tempOffset + file.getFilePath().hashCode()
+							, tempCache, tableType);
+				}
+				
 			}
 			fileReader.close();
 			

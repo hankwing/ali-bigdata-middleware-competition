@@ -102,7 +102,7 @@ public class BuyerHandler{
 
 			while( true) {
 				IndexItem record = indexQueue.poll();
-
+				
 				if( record != null ) {
 					if( record.recordsData.equals("end")) {
 						isEnd = true;
@@ -162,9 +162,9 @@ public class BuyerHandler{
 					smallFile.setFilePath(dataFileName);
 					BucketCachePool.getInstance().removeAllBucket();
 
-					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+					//smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
 
-					smallFile.setBuyerIdIndex(0);
+					//smallFile.setBuyerIdIndex(0);
 					buyerFileList.add(smallFile);
 					buyerIdIndexList.put(dataFileName, buyerIdHashTable);
 					latch.countDown();

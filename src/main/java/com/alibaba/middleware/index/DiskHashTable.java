@@ -197,12 +197,13 @@ public class DiskHashTable<K,T> implements Serializable {
 			// write this HashTable to dataFile and return offset
 			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map
 			
-			fos = new FileOutputStream(dataFilePath, true);
+			// 先不把元数据写出去了
+			/*fos = new FileOutputStream(dataFilePath, true);
 			ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
 			thisOffset = byteArrayOs.size();
 			oos.writeObject(this);
 			oos.close();
-			fos.write(byteArrayOs.toByteArray());
+			fos.write(byteArrayOs.toByteArray());*/
 			readWriteLock.writeLock().unlock();
 
 		} catch (FileNotFoundException e) {
