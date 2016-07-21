@@ -70,7 +70,7 @@ public class BuyerHandler{
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					buyerfile.writeLine(record, IndexType.BuyerTable);
+					buyerfile.writeLine(file, record, IndexType.BuyerTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -80,8 +80,7 @@ public class BuyerHandler{
 		}
 
 		// set end signal
-		buyerfile.writeLine("end", IndexType.BuyerTable);
-		buyerfile.closeFile();
+		buyerfile.writeLine(null, "end", IndexType.BuyerTable);
 		System.out.println("end buyer handling!");
 	}
 
@@ -89,6 +88,7 @@ public class BuyerHandler{
 	public class BuyerIndexConstructor implements Runnable {
 
 		String indexFileName = null;
+		String dataFileName = null;
 		DiskHashTable<Integer, List<Long>> buyerIdHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
@@ -99,7 +99,6 @@ public class BuyerHandler{
 		}
 
 		public void run() {
-			// TODO Auto-generated method stub
 
 			while( true) {
 				IndexItem record = indexQueue.poll();
@@ -110,25 +109,28 @@ public class BuyerHandler{
 						continue;
 					}
 
-					if( !record.getDataFileName().equals(indexFileName)) {
+					if( !record.getIndexFileName().equals(indexFileName)) {
 						if( indexFileName == null) {
 							// 第一次建立索引文件
-							indexFileName = record.getDataFileName();
+							dataFileName = record.getDataFileName();
+							indexFileName = record.getIndexFileName();
 							buyerIdHashTable = new DiskHashTable<Integer,List<Long>>(
-									indexFileName + RaceConfig.buyerIndexFileSuffix ,indexFileName, Long.class);
+									indexFileName + RaceConfig.buyerIndexFileSuffix ,dataFileName, Long.class);
 
 						}
 						else {
 							// 保存当前buyerId的索引  并写入索引List
 							FilePathWithIndex smallFile = new FilePathWithIndex();
-							smallFile.setFilePath(indexFileName);
-							smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
-							buyerIdIndexList.put(indexFileName, buyerIdHashTable);
+							smallFile.setFilePath(dataFileName);
+							//smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+							smallFile.setBuyerIdIndex(0);
+							buyerIdIndexList.put(dataFileName, buyerIdHashTable);
 							buyerFileList.add(smallFile);
 
-							indexFileName = record.getDataFileName();
+							dataFileName = record.getDataFileName();
+							indexFileName = record.getIndexFileName();
 							buyerIdHashTable = new DiskHashTable<Integer,List<Long>>(
-									record.getDataFileName() + RaceConfig.buyerIndexFileSuffix, indexFileName, Long.class);
+									indexFileName + RaceConfig.buyerIndexFileSuffix, dataFileName, Long.class);
 
 						}
 					}
@@ -136,7 +138,7 @@ public class BuyerHandler{
 					Row recordRow = Row
 							.createKVMapFromLine(record.recordsData);
 					// 添加到缓冲区
-					rowCache.putInCache(indexFileName.hashCode() + record.getOffset()
+					rowCache.putInCache(dataFileName.hashCode() + record.getOffset()
 						, record.recordsData, TableName.BuyerTable);
 					
 					tempAttrList.addAll(recordRow.keySet());			// 添加属性
@@ -155,11 +157,12 @@ public class BuyerHandler{
 						buyerAttrList.addAll(tempAttrList);
 					}
 					FilePathWithIndex smallFile = new FilePathWithIndex();
-					smallFile.setFilePath(indexFileName);
+					smallFile.setFilePath(dataFileName);
 					BucketCachePool.getInstance().removeAllBucket();
-					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+					//smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+					smallFile.setBuyerIdIndex(0);
 					buyerFileList.add(smallFile);
-					buyerIdIndexList.put(indexFileName, buyerIdHashTable);
+					buyerIdIndexList.put(dataFileName, buyerIdHashTable);
 					latch.countDown();
 					break;
 				}

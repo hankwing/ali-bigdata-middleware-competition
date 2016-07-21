@@ -1,11 +1,7 @@
 package com.alibaba.middleware.handlefile;
 
-import java.io.BufferedWriter;
+
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
@@ -21,11 +17,10 @@ public class WriteFile {
 	private long MAX_LINES = RaceConfig.smallFileCapacity;
 	private long offset;
 	private int count;
-
-	private BufferedWriter writer;
-	private String filePerfix;
-	private String fileName;
 	private int fileNum;
+	
+	private String dataFileName;
+	private String indexFileName;
 	private LinkedBlockingQueue<IndexItem> indexQueue = null;
 
 	/**
@@ -41,51 +36,45 @@ public class WriteFile {
 		this.fileNum = 0;
 		this.MAX_LINES = maxLines;
 		this.indexQueue = indexQueue;
+		
+		dataFileName = null;
+		indexFileName = null;
 
 		//如果文件夹不存在则创建文件夹
 		File file = new File(path);
 		if (!file.exists()) {
 			file.mkdirs();
 		}
-
-		filePerfix = new String(path + name);
-		try {
-			fileName = filePerfix + String.valueOf(fileNum);
-			this.writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName)));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
-	public void writeLine(String line, IndexType type){
+	public void writeLine(String dataFileName, String line, IndexType type){
 		try {
-			if (count == MAX_LINES) {
-				writer.close();
-				//创建新的文件
+			/***
+			 * 索引文件为空时创建新的索引文件
+			 * 数据文件变化时创建新的索引文件
+			 */
+			if (indexFileName == null || !this.dataFileName.equals(dataFileName)) {
+				fileNum = 0;
+				indexFileName = dataFileName + fileNum;
 				fileNum++;
-				fileName = filePerfix + String.valueOf(fileNum);
-				writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName)));
+				offset = 0;
+				count = 0;
+				this.dataFileName = dataFileName;
+			}
+			
+			if (count == MAX_LINES) {
+				indexFileName = dataFileName + fileNum;
+				fileNum++;
 				offset = 0;
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
-			indexQueue.put(new IndexItem(fileName, line, offset, type));
+			indexQueue.put(new IndexItem(indexFileName,dataFileName, line, offset, type));
 			String writeLine = line + "\n";
-			writer.write(writeLine);
 			offset = offset + writeLine.getBytes().length;
 			count++;
-		} catch (IOException e) {
-			e.printStackTrace();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	public void closeFile(){
-		try {
-			writer.close();
-		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
@@ -93,9 +82,11 @@ public class WriteFile {
 	public long getOffset() {
 		return offset;
 	}
-
-	public String getFileName() {
-		return fileName;
+	
+	public String getIndexFileName() {
+		return indexFileName;
 	}
-
+	public String getDataFileName() {
+		return dataFileName;
+	}
 }
