@@ -31,20 +31,18 @@ public class GoodHandler{
 	ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList = null;
 	List<FilePathWithIndex> goodFileList = null;
 	HashSet<String> goodAttrList = null;
-	FilePathWithIndex goodIdSurrKeyFile = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
 	private SimpleCache rowCache = null;
 
 	public GoodHandler(List<FilePathWithIndex> goodFileList, 
-			HashSet<String> goodAttrList, FilePathWithIndex goodIdSurrKeyFile, 
+			HashSet<String> goodAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList, 
 			 int threadIndex,CountDownLatch latch) {
 		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.goodFileList = goodFileList;
 		this.goodAttrList = goodAttrList;
-		this.goodIdSurrKeyFile = goodIdSurrKeyFile;
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 		this.goodIdIndexList = goodIdIndexList;
 		this.threadIndex = threadIndex;

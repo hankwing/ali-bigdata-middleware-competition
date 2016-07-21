@@ -46,12 +46,12 @@ public class ConstructSystem {
 	public HashSet<String> buyerAttrList = null; // 保存buyer表的所有字段名称
 	public HashSet<String> goodAttrList = null; // 保存good表的所有字段名称
 
-	public FilePathWithIndex buyerIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
-	public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
+	//public FilePathWithIndex buyerIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
+	//public FilePathWithIndex goodIdSurrKeyFile = null; // 存代理键索引块的文件地址和索引元数据偏移地址
 	//public DiskHashTable<String, Long> buyerIdSurrKeyIndex = null; // 缓存buyerId事实键与代理键
 	//public DiskHashTable<String, Long> goodIdSurrKeyIndex = null; // 缓存goodId事实键与代理键
 	
-	HashMap<String, Boolean> computableItems;
+	//HashMap<String, Boolean> computableItems;
 
 	class BuyerRun implements Runnable {
 		CountDownLatch countDownLatch;
@@ -68,7 +68,7 @@ public class ConstructSystem {
 			// TODO Auto-generated method stub
 			if( !files.isEmpty()) {
 				BuyerHandler buyerHandler = new BuyerHandler( buyerFileList, buyerAttrList,
-						buyerIdSurrKeyFile, buyerIdIndexList, threadIndex, countDownLatch);
+						 buyerIdIndexList, threadIndex, countDownLatch);
 				buyerHandler.handeBuyerFiles(files);
 			}
 			else {
@@ -94,7 +94,7 @@ public class ConstructSystem {
 			// TODO Auto-generated method stub
 			if( !files.isEmpty()) {
 				GoodHandler goodHandler = new GoodHandler( goodFileList, goodAttrList,
-						goodIdSurrKeyFile, goodIdIndexList, threadIndex, countDownLatch);
+						 goodIdIndexList, threadIndex, countDownLatch);
 				goodHandler.HandleGoodFiles(files);
 			}
 			else {
@@ -138,7 +138,6 @@ public class ConstructSystem {
 			CopyOnWriteArrayList <FilePathWithIndex> buyerFileList, 
 			CopyOnWriteArrayList <FilePathWithIndex> goodFileList, HashSet<String> orderAttrList, 
 			HashSet<String> buyerAttrList, HashSet<String> goodAttrList, 
-			FilePathWithIndex buyerIdSurrKeyFile, FilePathWithIndex goodIdSurrKeyFile, 
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList, 
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList) {
 		// TODO Auto-generated constructor stub
@@ -153,8 +152,6 @@ public class ConstructSystem {
 		this.orderAttrList = orderAttrList;
 		this.buyerAttrList = buyerAttrList;
 		this.goodAttrList = goodAttrList;
-		this.buyerIdSurrKeyFile = buyerIdSurrKeyFile;
-		this.goodIdSurrKeyFile = goodIdSurrKeyFile;
 		this.goodIdIndexList = goodIdIndexList;
 		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
@@ -230,26 +227,4 @@ public class ConstructSystem {
 		}
 		return list;
 	}
-
-	// public static void main(String args[]){
-
-	/*
-	 * long startTime = System.currentTimeMillis(); List<String> buyerfiles =
-	 * new ArrayList<String>(); buyerfiles.add("benchmark\\buyer_records.txt");
-	 * buyerfiles.add("buyer_records_1.txt");
-	 * buyerfiles.add("buyer_records_2.txt");
-	 * 
-	 * List<String> goodfiles = new ArrayList<String>();
-	 * goodfiles.add("benchmark\\good_records.txt");
-	 * goodfiles.add("good_records_1.txt"); goodfiles.add("good_records_2.txt");
-	 * List<String> orderfiles = new ArrayList<String>();
-	 * //orderfiles.add("order_records.txt");
-	 * 
-	 * ConstructSystem constructSystem = new ConstructSystem();
-	 * constructSystem.startHandling(buyerfiles, goodfiles, orderfiles, 1);
-	 * 
-	 * System.out.println("order table time:" + (System.currentTimeMillis() -
-	 * startTime) / 1000);
-	 */
-	// }
 }

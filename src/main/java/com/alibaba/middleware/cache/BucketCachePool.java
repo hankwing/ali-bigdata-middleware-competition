@@ -1,15 +1,9 @@
 package com.alibaba.middleware.cache;
 
-import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.index.HashBucket;
-
-import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import com.alibaba.middleware.index.HashBucket;
 
 /**
  * @author Jelly

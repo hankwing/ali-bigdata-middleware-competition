@@ -43,8 +43,8 @@ public class DiskHashTable<K,T> implements Serializable {
 	private transient ObjectOutputStream offsetOos = null;
 	private transient BufferedOutputStream bufferedFout;
 	private transient FileOutputStream fos;
-	private transient FileInputStream streamIn;
-	private transient ObjectInputStream bucketReader;
+	//private transient FileInputStream streamIn;
+	//private transient ObjectInputStream bucketReader;
 	private transient long lastOffset = 0;
 	private transient ReadWriteLock readWriteLock = null;
 	private transient BucketCachePool bucketCachePool = null;
@@ -247,11 +247,11 @@ public class DiskHashTable<K,T> implements Serializable {
 			if( fileBucket == null) {
 				// 需要从文件里读桶 该桶需要缓冲区管理
 				readWriteLock.readLock().lock();
-				if( streamIn == null) {
-					streamIn = new FileInputStream(bucketFilePath);
+				//if( streamIn == null) {
+				FileInputStream streamIn = new FileInputStream(bucketFilePath);
 
-					bucketReader = new ObjectInputStream(streamIn);
-				}
+				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
+				//}
 				
 				streamIn.getChannel().position(bucketAddressList.get(bucketKey));
 				
@@ -414,9 +414,9 @@ public class DiskHashTable<K,T> implements Serializable {
 			if (bufferedFout != null) {
 				bufferedFout.close();
 			}
-			if (bucketReader != null) {
+			/*if (bucketReader != null) {
 				bucketReader.close();
-			}
+			}*/
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

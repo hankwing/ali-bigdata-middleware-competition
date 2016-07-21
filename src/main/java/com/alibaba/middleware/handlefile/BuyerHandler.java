@@ -8,21 +8,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
-import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.FilePathWithIndex;
-import com.alibaba.middleware.tools.RecordsUtils;
 
 public class BuyerHandler{
 
@@ -34,20 +28,18 @@ public class BuyerHandler{
 	ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList = null;
 	List<FilePathWithIndex> buyerFileList = null;
 	HashSet<String> buyerAttrList = null;
-	FilePathWithIndex buyerIdSurrKeyFile = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
 	public SimpleCache rowCache = null;
 
 	public BuyerHandler(List<FilePathWithIndex> buyerFileList, 
-			HashSet<String> buyerAttrList, FilePathWithIndex buyerIdSurrKeyFile, 
+			HashSet<String> buyerAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList, 
 			int threadIndex, CountDownLatch latch) {
 		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.buyerFileList = buyerFileList;
 		this.buyerAttrList = buyerAttrList;
-		this.buyerIdSurrKeyFile = buyerIdSurrKeyFile;
 		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		this.buyerIdIndexList = buyerIdIndexList;
 		this.threadIndex = threadIndex;
