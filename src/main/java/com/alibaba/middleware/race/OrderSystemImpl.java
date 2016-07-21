@@ -221,10 +221,10 @@ public class OrderSystemImpl implements OrderSystem {
 		buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
 		goodIdSurrKeyFile = new FilePathWithIndex();
 
-		JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
-		threadPool.addMonitor(jvmMonitorThread);
-		threadPool.startMonitors();
-		rowCache = SimpleCache.getInstance();
+		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
+		//threadPool.addMonitor(jvmMonitorThread);
+		//threadPool.startMonitors();
+		//rowCache = SimpleCache.getInstance();
 	}
 
 	/**
