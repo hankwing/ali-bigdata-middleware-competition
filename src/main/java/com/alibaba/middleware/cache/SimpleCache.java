@@ -85,20 +85,25 @@ public class SimpleCache {
     public void putInCache(Long key, String value, TableName tableType) {
     	switch( tableType) {
     	case OrderTable:
-    		synchronized(orderCacheMap) {
-    			
-    			orderCacheMap.put( key, value);
-             }
+    		//synchronized(orderCacheMap) {
+    		lock.writeLock().lock();
+    		orderCacheMap.put( key, value);
+    		lock.readLock().unlock();
+            // }
     		break;
     	case BuyerTable:
-    		synchronized(buyerCacheMap) {
-    			buyerCacheMap.put( key, value);
-             }
+    		//synchronized(buyerCacheMap) {
+    		lock.writeLock().lock();
+    		buyerCacheMap.put( key, value);
+    		lock.writeLock().unlock();
+            // }
     		break;
     	case GoodTable:
-    		synchronized(goodCacheMap) {
-    			goodCacheMap.put( key, value);
-             }
+    		//synchronized(goodCacheMap) {
+    		lock.writeLock().lock();
+    		goodCacheMap.put( key, value);
+    		lock.writeLock().unlock();
+            // }
     		break;
     	}
     	
@@ -160,21 +165,28 @@ public class SimpleCache {
     }*/
 
     public Row getFromCache(long key, TableName tableType) {
+    	Row row = null;
     	switch( tableType) {
     	case OrderTable:
-    		synchronized(orderCacheMap) {
-    			return Row.createKVMapFromLine(orderCacheMap.get(key));
-             }
+    		//synchronized(orderCacheMap) {
+    		lock.readLock().lock();
+    		row = Row.createKVMapFromLine(orderCacheMap.get(key));
+    		lock.readLock().unlock();
+            // }
     	case BuyerTable:
-    		synchronized(buyerCacheMap) {
-    			return Row.createKVMapFromLine(buyerCacheMap.get(key));
-             }
+    		//synchronized(buyerCacheMap) {
+    		lock.readLock().lock();
+    		row = Row.createKVMapFromLine(buyerCacheMap.get(key));
+    		lock.readLock().unlock();
+            // }
     	case GoodTable:
-    		synchronized(goodCacheMap) {
-    			return Row.createKVMapFromLine(goodCacheMap.get(key));
-             }
+    		//synchronized(goodCacheMap) {
+    		lock.readLock().lock();
+    		row = Row.createKVMapFromLine(goodCacheMap.get(key));
+    		lock.readLock().unlock();
+            // }
     	}
-    	return null;
+    	return row;
     }
 
 	/*public void putInCache(int key, Row row,
