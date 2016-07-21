@@ -92,7 +92,7 @@ public class SimpleCache {
     		//synchronized(orderCacheMap) {
     		orderLock.writeLock().lock();
     		orderCacheMap.put( key, value);
-    		orderLock.readLock().unlock();
+    		orderLock.writeLock().unlock();
             // }
     		break;
     	case BuyerTable:
@@ -176,18 +176,21 @@ public class SimpleCache {
     		orderLock.readLock().lock();
     		row = Row.createKVMapFromLine(orderCacheMap.get(key));
     		orderLock.readLock().unlock();
+    		break;
             // }
     	case BuyerTable:
     		//synchronized(buyerCacheMap) {
     		buyerLock.readLock().lock();
     		row = Row.createKVMapFromLine(buyerCacheMap.get(key));
     		buyerLock.readLock().unlock();
+    		break;
             // }
     	case GoodTable:
     		//synchronized(goodCacheMap) {
     		goodLock.readLock().lock();
     		row = Row.createKVMapFromLine(goodCacheMap.get(key));
     		goodLock.readLock().unlock();
+    		break;
             // }
     	}
     	return row;
