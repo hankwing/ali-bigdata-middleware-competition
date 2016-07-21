@@ -39,7 +39,7 @@ public class KeyValueImpl implements KeyValue{
 		try {
 			return Long.parseLong(rawValue);
 		} catch (NumberFormatException e) {
-			System.out.println("long failed!：" + rawValue);
+			System.out.println("long failed!" + rawValue);
 			throw new TypeException();
 		}
 	}
