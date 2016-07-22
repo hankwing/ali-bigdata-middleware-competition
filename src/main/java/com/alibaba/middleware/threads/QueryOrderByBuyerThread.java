@@ -65,11 +65,11 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 							filePath.getOrderBuyerIdIndex());
 					system.orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
 				}*/
-				long resultNum = hashTable.get(surrId).size();
-				if (resultNum != 0) {
+				List<Long> offSetresults = hashTable.get(surrId);
+				if (offSetresults.size() != 0) {
 					// find the records offset
 					// 找到后，按照降序插入TreeMap中
-					for( Long offset: hashTable.get(surrId)) {
+					for( Long offset: offSetresults) {
 
 						Row row = system.rowCache.getFromCache(offset + filePath.getFilePath().hashCode(),
 								TableName.OrderTable);

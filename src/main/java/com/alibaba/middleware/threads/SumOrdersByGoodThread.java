@@ -80,12 +80,13 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 							filePath.getOrderGoodIdIndex());
 					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
 				}*/
-				long resultNum = hashTable.get(surrId).size();
+				List<Long> offSetresults = hashTable.get(surrId);
+				int resultNum = offSetresults.size();
 				if (resultNum != 0) {
 					// find the records offset
 					// 找到后，按照降序插入TreeMap中
 					//System.out.println("4 case :" + goodid +" " + key);
-					for( Long offset: hashTable.get(surrId)) {
+					for( Long offset: offSetresults) {
 						boolean isGoodKey = false;
 						long longValue = 0;
 						Double doubleValue = 0.0;

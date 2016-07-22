@@ -23,8 +23,6 @@ public class SimpleCache {
     private LinkedHashMap<Long, String> orderCacheMap;
     private LinkedHashMap<Long,String> buyerCacheMap;
     private LinkedHashMap<Long, String> goodCacheMap;
-    //private LinkedHashMap<Integer, String> orderCacheMap;
-    //private LinkedHashMap<Long, String> orderCacheMap;
     //private LinkedHashMap<Integer, List<Row>> orderBuyerIdCacheMap;
     //private LinkedHashMap<Integer, List<Row>> orderGoodIdCacheMap;
     //private LinkedHashMap<Integer, Row> buyerCacheMap;
