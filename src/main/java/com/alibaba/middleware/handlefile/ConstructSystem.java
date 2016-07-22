@@ -1,5 +1,6 @@
 package com.alibaba.middleware.handlefile;
 
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,6 +38,8 @@ public class ConstructSystem {
 	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList = null;
 	// goodId里的goodId代理键索引
 	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList = null;
+	
+	public ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandersList = null;
 
 	public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; // 保存order表所有文件的名字
 	public CopyOnWriteArrayList<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
@@ -68,7 +71,7 @@ public class ConstructSystem {
 			// TODO Auto-generated method stub
 			if( !files.isEmpty()) {
 				BuyerHandler buyerHandler = new BuyerHandler( buyerFileList, buyerAttrList,
-						 buyerIdIndexList, threadIndex, countDownLatch);
+						 buyerIdIndexList, threadIndex, countDownLatch, fileHandersList);
 				buyerHandler.handeBuyerFiles(files);
 			}
 			else {
@@ -94,7 +97,7 @@ public class ConstructSystem {
 			// TODO Auto-generated method stub
 			if( !files.isEmpty()) {
 				GoodHandler goodHandler = new GoodHandler( goodFileList, goodAttrList,
-						 goodIdIndexList, threadIndex, countDownLatch);
+						 goodIdIndexList, threadIndex, countDownLatch, fileHandersList);
 				goodHandler.HandleGoodFiles(files);
 			}
 			else {
@@ -120,7 +123,7 @@ public class ConstructSystem {
 			if( !files.isEmpty()) {
 				OrderHandler orderHandler = new OrderHandler(orderIdIndexList, orderBuyerIdIndexList,
 						orderGoodIdIndexList, orderCountableIndexList, orderFileList, orderAttrList,
-						threadIndex, countDownLatch);
+						threadIndex, countDownLatch, fileHandersList);
 				orderHandler.HandleOrderFiles(files);
 			}
 			else {
@@ -139,7 +142,8 @@ public class ConstructSystem {
 			CopyOnWriteArrayList <FilePathWithIndex> goodFileList, HashSet<String> orderAttrList, 
 			HashSet<String> buyerAttrList, HashSet<String> goodAttrList, 
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList, 
-			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList) {
+			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList,
+			ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList) {
 		// TODO Auto-generated constructor stub
 		this.orderIdIndexList = orderIdIndexList;
 		this.buyerIdIndexList = buyerIdIndexList;
@@ -153,6 +157,7 @@ public class ConstructSystem {
 		this.buyerAttrList = buyerAttrList;
 		this.goodAttrList = goodAttrList;
 		this.goodIdIndexList = goodIdIndexList;
+		this.fileHandersList = fileHandlersList;
 		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 	}

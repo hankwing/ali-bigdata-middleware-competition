@@ -45,8 +45,7 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-
-		 BufferedReader reader;
+		List<RandomAccessFile> files = new ArrayList<RandomAccessFile>();
 		 String line = null;
 		 long offset = 0;
 		 long mStartTime = System.currentTimeMillis();
@@ -58,28 +57,17 @@ public class Test {
 		 HashMap<Integer,Long> map2 = new HashMap<Integer,Long>();
 		 HashMap<Integer,Long> map3 = new HashMap<Integer,Long>();
 		try {
-			reader = new BufferedReader(new FileReader("benchmark/order_records.txt"));
-			line = reader.readLine();
+			
+			
 			offset = 0;
-			while( line != null) {
+			while( offset < 10000) {
+				RandomAccessFile reader = new RandomAccessFile("benchmark/order_records.txt","r");
+				files.add(reader);
 				offset ++;
 				long id = 0;
-				Row row = Row.createKVMapFromLine(line);
-				try {
-					id = row.getKV("orderid").valueAsLong();
-				} catch (TypeException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				//buyerIdHashTable.put((int) (line.hashCode() + id), offset);
-				//dHashTable.put((int) (line.hashCode() + id), offset);
-				map.put(line.hashCode(), offset);
-				map2.put(line.hashCode(), offset);
-				map3.put(line.hashCode(), offset);
-				line = reader.readLine();
 				
 			}
-			reader.close();
+			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

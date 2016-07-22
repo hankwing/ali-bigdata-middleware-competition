@@ -128,8 +128,12 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						// find the records offset
 						// 找到后，按照降序插入TreeMap中
 						for( Long offset: offSetresults) {
-							Row	row = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-										filePath, offset, TableName.OrderTable));
+							// 放入缓冲区
+							String record = RecordsUtils.getStringFromFile(
+									system.fileHandlersList.get(filePath.getFilePath()), offset, TableName.OrderTable);
+							Row	row = Row.createKVMapFromLine(record);
+							system.rowCache.putInCache(
+									row.getKV(RaceConfig.orderId).valueAsLong(), record, TableName.OrderTable);
 							addToResults(row, results, buyerKeys, goodKeys);
 						}
 						

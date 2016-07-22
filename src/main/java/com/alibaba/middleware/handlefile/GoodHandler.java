@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,11 +37,13 @@ public class GoodHandler{
 	int threadIndex = 0;
 	CountDownLatch latch = null;
 	private SimpleCache rowCache = null;
+	public ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList = null;
 
 	public GoodHandler(List<FilePathWithIndex> goodFileList, 
 			HashSet<String> goodAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList, 
-			 int threadIndex,CountDownLatch latch) {
+			 int threadIndex,CountDownLatch latch,
+			 ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList) {
 		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.goodFileList = goodFileList;
@@ -48,6 +51,7 @@ public class GoodHandler{
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 		this.goodIdIndexList = goodIdIndexList;
 		this.threadIndex = threadIndex;
+		this.fileHandlersList = fileHandlersList;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		goodfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}},
 				RaceConfig.storeFolders[threadIndex], 
@@ -60,6 +64,16 @@ public class GoodHandler{
 		for (String file : files) {
 			try {
 				reader = new BufferedReader(new FileReader(file));
+				// 建立文件句柄
+				LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(file);
+				if( handlersQueue == null) {
+					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+					fileHandlersList.put(file, handlersQueue);
+				}
+				
+				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+					handlersQueue.add(new RandomAccessFile(file, "r"));
+				}
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -137,7 +151,7 @@ public class GoodHandler{
 						tempAttrList.addAll(rowData.keySet());
 						String goodid = rowData.getKV(RaceConfig.goodId).valueAsString();
 						Integer goodIdHashCode = goodid.hashCode();
-						rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
+						//rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
 						goodIdHashTable.put(goodIdHashCode, record.getOffset());
 						//surrKey ++;
 					}

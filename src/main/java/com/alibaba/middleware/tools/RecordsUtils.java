@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
@@ -114,35 +115,33 @@ public class RecordsUtils {
 	 * @param offset
 	 * @return
 	 */
-	public static String getStringFromFile(FilePathWithIndex file ,Long offset, TableName tableType){
+	public static String getStringFromFile(LinkedBlockingQueue<RandomAccessFile> file
+			,Long offset, TableName tableType){
 		String result = null;
-		long tempOffset = 0;
-		String tempCache = null;
 		
 		try {
-			RandomAccessFile fileReader = new RandomAccessFile(file.getFilePath(), "r");
-			SimpleCache cache = SimpleCache.getInstance();
+			RandomAccessFile fileReader = file.take();
 			fileReader.seek(offset);
 			result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
 					StandardCharsets.UTF_8);
-			cache.putInCache(offset + file.getFilePath().hashCode()
-					, result, tableType);
 				
-			for( int i = 0; i< RaceConfig.cacheNumberOneRead ; i++ ) {
+			/*for( int i = 0; i< RaceConfig.cacheNumberOneRead ; i++ ) {
 				// 每从文件读一次数据即放入缓冲区一定数量大小的String
-				tempOffset = fileReader.getFilePointer();
 				String line = fileReader.readLine();
-				if( line != null) {
+				Row row = Row.createKVMapFromLine(fileReader.readLine());
+				if( row != null) {
 					tempCache = new String(line.getBytes(StandardCharsets.ISO_8859_1), 
 							StandardCharsets.UTF_8);
-					cache.putInCache(tempOffset + file.getFilePath().hashCode()
-							, tempCache, tableType);
+					cache.putInCache(row.ge, tempCache, tableType);
 				}
 				
-			}
-			fileReader.close();
-			
+			}*/
+			// 放回文件句柄队列中
+			file.add(fileReader);
 			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}

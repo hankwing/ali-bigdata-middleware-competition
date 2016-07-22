@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -34,11 +35,13 @@ public class BuyerHandler{
 	int threadIndex = 0;
 	CountDownLatch latch = null;
 	public SimpleCache rowCache = null;
+	public ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList = null;
 
 	public BuyerHandler(List<FilePathWithIndex> buyerFileList, 
 			HashSet<String> buyerAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList, 
-			int threadIndex, CountDownLatch latch) {
+			int threadIndex, CountDownLatch latch, 
+			ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList) {
 		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.buyerFileList = buyerFileList;
@@ -46,6 +49,7 @@ public class BuyerHandler{
 		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		this.buyerIdIndexList = buyerIdIndexList;
 		this.threadIndex = threadIndex;
+		this.fileHandlersList = fileHandlersList;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		buyerfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
@@ -64,6 +68,16 @@ public class BuyerHandler{
 		for (String file : files) {
 			try {
 				reader = new BufferedReader(new FileReader(file));
+				// 建立文件句柄
+				LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(file);
+				if( handlersQueue == null) {
+					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+					fileHandlersList.put(file, handlersQueue);
+				}
+				
+				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+					handlersQueue.add(new RandomAccessFile(file, "r"));
+				}
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
@@ -143,7 +157,7 @@ public class BuyerHandler{
 					tempAttrList.addAll(rowData.keySet());			// 添加属性
 					String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
 					Integer buyerIdHashCode = buyerid.hashCode();
-					rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
+					//rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
 					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
 					buyerIdHashTable.put(buyerIdHashCode, record.getOffset());
 					//surrKey ++;

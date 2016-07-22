@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.SimpleCache;
@@ -54,6 +56,8 @@ public class OrderSystemImpl implements OrderSystem {
 	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList = null;
 	// goodId里的goodId代理键索引
 	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList = null;
+	// 文件句柄池
+	public ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList = null;
 
 	public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; // 保存order表所有文件的名字
 	public CopyOnWriteArrayList<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
@@ -210,7 +214,8 @@ public class OrderSystemImpl implements OrderSystem {
 		buyerIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
 		// goodId里的goodId代理键索引
 		goodIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
-
+		fileHandlersList = new ConcurrentHashMap<String,LinkedBlockingQueue<RandomAccessFile>>();
+		
 		orderFileList = new CopyOnWriteArrayList<FilePathWithIndex>(); // 保存order表所有文件的名字
 		buyerFileList = new CopyOnWriteArrayList<FilePathWithIndex>(); // 保存buyer表所有文件的名字
 		goodFileList = new CopyOnWriteArrayList<FilePathWithIndex>(); // 保存good表所有文件的名字
@@ -258,7 +263,7 @@ public class OrderSystemImpl implements OrderSystem {
 				orderBuyerIdIndexList, orderGoodIdIndexList,
 				orderCountableIndexList, orderFileList, buyerFileList,
 				goodFileList, orderAttrList, buyerAttrList, goodAttrList,
-				 buyerIdIndexList,goodIdIndexList);
+				 buyerIdIndexList,goodIdIndexList, fileHandlersList);
 		constructSystem.startHandling(buyerFiles, goodFiles, orderFiles,
 				storeFolders, RaceConfig.handleThreadNumber);
 
@@ -338,45 +343,6 @@ public class OrderSystemImpl implements OrderSystem {
 
 		return surrogateKey;
 	}*/
-	
-	/**
-	 * 根据id查找对应表的数据存在不存在
-	 * 
-	 * @return
-	 * @throws TypeException 
-	 */
-	public boolean isRecordExist(long orderid) throws TypeException {
-		for (FilePathWithIndex filePath : orderFileList) {
-			String fileName = filePath.getFilePath();
-			DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
-			List<Long> results = hashTable.get(orderid);
-			
-			if (results.size() != 0) {
-				// find the records offset
-				// 不管key是什么，都得载入固定order表里的固定key
-				/*System.out.println("records offset:"
-						+ hashTable.get(id).get(0));*/
-				for( Long offset : results) {
-					Row temp = rowCache.getFromCache(offset + fileName.hashCode(), TableName.OrderTable);
-					if(temp != null) {
-						temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-								temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-										filePath, offset, TableName.OrderTable));
-					}
-					else {
-						temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-								filePath, offset, TableName.OrderTable));
-					}
-					if( temp.getKV(RaceConfig.orderId).valueAsLong() == orderid) {
-						return true;
-					}
-				}
-				break;
-			}
-		}
-		
-		return false;
-	}
 
 	/**
 	 * 根据各个表的主键查找索引返回相应的表记录 无记录则返回null
@@ -385,7 +351,7 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @throws TypeException 
 	 */
 	public Row getRowById(TableName tableName, Object id) throws TypeException {
-		Row result = new Row();
+		Row result = null;
 		String idString = String.valueOf(id);
 		switch (tableName) {
 		case OrderTable:
@@ -405,11 +371,12 @@ public class OrderSystemImpl implements OrderSystem {
 					if (results.size() != 0) {
 						// find the records offset
 						for( Long offset : results) {
-						
-							Row temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-									filePath, offset, TableName.OrderTable));
+							String records = RecordsUtils.getStringFromFile(
+									fileHandlersList.get(filePath.getFilePath()), offset, tableName);
+							Row temp = Row.createKVMapFromLine(records);
 							if( temp.getKV(RaceConfig.orderId).valueAsLong() == orderid) {
-								// 确认row是我们要找的
+								// 确认row是我们要找的,放入缓冲区
+								rowCache.putInCache(orderid, records, tableName);
 								result = temp;
 								break;
 							}
@@ -436,11 +403,13 @@ public class OrderSystemImpl implements OrderSystem {
 					List<Long> results = hashTable.get(surrId);
 					if (results.size() != 0) {
 						for( Long offset : results) {
-						
-							Row temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-									filePath, offset, TableName.BuyerTable));
+							String records = RecordsUtils.getStringFromFile(
+									fileHandlersList.get(filePath.getFilePath()), offset, tableName);
+							Row temp = Row.createKVMapFromLine(records);
 							if( temp.getKV(RaceConfig.buyerId).valueAsString().equals(id)) {
 								result = temp;
+								// 放入缓冲区
+								rowCache.putInCache(surrId, records, tableName);
 								break;
 							}
 						}
@@ -464,11 +433,13 @@ public class OrderSystemImpl implements OrderSystem {
 					List<Long> results = hashTable.get(goodSurrId);
 					if (results.size() != 0) {
 						for( Long offset : results) {
-
-							Row temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-										filePath, offset, TableName.GoodTable));
+							String records = RecordsUtils.getStringFromFile(
+									fileHandlersList.get(filePath.getFilePath()), offset, tableName);
+							Row temp = Row.createKVMapFromLine(records);
 							if( temp.getKV(RaceConfig.goodId).valueAsString().equals(id)) {
 								result = temp;
+								// 放入缓冲区
+								rowCache.putInCache(goodSurrId, records, tableName);
 								break;
 							}
 						}

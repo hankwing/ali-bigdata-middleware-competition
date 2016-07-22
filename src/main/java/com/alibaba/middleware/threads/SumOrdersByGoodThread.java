@@ -178,9 +178,14 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 					int resultNum = offSetresults.size();
 					if (resultNum != 0) {
 						for (Long offset : offSetresults) {
-							Row row = Row.createKVMapFromLine(RecordsUtils
-									.getStringFromFile(filePath, offset,
-											TableName.OrderTable));
+							String record = RecordsUtils
+									.getStringFromFile(system.fileHandlersList.get(
+											filePath.getFilePath()), offset,TableName.OrderTable);
+							Row row = Row.createKVMapFromLine(record);
+							// 放入缓冲区
+							system.rowCache.putInCache(
+									row.getKV(RaceConfig.orderId).valueAsLong(), record, TableName.OrderTable);
+							
 							boolean isGoodKey = false;
 							long longValue = 0;
 							Double doubleValue = 0.0;
