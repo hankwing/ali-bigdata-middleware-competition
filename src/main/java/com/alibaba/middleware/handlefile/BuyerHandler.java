@@ -124,7 +124,7 @@ public class BuyerHandler{
 							FilePathWithIndex smallFile = new FilePathWithIndex();
 
 							smallFile.setFilePath(dataFileName);
-							smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+							//smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
 							smallFile.setBuyerIdIndex(0);
 							buyerIdIndexList.put(dataFileName, buyerIdHashTable);
 
@@ -157,7 +157,7 @@ public class BuyerHandler{
 					smallFile.setFilePath(dataFileName);
 					BucketCachePool.getInstance().removeAllBucket();
 
-					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+					//smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
 
 					//smallFile.setBuyerIdIndex(0);
 					buyerFileList.add(smallFile);

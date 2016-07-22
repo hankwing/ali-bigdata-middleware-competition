@@ -75,11 +75,11 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			for (FilePathWithIndex filePath : system.orderFileList) {
 				DiskHashTable<Integer, List<Long>> hashTable = system.orderGoodIdIndexList
 						.get(filePath.getFilePath());
-				if (hashTable == null) {
+				/*if (hashTable == null) {
 					hashTable = system.getHashDiskTable(filePath.getFilePath(),
 							filePath.getOrderGoodIdIndex());
 					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
-				}
+				}*/
 				long resultNum = hashTable.get(surrId).size();
 				if (resultNum != 0) {
 					// find the records offset

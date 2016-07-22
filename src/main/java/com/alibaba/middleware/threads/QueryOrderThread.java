@@ -95,8 +95,8 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 			else {
 				// 这里说明key为空 只需要判断是否存在该条记录即可
 				// 这里需改进
-				Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,orderId);
-				if(orderIdRow.isEmpty()) {
+				
+				if(!system.isRecordExist(orderId)) {
 					// 没找到相应订单
 					return null;
 				}

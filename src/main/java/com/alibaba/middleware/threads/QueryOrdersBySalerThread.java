@@ -48,7 +48,6 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 	 *            待查询的字段，如果为null，则查询所有字段，如果为空，则排除所有字段
 	 * @return 符合条件的订单集合，按照订单id从小至大排序
 	 */
-	@SuppressWarnings("unchecked")
     @Override
     public Iterator<Result> call() throws Exception {
         // TODO
@@ -79,14 +78,15 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 			return null;
 		}
 		else {
+			
 			for (FilePathWithIndex filePath : system.orderFileList) {
 				DiskHashTable<Integer, List<Long>> hashTable = system.orderGoodIdIndexList
 						.get(filePath.getFilePath());
-				if (hashTable == null) {
+				/*if (hashTable == null) {
 					hashTable = system.getHashDiskTable(filePath.getFilePath(),
 							filePath.getOrderGoodIdIndex());
 					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
-				}
+				}*/
 				long resultNum = hashTable.get(surrId).size();
 				if (resultNum != 0) {
 					// find the records offset
@@ -107,16 +107,21 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						}
 						
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
-							// 放入缓冲区
 							
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
-							// need query buyerTable
-							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-									row.get(RaceConfig.buyerId).valueAsString()));			
-							// need query goodTable
-							row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-									row.get(RaceConfig.goodId).valueAsString()));
+							if( !buyerKeys.isEmpty()) {
+								// need query buyerTable
+								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+										row.get(RaceConfig.buyerId).valueAsString()));
+							}
+							if(!goodKeys.isEmpty()) {
+								// 按理说这种情况不会发生的
+								System.out.println("weired query!");
+								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+										row.get(RaceConfig.goodId).valueAsString()));
+							}
 							results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
+							
 						}				
 						
 					}

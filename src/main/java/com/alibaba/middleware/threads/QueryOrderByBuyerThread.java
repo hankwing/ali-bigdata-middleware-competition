@@ -60,11 +60,11 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 			for (FilePathWithIndex filePath : system.orderFileList) {
 				DiskHashTable<Integer, List<Long>> hashTable = system.orderBuyerIdIndexList.get(filePath
 						.getFilePath());
-				if (hashTable == null) {
+				/*if (hashTable == null) {
 					hashTable = system.getHashDiskTable(filePath.getFilePath(),
 							filePath.getOrderBuyerIdIndex());
 					system.orderBuyerIdIndexList.put(filePath.getFilePath(), hashTable);
-				}
+				}*/
 				long resultNum = hashTable.get(surrId).size();
 				if (resultNum != 0) {
 					// find the records offset

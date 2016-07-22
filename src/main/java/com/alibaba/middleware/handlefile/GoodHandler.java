@@ -119,7 +119,7 @@ public class GoodHandler{
 								FilePathWithIndex smallFile = new FilePathWithIndex();
 
 								smallFile.setFilePath(dataFileName);
-								smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+								//smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
 								smallFile.setGoodIdIndex(0);
 								goodIdIndexList.put(dataFileName, goodIdHashTable);
 
@@ -150,7 +150,7 @@ public class GoodHandler{
 						FilePathWithIndex smallFile = new FilePathWithIndex();
 
 						smallFile.setFilePath(dataFileName);
-						smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+						//smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
 
 						smallFile.setGoodIdIndex(0);
 						BucketCachePool.getInstance().removeAllBucket();

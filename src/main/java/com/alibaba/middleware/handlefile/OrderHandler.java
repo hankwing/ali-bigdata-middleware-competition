@@ -166,8 +166,8 @@ public class OrderHandler {
 									// 保存当前goodId的索引 并写入索引List
 									FilePathWithIndex smallFile = new FilePathWithIndex();
 									smallFile.setFilePath(dataFileName);
-									smallFile.setOrderIdIndex(idHashTable
-											.writeAllBuckets());
+									//smallFile.setOrderIdIndex(idHashTable
+									//		.writeAllBuckets());
 									orderFileList.add(smallFile);
 									orderIdIndexList.put(dataFileName, idHashTable);
 									dataFileName = record.getDataFileName();
@@ -179,6 +179,7 @@ public class OrderHandler {
 									break;
 								case OrderBuyerId:
 									orderBuyerIdIndexList.put(dataFileName, idHashTable);
+									//idHashTable.writeAllBuckets();
 									dataFileName = record.getDataFileName();
 									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<Long>>(
@@ -188,6 +189,7 @@ public class OrderHandler {
 									break;
 								case OrderGoodId:
 									orderGoodIdIndexList.put(dataFileName,idHashTable);
+									//idHashTable.writeAllBuckets();
 									dataFileName = record.getDataFileName();
 									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<Long>>(
@@ -229,15 +231,17 @@ public class OrderHandler {
 							}
 							FilePathWithIndex smallFile = new FilePathWithIndex();
 							smallFile.setFilePath(dataFileName);
-							smallFile.setOrderIdIndex(idHashTable
-									.writeAllBuckets());
+							//smallFile.setOrderIdIndex(idHashTable
+							//		.writeAllBuckets());
 							orderFileList.add(smallFile);
 							orderIdIndexList.put(dataFileName, idHashTable);
 							break;
 						case OrderBuyerId:
+							//idHashTable.writeAllBuckets();
 							orderBuyerIdIndexList.put(dataFileName, idHashTable);
 							break;
 						case OrderGoodId:
+							//idHashTable.writeAllBuckets();
 							orderGoodIdIndexList.put(dataFileName,idHashTable);
 							break;
 						}	

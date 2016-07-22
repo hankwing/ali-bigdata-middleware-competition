@@ -338,6 +338,45 @@ public class OrderSystemImpl implements OrderSystem {
 
 		return surrogateKey;
 	}*/
+	
+	/**
+	 * 根据id查找对应表的数据存在不存在
+	 * 
+	 * @return
+	 * @throws TypeException 
+	 */
+	public boolean isRecordExist(long orderid) throws TypeException {
+		for (FilePathWithIndex filePath : orderFileList) {
+			String fileName = filePath.getFilePath();
+			DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
+			List<Long> results = hashTable.get(orderid);
+			
+			if (results.size() != 0) {
+				// find the records offset
+				// 不管key是什么，都得载入固定order表里的固定key
+				/*System.out.println("records offset:"
+						+ hashTable.get(id).get(0));*/
+				for( Long offset : results) {
+					Row temp = rowCache.getFromCache(offset + fileName.hashCode(), TableName.OrderTable);
+					if(temp != null) {
+						temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
+								temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+										filePath, offset, TableName.OrderTable));
+					}
+					else {
+						temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+								filePath, offset, TableName.OrderTable));
+					}
+					if( temp.getKV(RaceConfig.orderId).valueAsLong() == orderid) {
+						return true;
+					}
+				}
+				break;
+			}
+		}
+		
+		return false;
+	}
 
 	/**
 	 * 根据orderid查找索引返回记录 无记录则返回null
