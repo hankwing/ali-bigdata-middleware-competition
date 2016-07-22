@@ -127,7 +127,10 @@ public class ConstructSystem {
 				orderHandler.HandleOrderFiles(files);
 			}
 			else {
-				countDownLatch.countDown();
+				for( int i = 0; i< 3; i++) {
+					countDownLatch.countDown();
+				}
+				
 			}
 			//countDownLatch.countDown();
 		}

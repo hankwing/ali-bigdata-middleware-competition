@@ -107,6 +107,8 @@ public class OrderSystemImpl implements OrderSystem {
 				//buyerfiles.add("benchmark/buyer_records_2.txt");
 				//buyerfiles.add("benchmark/buyer_records_3.txt");
 				//buyerfiles.add("benchmark/buyer_records_4.txt");
+				//buyerfiles.add("benchmark/buyer_records.txt");
+				//buyerfiles.add("benchmark/buyer_records_1.txt");
 
 				List<String> goodfiles = new ArrayList<String>();
 				goodfiles.add("prerun_data/good.0.0");
@@ -116,6 +118,8 @@ public class OrderSystemImpl implements OrderSystem {
 				//goodfiles.add("benchmark/good_records_2.txt");
 				//goodfiles.add("benchmark/good_records_3.txt");
 				//goodfiles.add("benchmark/good_records_4.txt");
+				//goodfiles.add("benchmark/good_records.txt");
+				//goodfiles.add("benchmark/good_records_1.txt");
 
 				List<String> orderfiles = new ArrayList<String>();
 				orderfiles.add("prerun_data/order.0.0");
@@ -126,6 +130,8 @@ public class OrderSystemImpl implements OrderSystem {
 				//orderfiles.add("benchmark/order_records_2.txt");
 				//orderfiles.add("benchmark/order_records_3.txt");
 				//orderfiles.add("benchmark/order_records_4.txt");
+				//orderfiles.add("benchmark/order_records_1.txt");
+				//orderfiles.add("benchmark/order_records.txt");
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
@@ -373,6 +379,7 @@ public class OrderSystemImpl implements OrderSystem {
 						for( Long offset : results) {
 							String records = RecordsUtils.getStringFromFile(
 									fileHandlersList.get(filePath.getFilePath()), offset, tableName);
+							System.out.println("records: " + records);
 							Row temp = Row.createKVMapFromLine(records);
 							if( temp.getKV(RaceConfig.orderId).valueAsLong() == orderid) {
 								// 确认row是我们要找的,放入缓冲区
