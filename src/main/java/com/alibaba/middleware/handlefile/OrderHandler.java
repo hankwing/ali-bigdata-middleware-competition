@@ -43,7 +43,7 @@ public class OrderHandler {
 	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch countDownLatch = null;
-	private SimpleCache rowCache = null;
+	//private SimpleCache rowCache = null;
 
 	public OrderHandler(
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
@@ -52,7 +52,7 @@ public class OrderHandler {
 			ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList,
 			List<FilePathWithIndex> orderFileList, HashSet<String> orderAttrList,
 			 int thread, CountDownLatch countDownLatch) {
-		rowCache = SimpleCache.getInstance();
+		//rowCache = SimpleCache.getInstance();
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = orderIdIndexList;
 		this.orderBuyerIdIndexList = orderBuyerIdIndexList;

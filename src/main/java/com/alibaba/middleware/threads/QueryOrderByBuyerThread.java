@@ -90,10 +90,10 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 							// 判断买家id是否符合  并且时间范围符合要求
 							
 							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-									row.get(RaceConfig.buyerId).valueAsString(), null));			
+									row.get(RaceConfig.buyerId).valueAsString()));			
 							// need query goodTable
 							row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-									row.get(RaceConfig.goodId).valueAsString(), null));
+									row.get(RaceConfig.goodId).valueAsString()));
 							List<Result> smallResults = results.get(createTime);
 							if(smallResults == null) {
 								smallResults = new ArrayList<Result>();

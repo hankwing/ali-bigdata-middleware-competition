@@ -34,13 +34,13 @@ public class GoodHandler{
 	HashSet<String> goodAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
-	private SimpleCache rowCache = null;
+	//private SimpleCache rowCache = null;
 
 	public GoodHandler(List<FilePathWithIndex> goodFileList, 
 			HashSet<String> goodAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList, 
 			 int threadIndex,CountDownLatch latch) {
-		rowCache = SimpleCache.getInstance();
+		//rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.goodFileList = goodFileList;
 		this.goodAttrList = goodAttrList;

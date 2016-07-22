@@ -80,7 +80,7 @@ public class Row extends HashMap<String, KeyValueImpl> {
 				if (key.length() == 0 || value.length() == 0) {
 					throw new RuntimeException("Bad data:" + line);
 				}
-				kvMap.putKV(key, value);
+				kvMap.put(key, new KeyValueImpl(key, value));
 			}
 			return kvMap;
 		}

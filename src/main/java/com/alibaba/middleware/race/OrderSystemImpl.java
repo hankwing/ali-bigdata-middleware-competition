@@ -345,153 +345,138 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @return
 	 * @throws TypeException 
 	 */
-	@SuppressWarnings("unchecked")
-	public Row getRowById(TableName tableName, String idName, Object id,
-			Collection<String> keys) throws TypeException {
+	public Row getRowById(TableName tableName, String idName, Object id) throws TypeException {
 		Row result = new Row();
 		String idString = String.valueOf(id);
-		try {
-			switch (tableName) {
-			case OrderTable:
-				for (FilePathWithIndex filePath : orderFileList) {
-					long orderid = Long.valueOf(id.toString());
-					DiskHashTable<Long, Long> hashTable = orderIdIndexList
-							.get(filePath.getFilePath());
-					if (hashTable == null) {
-						FileInputStream streamIn = new FileInputStream(
-								filePath.getFilePath());
-						if( idName.equals(RaceConfig.orderId)) {
-							streamIn.getChannel().position(
-									filePath.getOrderIdIndex());
-						}
-
-						ObjectInputStream objectinputstream = new ObjectInputStream(
-								streamIn);
-
-						hashTable = (DiskHashTable<Long, Long>) objectinputstream
-								.readObject();
-						orderIdIndexList.put(filePath.getFilePath(), hashTable);
-						hashTable.restore();
-						objectinputstream.close();
-					}
-					List<Long> results = hashTable.get(orderid);
-					
-					if (results.size() != 0) {
-						// find the records offset
-						// 不管key是什么，都得载入固定order表里的固定key
-						/*System.out.println("records offset:"
-								+ hashTable.get(id).get(0));*/
-						for( Long offset : results) {
-							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
-									tableName);
-							if(temp != null) {
-								temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-										temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-												filePath, offset, TableName.OrderTable));
-							}
-							else {
-								temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-										filePath, offset, TableName.OrderTable));
-							}
-							if( temp.getKV(idName).valueAsString().equals(idString)) {
-								// 二次确认row是我们要找的
-								result = temp;
-								break;
-							}
-						}
-						break;
+		switch (tableName) {
+		case OrderTable:
+			for (FilePathWithIndex filePath : orderFileList) {
+				String fileName = filePath.getFilePath();
+				long orderid = Long.valueOf(idString);
+				DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
+				/*if (hashTable == null) {
+					FileInputStream streamIn = new FileInputStream(
+							filePath.getFilePath());
+					if( idName.equals(RaceConfig.orderId)) {
+						streamIn.getChannel().position(
+								filePath.getOrderIdIndex());
 					}
 
+					ObjectInputStream objectinputstream = new ObjectInputStream(
+							streamIn);
+
+					hashTable = (DiskHashTable<Long, Long>) objectinputstream
+							.readObject();
+					orderIdIndexList.put(filePath.getFilePath(), hashTable);
+					hashTable.restore();
+					objectinputstream.close();
+				}*/
+				List<Long> results = hashTable.get(orderid);
+				
+				if (results.size() != 0) {
+					// find the records offset
+					// 不管key是什么，都得载入固定order表里的固定key
+					/*System.out.println("records offset:"
+							+ hashTable.get(id).get(0));*/
+					for( Long offset : results) {
+						Row temp = rowCache.getFromCache(offset + fileName.hashCode(), tableName);
+						if(temp != null) {
+							temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
+									temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+											filePath, offset, TableName.OrderTable));
+						}
+						else {
+							temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+									filePath, offset, TableName.OrderTable));
+						}
+						if( temp.getKV(RaceConfig.orderId).valueAsLong() == orderid) {
+							// 二次确认row是我们要找的
+							result = temp;
+							break;
+						}
+					}
+					break;
 				}
-				break;
-			case BuyerTable:
-				// 将事实键转为代理键
-				Integer surrId = String.valueOf(id).hashCode();
-				for (FilePathWithIndex filePath : buyerFileList) {
-					DiskHashTable<Integer, List<Long>> hashTable = buyerIdIndexList
-							.get(filePath.getFilePath());
-					if (hashTable == null) {
-						hashTable = getHashDiskTable(
-								filePath.getFilePath(),
-								filePath.getBuyerIdIndex());
-						buyerIdIndexList.put(filePath.getFilePath(), hashTable);
-					}
-					List<Long> results = hashTable.get(surrId);
-					if (results.size() != 0) {
-						// find the records offset
-						/*System.out.println("records offset:"
-								+ hashTable.get(id).size());*/
-						for( Long offset : results) {
-							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
-									tableName);
-							if(temp != null) {
-								temp = temp.getKV(RaceConfig.buyerId).valueAsString().equals(String.valueOf(id)) ?
-										temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-												filePath, offset, TableName.BuyerTable));
-							}
-							else {
-								temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-										filePath, offset, TableName.BuyerTable));
-							}
-							if( temp.getKV(idName).valueAsString().equals(id)) {
-								result = temp;
-								break;
-							}
-						}
-						break;
-					}
 
-				}
-				break;
-			case GoodTable:
-				Integer goodSurrId = String.valueOf(id).hashCode();
-				for (FilePathWithIndex filePath : goodFileList) {
-					DiskHashTable<Integer, List<Long>> hashTable = goodIdIndexList
-							.get(filePath.getFilePath());
-					if (hashTable == null) {
-						hashTable = getHashDiskTable(
-								filePath.getFilePath(),
-								filePath.getGoodIdIndex());
-						goodIdIndexList.put(filePath.getFilePath(), hashTable);
-					}
-					List<Long> results = hashTable.get(goodSurrId);
-					if (results.size() != 0) {
-						// find the records offset
-						/*System.out.println("records offset:"
-								+ hashTable.get(id).size());*/
-						for( Long offset : results) {
-							Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
-									tableName);
-							if(temp != null) {
-								temp = temp.getKV(RaceConfig.goodId).valueAsString().equals(String.valueOf(id)) ?
-										temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-												filePath, offset, TableName.GoodTable));
-							}
-							else {
-								temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-										filePath, offset, TableName.GoodTable));
-							}
-							if( temp.getKV(idName).valueAsString().equals(id)) {
-								result = temp;
-								break;
-							}
-						}
-						break;
-					}
-
-				}
-				break;
 			}
+			break;
+		case BuyerTable:
+			// 将事实键转为代理键
+			Integer surrId = String.valueOf(id).hashCode();
+			for (FilePathWithIndex filePath : buyerFileList) {
+				DiskHashTable<Integer, List<Long>> hashTable = buyerIdIndexList
+						.get(filePath.getFilePath());
+				/*if (hashTable == null) {
+					hashTable = getHashDiskTable(
+							filePath.getFilePath(),
+							filePath.getBuyerIdIndex());
+					buyerIdIndexList.put(filePath.getFilePath(), hashTable);
+				}*/
+				List<Long> results = hashTable.get(surrId);
+				if (results.size() != 0) {
+					// find the records offset
+					/*System.out.println("records offset:"
+							+ hashTable.get(id).size());*/
+					for( Long offset : results) {
+						Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
+								tableName);
+						if(temp != null) {
+							temp = temp.getKV(idName).valueAsString().equals(id) ?
+									temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+											filePath, offset, TableName.BuyerTable));
+						}
+						else {
+							temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+									filePath, offset, TableName.BuyerTable));
+						}
+						if( temp.getKV(idName).valueAsString().equals(id)) {
+							result = temp;
+							break;
+						}
+					}
+					break;
+				}
 
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			}
+			break;
+		case GoodTable:
+			Integer goodSurrId = String.valueOf(id).hashCode();
+			for (FilePathWithIndex filePath : goodFileList) {
+				DiskHashTable<Integer, List<Long>> hashTable = goodIdIndexList
+						.get(filePath.getFilePath());
+				/*if (hashTable == null) {
+					hashTable = getHashDiskTable(
+							filePath.getFilePath(),
+							filePath.getGoodIdIndex());
+					goodIdIndexList.put(filePath.getFilePath(), hashTable);
+				}*/
+				List<Long> results = hashTable.get(goodSurrId);
+				if (results.size() != 0) {
+					// find the records offset
+					/*System.out.println("records offset:"
+							+ hashTable.get(id).size());*/
+					for( Long offset : results) {
+						Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
+								tableName);
+						if(temp != null) {
+							temp = temp.getKV(idName).valueAsString().equals(id) ?
+									temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+											filePath, offset, TableName.GoodTable));
+						}
+						else {
+							temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+									filePath, offset, TableName.GoodTable));
+						}
+						if( temp.getKV(idName).valueAsString().equals(id)) {
+							result = temp;
+							break;
+						}
+					}
+					break;
+				}
+
+			}
+			break;
 		}
 		
 		return result;

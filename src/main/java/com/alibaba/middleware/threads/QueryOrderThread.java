@@ -40,17 +40,18 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
     public ResultImpl call() {
     	ResultImpl result = null;
 		Row resultKV = new Row();
+		
 		try {
 			resultKV.putKV(RaceConfig.orderId, orderId);
 			if (keys == null) {
-				Row orderIdRow = system.getRowById(TableName.OrderTable,RaceConfig.orderId,
-						orderId, keys);
+				// 需要返回所有记录
+				Row orderIdRow = system.getRowById(TableName.OrderTable,RaceConfig.orderId,orderId);
 				if( !orderIdRow.isEmpty() ) {
 					resultKV.putAll(orderIdRow);
 					resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-							resultKV.get(RaceConfig.buyerId).valueAsString(), keys));
+							resultKV.get(RaceConfig.buyerId).valueAsString()));
 					resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-							resultKV.get(RaceConfig.goodId).valueAsString(), keys));
+							resultKV.get(RaceConfig.goodId).valueAsString()));
 				}
 				else {
 					// 没有找到对应orderid的记录
@@ -58,6 +59,7 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 				}
 			} else if ( !keys.isEmpty()) {
 				// 查询指定字段
+				// 先找到要查询的key在哪个表里出现了
 				List<String> orderKeys = new ArrayList<String>();
 				List<String> buyerKeys = new ArrayList<String>();
 				List<String> goodKeys = new ArrayList<String>();
@@ -70,14 +72,19 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 						goodKeys.add(key);
 					}
 				}
-				Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,
-						orderId, orderKeys);
+				Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,orderId);
 				if( !orderIdRow.isEmpty() ) {
 					resultKV.putAll(orderIdRow);
-					resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-							resultKV.get(RaceConfig.buyerId).valueAsString(), buyerKeys));
-					resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-							resultKV.get(RaceConfig.goodId).valueAsString(), goodKeys));
+					if(!buyerKeys.isEmpty()) {
+						// 需要查询buyer表
+						resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+								resultKV.get(RaceConfig.buyerId).valueAsString()));
+					}
+					if( !goodKeys.isEmpty()) {
+						// 需要查询good表
+						resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+								resultKV.get(RaceConfig.goodId).valueAsString()));
+					}
 				}
 				else {
 					// 没有找到对应orderid的记录
@@ -86,8 +93,9 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 				
 			}
 			else {
-				Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,
-						orderId, null);
+				// 这里说明key为空 只需要判断是否存在该条记录即可
+				// 这里需改进
+				Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,orderId);
 				if(orderIdRow.isEmpty()) {
 					// 没找到相应订单
 					return null;

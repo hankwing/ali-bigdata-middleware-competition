@@ -112,10 +112,10 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
 							// need query buyerTable
 							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-									row.get(RaceConfig.buyerId).valueAsString(), null));			
+									row.get(RaceConfig.buyerId).valueAsString()));			
 							// need query goodTable
 							row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-									row.get(RaceConfig.goodId).valueAsString(), null));
+									row.get(RaceConfig.goodId).valueAsString()));
 							results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
 						}				
 						

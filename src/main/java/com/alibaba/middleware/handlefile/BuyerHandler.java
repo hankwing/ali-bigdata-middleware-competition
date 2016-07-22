@@ -32,13 +32,13 @@ public class BuyerHandler{
 	HashSet<String> buyerAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
-	public SimpleCache rowCache = null;
+	//public SimpleCache rowCache = null;
 
 	public BuyerHandler(List<FilePathWithIndex> buyerFileList, 
 			HashSet<String> buyerAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList, 
 			int threadIndex, CountDownLatch latch) {
-		rowCache = SimpleCache.getInstance();
+		//rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.buyerFileList = buyerFileList;
 		this.buyerAttrList = buyerAttrList;

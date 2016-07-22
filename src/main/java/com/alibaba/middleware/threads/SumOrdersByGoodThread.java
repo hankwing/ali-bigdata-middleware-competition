@@ -110,12 +110,12 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 							if(!buyerKeys.isEmpty()) {
 								// need query buyerTable 
 								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-										row.get(RaceConfig.buyerId).valueAsString(), null));	
+										row.get(RaceConfig.buyerId).valueAsString()));	
 							}
 							if( !goodKeys.isEmpty()) {
 								// 到good表里找相应的key
 								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-										row.get(RaceConfig.goodId).valueAsString(), null));
+										row.get(RaceConfig.goodId).valueAsString()));
 								
 								try {
 									KeyValueImpl keyValue = row.getKV(key);
