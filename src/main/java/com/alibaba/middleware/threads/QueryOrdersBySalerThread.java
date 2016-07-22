@@ -82,11 +82,12 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 			for (FilePathWithIndex filePath : system.orderFileList) {
 				DiskHashTable<Integer, List<Long>> hashTable = system.orderGoodIdIndexList
 						.get(filePath.getFilePath());
-				/*if (hashTable == null) {
+				if (hashTable == null) {
+					System.out.println("weired...");
 					hashTable = system.getHashDiskTable(filePath.getFilePath(),
 							filePath.getOrderGoodIdIndex());
 					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
-				}*/
+				}
 				long resultNum = hashTable.get(surrId).size();
 				if (resultNum != 0) {
 					// find the records offset
@@ -115,8 +116,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 										row.get(RaceConfig.buyerId).valueAsString()));
 							}
 							if(!goodKeys.isEmpty()) {
-								// 按理说这种情况不会发生的
-								System.out.println("weired query!");
+								//System.out.println("weired query!");
 								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
 										row.get(RaceConfig.goodId).valueAsString()));
 							}

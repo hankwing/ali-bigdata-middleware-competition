@@ -188,7 +188,7 @@ public class OrderHandler {
 											dataFileName, List.class);
 									break;
 								case OrderGoodId:
-									orderGoodIdIndexList.put(dataFileName,idHashTable);
+									orderGoodIdIndexList.put(dataFileName, idHashTable);
 									//idHashTable.writeAllBuckets();
 									dataFileName = record.getDataFileName();
 									indexFileName = record.getIndexFileName();
