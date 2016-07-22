@@ -379,141 +379,103 @@ public class OrderSystemImpl implements OrderSystem {
 	}
 
 	/**
-	 * 根据orderid查找索引返回记录 无记录则返回null
+	 * 根据各个表的主键查找索引返回相应的表记录 无记录则返回null
 	 * 
 	 * @return
 	 * @throws TypeException 
 	 */
-	public Row getRowById(TableName tableName, String idName, Object id) throws TypeException {
+	public Row getRowById(TableName tableName, Object id) throws TypeException {
 		Row result = new Row();
 		String idString = String.valueOf(id);
 		switch (tableName) {
 		case OrderTable:
-			for (FilePathWithIndex filePath : orderFileList) {
-				String fileName = filePath.getFilePath();
-				long orderid = Long.valueOf(idString);
-				DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
-				/*if (hashTable == null) {
-					FileInputStream streamIn = new FileInputStream(
-							filePath.getFilePath());
-					if( idName.equals(RaceConfig.orderId)) {
-						streamIn.getChannel().position(
-								filePath.getOrderIdIndex());
-					}
-
-					ObjectInputStream objectinputstream = new ObjectInputStream(
-							streamIn);
-
-					hashTable = (DiskHashTable<Long, Long>) objectinputstream
-							.readObject();
-					orderIdIndexList.put(filePath.getFilePath(), hashTable);
-					hashTable.restore();
-					objectinputstream.close();
-				}*/
-				List<Long> results = hashTable.get(orderid);
-				
-				if (results.size() != 0) {
-					// find the records offset
-					// 不管key是什么，都得载入固定order表里的固定key
-					/*System.out.println("records offset:"
-							+ hashTable.get(id).get(0));*/
-					for( Long offset : results) {
-						Row temp = rowCache.getFromCache(offset + fileName.hashCode(), tableName);
-						if(temp != null) {
-							temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-									temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-											filePath, offset, TableName.OrderTable));
-						}
-						else {
-							temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+			// 先在缓冲区里找
+			result = rowCache.getFromCache(id, tableName);
+			if( result != null) {
+				// 说明在缓冲区里找到了
+				return result;
+			} else {
+				// 在索引里找
+				for (FilePathWithIndex filePath : orderFileList) {
+					String fileName = filePath.getFilePath();
+					long orderid = Long.valueOf(idString);
+					DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
+					List<Long> results = hashTable.get(orderid);
+					
+					if (results.size() != 0) {
+						// find the records offset
+						for( Long offset : results) {
+						
+							Row temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
 									filePath, offset, TableName.OrderTable));
+							if( temp.getKV(RaceConfig.orderId).valueAsLong() == orderid) {
+								// 确认row是我们要找的
+								result = temp;
+								break;
+							}
 						}
-						if( temp.getKV(RaceConfig.orderId).valueAsLong() == orderid) {
-							// 二次确认row是我们要找的
-							result = temp;
-							break;
-						}
+						break;
 					}
-					break;
 				}
-
-			}
+			}		
 			break;
 		case BuyerTable:
 			// 将事实键转为代理键
 			Integer surrId = String.valueOf(id).hashCode();
-			for (FilePathWithIndex filePath : buyerFileList) {
-				DiskHashTable<Integer, List<Long>> hashTable = buyerIdIndexList
-						.get(filePath.getFilePath());
-				/*if (hashTable == null) {
-					hashTable = getHashDiskTable(
-							filePath.getFilePath(),
-							filePath.getBuyerIdIndex());
-					buyerIdIndexList.put(filePath.getFilePath(), hashTable);
-				}*/
-				List<Long> results = hashTable.get(surrId);
-				if (results.size() != 0) {
-					// find the records offset
-					/*System.out.println("records offset:"
-							+ hashTable.get(id).size());*/
-					for( Long offset : results) {
-						Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
-								tableName);
-						if(temp != null) {
-							temp = temp.getKV(idName).valueAsString().equals(id) ?
-									temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-											filePath, offset, TableName.BuyerTable));
-						}
-						else {
-							temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+			// 先在缓冲区里找
+			result = rowCache.getFromCache(surrId, TableName.BuyerTable);
+			if( result != null) {
+				// 在缓冲区找到了
+				return result;
+			}
+			else {
+				// 在索引里找
+				for (FilePathWithIndex filePath : buyerFileList) {
+					DiskHashTable<Integer, List<Long>> hashTable = buyerIdIndexList
+							.get(filePath.getFilePath());
+					List<Long> results = hashTable.get(surrId);
+					if (results.size() != 0) {
+						for( Long offset : results) {
+						
+							Row temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
 									filePath, offset, TableName.BuyerTable));
+							if( temp.getKV(RaceConfig.buyerId).valueAsString().equals(id)) {
+								result = temp;
+								break;
+							}
 						}
-						if( temp.getKV(idName).valueAsString().equals(id)) {
-							result = temp;
-							break;
-						}
+						break;
 					}
-					break;
-				}
 
+				}
 			}
 			break;
 		case GoodTable:
 			Integer goodSurrId = String.valueOf(id).hashCode();
-			for (FilePathWithIndex filePath : goodFileList) {
-				DiskHashTable<Integer, List<Long>> hashTable = goodIdIndexList
-						.get(filePath.getFilePath());
-				/*if (hashTable == null) {
-					hashTable = getHashDiskTable(
-							filePath.getFilePath(),
-							filePath.getGoodIdIndex());
-					goodIdIndexList.put(filePath.getFilePath(), hashTable);
-				}*/
-				List<Long> results = hashTable.get(goodSurrId);
-				if (results.size() != 0) {
-					// find the records offset
-					/*System.out.println("records offset:"
-							+ hashTable.get(id).size());*/
-					for( Long offset : results) {
-						Row temp = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(), 
-								tableName);
-						if(temp != null) {
-							temp = temp.getKV(idName).valueAsString().equals(id) ?
-									temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-											filePath, offset, TableName.GoodTable));
-						}
-						else {
-							temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-									filePath, offset, TableName.GoodTable));
-						}
-						if( temp.getKV(idName).valueAsString().equals(id)) {
-							result = temp;
-							break;
-						}
-					}
-					break;
-				}
+			// 先在缓冲区里找
+			result = rowCache.getFromCache(goodSurrId, TableName.GoodTable);
+			if( result != null) {
+				return result;
+			}
+			else {
+				for (FilePathWithIndex filePath : goodFileList) {
+					DiskHashTable<Integer, List<Long>> hashTable = goodIdIndexList
+							.get(filePath.getFilePath());
+					List<Long> results = hashTable.get(goodSurrId);
+					if (results.size() != 0) {
+						for( Long offset : results) {
 
+							Row temp = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+										filePath, offset, TableName.GoodTable));
+							if( temp.getKV(RaceConfig.goodId).valueAsString().equals(id)) {
+								result = temp;
+								break;
+							}
+						}
+						break;
+					}
+
+				}
 			}
 			break;
 		}

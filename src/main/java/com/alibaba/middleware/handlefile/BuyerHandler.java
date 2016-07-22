@@ -14,6 +14,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
@@ -32,13 +33,13 @@ public class BuyerHandler{
 	HashSet<String> buyerAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
-	//public SimpleCache rowCache = null;
+	public SimpleCache rowCache = null;
 
 	public BuyerHandler(List<FilePathWithIndex> buyerFileList, 
 			HashSet<String> buyerAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList, 
 			int threadIndex, CountDownLatch latch) {
-		//rowCache = SimpleCache.getInstance();
+		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.buyerFileList = buyerFileList;
 		this.buyerAttrList = buyerAttrList;
@@ -141,8 +142,10 @@ public class BuyerHandler{
 					Row rowData = Row.createKVMapFromLine(record.getRecordsData());
 					tempAttrList.addAll(rowData.keySet());			// 添加属性
 					String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
+					Integer buyerIdHashCode = buyerid.hashCode();
+					rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
 					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
-					buyerIdHashTable.put(buyerid.hashCode(), record.getOffset());
+					buyerIdHashTable.put(buyerIdHashCode, record.getOffset());
 					//surrKey ++;
 				}
 				else if(isEnd ) {

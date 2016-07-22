@@ -14,6 +14,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
@@ -34,13 +35,13 @@ public class GoodHandler{
 	HashSet<String> goodAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
-	//private SimpleCache rowCache = null;
+	private SimpleCache rowCache = null;
 
 	public GoodHandler(List<FilePathWithIndex> goodFileList, 
 			HashSet<String> goodAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList, 
 			 int threadIndex,CountDownLatch latch) {
-		//rowCache = SimpleCache.getInstance();
+		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.goodFileList = goodFileList;
 		this.goodAttrList = goodAttrList;
@@ -135,7 +136,9 @@ public class GoodHandler{
 						Row rowData = Row.createKVMapFromLine(record.getRecordsData());	
 						tempAttrList.addAll(rowData.keySet());
 						String goodid = rowData.getKV(RaceConfig.goodId).valueAsString();
-						goodIdHashTable.put(goodid.hashCode(), record.getOffset());
+						Integer goodIdHashCode = goodid.hashCode();
+						rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
+						goodIdHashTable.put(goodIdHashCode, record.getOffset());
 						//surrKey ++;
 					}
 					else if(isEnd ) {

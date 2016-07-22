@@ -9,6 +9,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.race.Row;
 
@@ -21,15 +22,17 @@ import com.alibaba.middleware.race.Row;
 public class SimpleCache {
     private final int capacity;
     private LinkedHashMap<Long, String> orderCacheMap;
-    private LinkedHashMap<Long,String> buyerCacheMap;
-    private LinkedHashMap<Long, String> goodCacheMap;
-    //private LinkedHashMap<Integer, List<Row>> orderBuyerIdCacheMap;
-    //private LinkedHashMap<Integer, List<Row>> orderGoodIdCacheMap;
+    private LinkedHashMap<Integer,String> buyerCacheMap;
+    private LinkedHashMap<Integer, String> goodCacheMap;
+    private LinkedHashMap<Integer, List<Long>> buyerToOrderIdCacheMap;
+    private LinkedHashMap<Integer, List<Long>> goodToOrderIdCacheMap;
     //private LinkedHashMap<Integer, Row> buyerCacheMap;
     //private LinkedHashMap<Integer, Row> goodCacheMap;
     private ReadWriteLock orderLock;
     private ReadWriteLock buyerLock;
     private ReadWriteLock goodLock;
+    private ReadWriteLock buyerToOrderLock;
+    private ReadWriteLock goodToOrderLock;
     private static SimpleCache instance = null;
     
     public static SimpleCache getInstance() {
@@ -47,16 +50,30 @@ public class SimpleCache {
             }
         };
         
-        buyerCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
+        buyerCacheMap = new LinkedHashMap<Integer, String>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Integer, String> eldest) {
                 return size() > capacity;
             }
         };
         
-        goodCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
+        goodCacheMap = new LinkedHashMap<Integer, String>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Integer, String> eldest) {
+                return size() > capacity;
+            }
+        };
+        
+        buyerToOrderIdCacheMap = new LinkedHashMap<Integer, List<Long>>(capacity/2, 0.95f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Integer, List<Long>> eldest) {
+                return size() > capacity;
+            }
+        };
+        
+        goodToOrderIdCacheMap = new LinkedHashMap<Integer, List<Long>>(capacity/2, 0.95f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Integer, List<Long>> eldest) {
                 return size() > capacity;
             }
         };
@@ -64,6 +81,8 @@ public class SimpleCache {
         orderLock = new ReentrantReadWriteLock(false);
         buyerLock = new ReentrantReadWriteLock(false);
         goodLock = new ReentrantReadWriteLock(false);
+        buyerToOrderLock = new ReentrantReadWriteLock(false);
+        goodToOrderLock = new ReentrantReadWriteLock(false);
     }
 
     /*@Override
@@ -86,30 +105,88 @@ public class SimpleCache {
         return value;
     }*/
     
-    public void putInCache(Long key, String value, TableName tableType) {
+    public void putInCache(Object key, String value, TableName tableType) {
     	switch( tableType) {
     	case OrderTable:
     		//synchronized(orderCacheMap) {
     		orderLock.writeLock().lock();
-    		orderCacheMap.put( key, value);
+    		orderCacheMap.put( (Long) key, value);
     		orderLock.writeLock().unlock();
             // }
     		break;
     	case BuyerTable:
     		//synchronized(buyerCacheMap) {
     		buyerLock.writeLock().lock();
-    		buyerCacheMap.put( key, value);
+    		buyerCacheMap.put( (Integer) key, value);
     		buyerLock.writeLock().unlock();
             // }
     		break;
     	case GoodTable:
     		//synchronized(goodCacheMap) {
     		goodLock.writeLock().lock();
-    		goodCacheMap.put( key, value);
+    		goodCacheMap.put( (Integer) key, value);
     		goodLock.writeLock().unlock();
             // }
     		break;
     	}
+    	
+    }
+    
+    /**
+     * 缓存order表里的buyerid和goodid对应的orderid列表
+     * @param key
+     * @param value
+     * @param tableType
+     */
+    public void putInIdCache(Integer key, long value, IdIndexType indexType) {
+    	switch( indexType) {
+    	case BuyerIdToOrderId:
+    		//synchronized(orderCacheMap) {
+    		buyerToOrderLock.writeLock().lock();
+    		List<Long> list = buyerToOrderIdCacheMap.get(key);
+    		if( list == null) {
+    			list = new ArrayList<Long>();
+    			buyerToOrderIdCacheMap.put(key, list);
+    		}
+    		list.add( value);
+    		buyerToOrderLock.writeLock().unlock();
+    		break;
+    	case GoodIdToOrderId:
+    		goodToOrderLock.writeLock().lock();
+    		List<Long> goodList = goodToOrderIdCacheMap.get(key);
+    		if( goodList == null) {
+    			goodList = new ArrayList<Long>();
+    			goodToOrderIdCacheMap.put(key, goodList);
+    		}
+    		goodList.add(value);
+    		goodToOrderLock.writeLock().unlock();
+    		break;
+    	}
+    	
+    }
+
+    /**
+     * 根据buyerid或者goodid得到对应的orderid列表
+     * @param key
+     * @param indexType
+     * @return
+     */
+    public List<Long> getFormIdCache(Integer key, IdIndexType indexType) {
+    	List<Long> results = null;
+    	switch( indexType) {
+    	case BuyerIdToOrderId:
+    		//synchronized(orderCacheMap) {
+    		buyerToOrderLock.readLock().lock();
+    		results = buyerToOrderIdCacheMap.get(key);
+    		buyerToOrderLock.readLock().unlock();
+    		break;
+    	case GoodIdToOrderId:
+    		goodToOrderLock.readLock().lock();
+    		results = goodToOrderIdCacheMap.get(key);
+    		goodToOrderLock.readLock().unlock();
+    		break;
+    	}
+    	return results;
     	
     }
     
@@ -168,7 +245,7 @@ public class SimpleCache {
     	
     }*/
 
-    public Row getFromCache(long key, TableName tableType) {
+    public Row getFromCache(Object key, TableName tableType) {
     	Row row = null;
     	switch( tableType) {
     	case OrderTable:

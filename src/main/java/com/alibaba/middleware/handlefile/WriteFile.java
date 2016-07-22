@@ -26,7 +26,7 @@ public class WriteFile {
 	private String dataFileName;
 	private String indexFileName;
 	private List<LinkedBlockingQueue<IndexItem>> indexQueues = null;
-	private SimpleCache rowCache = null;
+	//private SimpleCache rowCache = null;
 	private int nextLineByteLength = 0;
 
 	/**
@@ -46,7 +46,7 @@ public class WriteFile {
 		
 		dataFileName = null;
 		indexFileName = null;
-		rowCache = SimpleCache.getInstance();
+		//rowCache = SimpleCache.getInstance();
 
 		//如果文件夹不存在则创建文件夹
 		File file = new File(path);
@@ -83,8 +83,6 @@ public class WriteFile {
 			}
 			
 			if(line != null ) {
-				rowCache.putInCache(dataFileName.hashCode() + offset
-						, line, tableType);
 				offset = offset + line.getBytes().length + nextLineByteLength;
 				count++;
 			}

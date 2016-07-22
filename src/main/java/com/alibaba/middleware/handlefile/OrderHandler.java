@@ -17,6 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
@@ -43,7 +44,7 @@ public class OrderHandler {
 	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch countDownLatch = null;
-	//private SimpleCache rowCache = null;
+	private SimpleCache rowCache = null;
 
 	public OrderHandler(
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
@@ -52,7 +53,7 @@ public class OrderHandler {
 			ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList,
 			List<FilePathWithIndex> orderFileList, HashSet<String> orderAttrList,
 			 int thread, CountDownLatch countDownLatch) {
-		//rowCache = SimpleCache.getInstance();
+		rowCache = SimpleCache.getInstance();
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = orderIdIndexList;
 		this.orderBuyerIdIndexList = orderBuyerIdIndexList;
@@ -205,20 +206,30 @@ public class OrderHandler {
 						switch(indexType) {
 						case OrderId:
 							tempAttrList.addAll(rowData.keySet());
-							idHashTable.put(rowData.get(RaceConfig.orderId)
-									.valueAsLong(), record.getOffset());
+							long orderId = rowData.get(RaceConfig.orderId).valueAsLong();
+							// 将order表的数据放入缓冲区
+							rowCache.putInCache(orderId, record.getRecordsData(), TableName.OrderTable);
+							idHashTable.put(orderId, record.getOffset());
 							
 							break;
 						case OrderBuyerId:
-							idHashTable.put(
-									rowData.get(RaceConfig.buyerId).valueAsString().hashCode(),
-									record.getOffset());
+							Integer buyerIdHashCode = rowData.get(
+									RaceConfig.buyerId).valueAsString().hashCode();
+							// 将buyerid对应的orderid放入缓冲区
+							rowCache.putInIdCache(buyerIdHashCode, 
+									rowData.getKV(RaceConfig.orderId).valueAsLong(), 
+									IdIndexType.BuyerIdToOrderId);
+							idHashTable.put(buyerIdHashCode, record.getOffset());
 							
 							break;
 						case OrderGoodId:
-							idHashTable.put(
-									rowData.get(RaceConfig.goodId).valueAsString().hashCode(),
-									record.getOffset());
+							Integer goodIdHashCode = rowData.get(
+									RaceConfig.goodId).valueAsString().hashCode();
+							// 将goodid对应的orderid放入缓冲区
+							rowCache.putInIdCache(goodIdHashCode, 
+									rowData.getKV(RaceConfig.orderId).valueAsLong(),
+									IdIndexType.GoodIdToOrderId);
+							idHashTable.put(goodIdHashCode, record.getOffset());
 							break;
 						}
 
