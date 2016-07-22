@@ -105,7 +105,13 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
 							
 							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
-							if( !buyerKeys.isEmpty()) {
+							if( keys == null) {
+								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+										row.get(RaceConfig.buyerId).valueAsString()));
+								row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+										row.get(RaceConfig.goodId).valueAsString()));
+							}
+							else if( !buyerKeys.isEmpty()) {
 								// need query buyerTable
 								row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
 										row.get(RaceConfig.buyerId).valueAsString()));
