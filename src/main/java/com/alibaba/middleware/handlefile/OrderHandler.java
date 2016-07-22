@@ -92,7 +92,7 @@ public class OrderHandler {
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(orderAttrList, record);
-					orderfile.writeLine(file, record);
+					orderfile.writeLine(file, record, TableName.OrderTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -102,7 +102,7 @@ public class OrderHandler {
 		}
 
 		// set end signal
-		orderfile.writeLine(null, null);
+		orderfile.writeLine(null, null, TableName.OrderTable);
 		System.out.println("end order handling!");
 	}
 
@@ -200,9 +200,6 @@ public class OrderHandler {
 						}
 
 						Row rowData = Row.createKVMapFromLine(record.getRecordsData());
-						long offset = record.getOffset();
-						rowCache.putInCache(dataFileName.hashCode() + offset
-								, record.getRecordsData(), TableName.OrderTable);
 						switch(indexType) {
 						case OrderId:
 							tempAttrList.addAll(rowData.keySet());
