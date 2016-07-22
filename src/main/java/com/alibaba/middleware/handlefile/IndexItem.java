@@ -8,14 +8,14 @@ public class IndexItem {
 	//这里dataFileName+offset=Value
 	String dataFileName;
 	String indexFileName;
-	//String recordsData = null;
-	Row rowData = null;
+	String recordsData = null;
+	//Row rowData = null;
 	long offset = 0;
 
-	public IndexItem(String indexFileName, String dataFileName, Row rowData, long offset) {
+	public IndexItem(String indexFileName, String dataFileName, String recordsData, long offset) {
 		this.indexFileName = indexFileName;
 		this.dataFileName = dataFileName;
-		this.rowData = rowData;
+		this.recordsData = recordsData;
 		this.offset = offset;
 	}
 	
@@ -23,8 +23,8 @@ public class IndexItem {
 		return offset;
 	}
 
-	public Row getRow() {
-		return rowData;
+	public String getRecordsData() {
+		return recordsData;
 	}
 
 	public String getDataFileName() {

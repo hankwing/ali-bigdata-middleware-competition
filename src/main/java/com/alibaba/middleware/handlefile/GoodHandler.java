@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,7 +48,7 @@ public class GoodHandler{
 		this.goodIdIndexList = goodIdIndexList;
 		this.threadIndex = threadIndex;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
-		goodfile = new WriteFile(indexQueue,
+		goodfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}},
 				RaceConfig.storeFolders[threadIndex], 
 				RaceConfig.goodFileNamePrex, (int) RaceConfig.smallFileCapacity);
 	}
@@ -99,7 +100,7 @@ public class GoodHandler{
 					IndexItem record = indexQueue.poll();
 					
 					if( record != null ) {
-						if( record.getRow() == null) {
+						if( record.getRecordsData() == null) {
 							isEnd = true;
 							continue;
 						}
@@ -118,7 +119,7 @@ public class GoodHandler{
 								FilePathWithIndex smallFile = new FilePathWithIndex();
 
 								smallFile.setFilePath(dataFileName);
-								//smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+								smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
 								smallFile.setGoodIdIndex(0);
 								goodIdIndexList.put(dataFileName, goodIdHashTable);
 
@@ -131,7 +132,7 @@ public class GoodHandler{
 								
 							}
 						}
-						Row rowData = record.getRow();
+						Row rowData = Row.createKVMapFromLine(record.getRecordsData());
 						tempAttrList.addAll(rowData.keySet());
 						String goodid = rowData.getKV(RaceConfig.goodId).valueAsString();
 						goodIdHashTable.put(goodid.hashCode(), record.getOffset());
@@ -149,7 +150,7 @@ public class GoodHandler{
 						FilePathWithIndex smallFile = new FilePathWithIndex();
 
 						smallFile.setFilePath(dataFileName);
-						//smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+						smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
 
 						smallFile.setGoodIdIndex(0);
 						BucketCachePool.getInstance().removeAllBucket();

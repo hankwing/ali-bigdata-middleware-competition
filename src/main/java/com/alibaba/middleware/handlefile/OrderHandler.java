@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -29,7 +30,9 @@ public class OrderHandler {
 	HashMap<String, WriteFile> columnFiles;
 	WriteFile orderfile;
 	BufferedReader reader;
-	LinkedBlockingQueue<IndexItem> indexQueue;
+	LinkedBlockingQueue<IndexItem> orderIndexQueue;
+	LinkedBlockingQueue<IndexItem> orderBuyerIndexQueue;
+	LinkedBlockingQueue<IndexItem> orderGoodIndexQueue;
 	ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList = null;
 	ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderBuyerIdIndexList = null;
 	ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderGoodIdIndexList = null;
@@ -40,7 +43,6 @@ public class OrderHandler {
 	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch countDownLatch = null;
-	private SimpleCache rowCache = null;
 
 	public OrderHandler(
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
@@ -49,7 +51,6 @@ public class OrderHandler {
 			ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList,
 			List<FilePathWithIndex> orderFileList, HashSet<String> orderAttrList,
 			 int thread, CountDownLatch countDownLatch) {
-		rowCache = SimpleCache.getInstance();
 
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = orderIdIndexList;
@@ -61,8 +62,11 @@ public class OrderHandler {
 		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 		threadIndex = thread;
-		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
-		orderfile = new WriteFile(indexQueue,
+		orderIndexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
+		orderBuyerIndexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
+		orderGoodIndexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
+		orderfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
+		add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}},
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.orderFileNamePrex,
 				(int) RaceConfig.smallFileCapacity);
@@ -70,7 +74,12 @@ public class OrderHandler {
 
 	public void HandleOrderFiles(List<String> files) {
 		System.out.println("start order handling!");
-		new Thread(new GoodIndexConstructor( )).start();					// 同时开启建索引线程
+		// 建orderId的索引
+		new Thread(new OrderIndexConstructor(IndexType.OrderId, orderIndexQueue)).start();	
+		// 建order表里的buyerId索引
+		new Thread(new OrderIndexConstructor(IndexType.OrderBuyerId, orderBuyerIndexQueue)).start();
+		// 建order表里的goodid索引
+		new Thread(new OrderIndexConstructor(IndexType.OrderGoodId, orderGoodIndexQueue)).start();
 		for (String file : files) {
 			try {
 				reader = new BufferedReader(new FileReader(file));
@@ -97,26 +106,29 @@ public class OrderHandler {
 	}
 
 	// order表的建索引线程 需要建的索引包括：orderid, buyerid, goodid, countable 字段的索引
-	public class GoodIndexConstructor implements Runnable {
+	public class OrderIndexConstructor implements Runnable {
 
 		String indexFileName = null;
 		String dataFileName = null;
-		DiskHashTable<Long, Long> orderIdHashTable = null;
-		DiskHashTable<Integer, List<Long>> orderBuyerIdHashTable = null;
-		DiskHashTable<Integer, List<Long>> orderGoodIdHashTable = null;
+		DiskHashTable idHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
+		IndexType indexType = null;
+		LinkedBlockingQueue<IndexItem> indexQueue;
 
-		public GoodIndexConstructor() {
-
+		public OrderIndexConstructor( IndexType indexType, LinkedBlockingQueue<IndexItem> indexQueue) {
+			this.indexType = indexType;
+			this.indexQueue = indexQueue;
+			
 		}
 
+		@SuppressWarnings("unchecked")
 		public void run() {
 			try {
 				while (true) {
 					IndexItem record = indexQueue.poll();
 					if (record != null) {
-						if (record.getRow() == null) {
+						if (record.getRecordsData() == null) {
 							isEnd = true;
 							continue;
 						}
@@ -126,107 +138,110 @@ public class OrderHandler {
 								// 第一次建立索引文件
 								indexFileName = record.getIndexFileName();
 								dataFileName = record.getDataFileName();
-								orderIdHashTable = new DiskHashTable<Long, Long>(
-										indexFileName
-										+ RaceConfig.orderIndexFileSuffix,
-										dataFileName, Long.class);
-								orderBuyerIdHashTable = new DiskHashTable<Integer, List<Long>>(
-										indexFileName
-										+ RaceConfig.orderIndexFileSuffix,
-										dataFileName, List.class);
-								orderGoodIdHashTable = new DiskHashTable<Integer, List<Long>>(
-										indexFileName
-										+ RaceConfig.orderIndexFileSuffix,
-										dataFileName, List.class);
+								switch(indexType) {
+								case OrderId:
+									idHashTable = new DiskHashTable<Long, Long>(
+											indexFileName
+											+ RaceConfig.orderIndexFileSuffix,
+											dataFileName, Long.class);
+									break;
+								case OrderBuyerId:
+									idHashTable = new DiskHashTable<Integer, List<Long>>(
+											indexFileName
+											+ RaceConfig.orderBuyerIdIndexFileSuffix,
+											dataFileName, List.class);
+									break;
+								case OrderGoodId:
+									idHashTable = new DiskHashTable<Integer, List<Long>>(
+											indexFileName
+											+ RaceConfig.orderGoodIdIndexFileSuffix,
+											dataFileName, List.class);
+									break;
+								}
 
 							} else {
-								// 保存当前goodId的索引 并写入索引List
-								FilePathWithIndex smallFile = new FilePathWithIndex();
-								smallFile.setFilePath(dataFileName);
-								// buyerIdIndexList.put(indexFileName,
-								// buyerIdHashTable);
-								/*smallFile.setOrderIdIndex(orderIdHashTable
-										.writeAllBuckets());
-								smallFile
-								.setOrderBuyerIdIndex(orderBuyerIdHashTable
-										.writeAllBuckets());
-								smallFile
-								.setOrderGoodIdIndex(orderGoodIdHashTable
-
-										.writeAllBuckets());*/
-
-								smallFile.setOrderIdIndex(0);
-								smallFile
-								.setOrderBuyerIdIndex(0);
-								smallFile
-								.setOrderGoodIdIndex(0);
-
-								orderIdIndexList.put(dataFileName,
-										orderIdHashTable);
-								orderBuyerIdIndexList.put(dataFileName,
-										orderBuyerIdHashTable);
-								orderGoodIdIndexList.put(dataFileName,
-										orderGoodIdHashTable);
-								orderFileList.add(smallFile);
-
-								dataFileName = record.getDataFileName();
-								indexFileName = record.getIndexFileName();
-								orderIdHashTable = new DiskHashTable<Long, Long>(
-										indexFileName
-										+ RaceConfig.orderIndexFileSuffix,
-										dataFileName, Long.class);
-								orderBuyerIdHashTable = new DiskHashTable<Integer, List<Long>>(
-										indexFileName
-										+ RaceConfig.orderIndexFileSuffix,
-										dataFileName, List.class);
-								orderGoodIdHashTable = new DiskHashTable<Integer, List<Long>>(
-										indexFileName
-										+ RaceConfig.orderIndexFileSuffix,
-										dataFileName, List.class);
-
+								switch(indexType) {
+								case OrderId:
+									// 保存当前goodId的索引 并写入索引List
+									FilePathWithIndex smallFile = new FilePathWithIndex();
+									smallFile.setFilePath(dataFileName);
+									smallFile.setOrderIdIndex(idHashTable
+											.writeAllBuckets());
+									orderFileList.add(smallFile);
+									orderIdIndexList.put(dataFileName, idHashTable);
+									dataFileName = record.getDataFileName();
+									indexFileName = record.getIndexFileName();
+									idHashTable = new DiskHashTable<Long, Long>(
+											indexFileName
+											+ RaceConfig.orderIndexFileSuffix,
+											dataFileName, Long.class);
+									break;
+								case OrderBuyerId:
+									orderBuyerIdIndexList.put(dataFileName, idHashTable);
+									dataFileName = record.getDataFileName();
+									indexFileName = record.getIndexFileName();
+									idHashTable = new DiskHashTable<Integer, List<Long>>(
+											indexFileName
+											+ RaceConfig.orderBuyerIdIndexFileSuffix,
+											dataFileName, List.class);
+									break;
+								case OrderGoodId:
+									orderGoodIdIndexList.put(dataFileName,idHashTable);
+									dataFileName = record.getDataFileName();
+									indexFileName = record.getIndexFileName();
+									idHashTable = new DiskHashTable<Integer, List<Long>>(
+											indexFileName
+											+ RaceConfig.orderGoodIdIndexFileSuffix,
+											dataFileName, List.class);
+									break;
+								}	
 							}
 						}
 
-						Row rowData = record.getRow();
-						tempAttrList.addAll(rowData.keySet());
-						long orderid = rowData.get(RaceConfig.orderId)
-								.valueAsLong();
+						Row rowData = Row.createKVMapFromLine(record.getRecordsData());
+						
 
-						// 建立三个索引  buyerid 和 goodid 的hashcode当作代理键
-						orderIdHashTable.put(orderid, record.getOffset());
-						orderBuyerIdHashTable.put(
-								rowData.get(RaceConfig.buyerId).valueAsString().hashCode(),
-								record.getOffset());
-						orderGoodIdHashTable.put(
-								rowData.get(RaceConfig.goodId).valueAsString().hashCode(),
-								record.getOffset());
+						switch(indexType) {
+						case OrderId:
+							tempAttrList.addAll(rowData.keySet());
+							idHashTable.put(rowData.get(RaceConfig.orderId)
+									.valueAsLong(), record.getOffset());
+							break;
+						case OrderBuyerId:
+							idHashTable.put(
+									rowData.get(RaceConfig.buyerId).valueAsString().hashCode(),
+									record.getOffset());
+							break;
+						case OrderGoodId:
+							idHashTable.put(
+									rowData.get(RaceConfig.goodId).valueAsString().hashCode(),
+									record.getOffset());
+							break;
+						}
 
 					} else if (isEnd) {
 						// 保存当前goodId的索引 并写入索引List
-						synchronized (orderAttrList) {
-							orderAttrList.addAll(tempAttrList);
-						}
-						FilePathWithIndex smallFile = new FilePathWithIndex();
-						smallFile.setFilePath(dataFileName);
-						// buyerIdIndexList.put(indexFileName,
-						// buyerIdHashTable);
-						/*smallFile.setOrderIdIndex(orderIdHashTable
-								.writeAllBuckets());
-						smallFile.setOrderBuyerIdIndex(orderBuyerIdHashTable
-								.writeAllBuckets());
-						smallFile.setOrderGoodIdIndex(orderGoodIdHashTable
-								.writeAllBuckets());*/
-						smallFile.setOrderIdIndex(0);
-						smallFile.setOrderBuyerIdIndex(0);
-						smallFile.setOrderGoodIdIndex(0);
-
-						orderIdIndexList.put(dataFileName, orderIdHashTable);
-						orderBuyerIdIndexList.put(dataFileName,
-								orderBuyerIdHashTable);
-						orderGoodIdIndexList.put(dataFileName,
-								orderGoodIdHashTable);
+						switch(indexType) {
+						case OrderId:
+							synchronized (orderAttrList) {
+								orderAttrList.addAll(tempAttrList);
+							}
+							FilePathWithIndex smallFile = new FilePathWithIndex();
+							smallFile.setFilePath(dataFileName);
+							smallFile.setOrderIdIndex(idHashTable
+									.writeAllBuckets());
+							orderFileList.add(smallFile);
+							orderIdIndexList.put(dataFileName, idHashTable);
+							break;
+						case OrderBuyerId:
+							orderBuyerIdIndexList.put(dataFileName, idHashTable);
+							break;
+						case OrderGoodId:
+							orderGoodIdIndexList.put(dataFileName,idHashTable);
+							break;
+						}	
 						BucketCachePool.getInstance().removeAllBucket();
-						orderFileList.add(smallFile);
+						
 						countDownLatch.countDown();
 						break;
 

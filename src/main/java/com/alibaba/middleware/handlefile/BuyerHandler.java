@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +46,7 @@ public class BuyerHandler{
 		this.buyerIdIndexList = buyerIdIndexList;
 		this.threadIndex = threadIndex;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
-		buyerfile = new WriteFile(indexQueue, 
+		buyerfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.buyerFileNamePrex, (int) RaceConfig.smallFileCapacity);
 
@@ -104,7 +105,7 @@ public class BuyerHandler{
 				IndexItem record = indexQueue.poll();
 				
 				if( record != null ) {
-					if( record.rowData == null) {
+					if( record.getRecordsData() == null) {
 						isEnd = true;
 						continue;
 					}
@@ -123,7 +124,7 @@ public class BuyerHandler{
 							FilePathWithIndex smallFile = new FilePathWithIndex();
 
 							smallFile.setFilePath(dataFileName);
-							//smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+							smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
 							smallFile.setBuyerIdIndex(0);
 							buyerIdIndexList.put(dataFileName, buyerIdHashTable);
 
@@ -137,7 +138,7 @@ public class BuyerHandler{
 						}
 					}
 					
-					Row rowData = record.getRow();
+					Row rowData = Row.createKVMapFromLine(record.getRecordsData());
 					tempAttrList.addAll(rowData.keySet());			// 添加属性
 					String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
 
@@ -157,7 +158,7 @@ public class BuyerHandler{
 					smallFile.setFilePath(dataFileName);
 					BucketCachePool.getInstance().removeAllBucket();
 
-					//smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
+					smallFile.setBuyerIdIndex(buyerIdHashTable.writeAllBuckets());
 
 					//smallFile.setBuyerIdIndex(0);
 					buyerFileList.add(smallFile);

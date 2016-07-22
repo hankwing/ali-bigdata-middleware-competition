@@ -279,10 +279,10 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param key
 	 * @return
 	 */
-	public List<Long> get(Object key) {
+	public List<Long> get(K key) {
 
 		HashBucket<K,T> bucket = null;
-		int bucketIndex = getBucketIndex((K) key);
+		int bucketIndex = getBucketIndex( key);
 		if (bucketIndex < bucketNum) {
 			bucket = readBucket((int) bucketIndex);
 	
@@ -292,7 +292,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		}
 
 		if (bucket != null) {
-			return bucket.getAddress(getBucketStringIndex((K) key), (K)key);
+			return bucket.getAddress(getBucketStringIndex( key), key);
 		} else {
 			// need to read from file
 			System.out.println("read error!");

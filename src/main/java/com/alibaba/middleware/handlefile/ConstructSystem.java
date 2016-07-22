@@ -193,7 +193,7 @@ public class ConstructSystem {
 			// 处理order表
 			System.out.println("good time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
-			countDownLatch = new CountDownLatch(threadNum);
+			countDownLatch = new CountDownLatch(threadNum * 2);
 			for (int i = 0; i < threadNum; i++) {
 				List<String> files = getGroupFiles(orderfiles, i, threadNum);
 				new Thread(new OrderRun(countDownLatch, files, i)).start();

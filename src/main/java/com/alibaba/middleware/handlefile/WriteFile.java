@@ -2,6 +2,7 @@ package com.alibaba.middleware.handlefile;
 
 
 import java.io.File;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.SimpleCache;
@@ -24,8 +25,9 @@ public class WriteFile {
 	
 	private String dataFileName;
 	private String indexFileName;
-	private LinkedBlockingQueue<IndexItem> indexQueue = null;
+	private List<LinkedBlockingQueue<IndexItem>> indexQueues = null;
 	private SimpleCache rowCache = null;
+	private int nextLineByteLength = 0;
 
 	/**
 	 * 写数据到小文件里  并且将数据放到缓冲区里  缓冲区里保存文件名+数据
@@ -34,12 +36,13 @@ public class WriteFile {
 	 * @param name	文件名
 	 * @param maxLines	每个小文件最大记录数
 	 */	
-	public WriteFile(LinkedBlockingQueue<IndexItem> indexQueue, String path,String name, long maxLines) {
+	public WriteFile(List<LinkedBlockingQueue<IndexItem>> indexQueues, String path,String name, long maxLines) {
 		this.offset = 0;
 		this.count = 0;
 		this.fileNum = 0;
 		this.MAX_LINES = maxLines;
-		this.indexQueue = indexQueue;
+		this.indexQueues = indexQueues;
+		nextLineByteLength = "\n".getBytes().length;
 		
 		dataFileName = null;
 		indexFileName = null;
@@ -74,17 +77,19 @@ public class WriteFile {
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
-			indexQueue.put(new IndexItem(indexFileName, dataFileName, 
-					Row.createKVMapFromLine(line), offset));
+			indexFileName = dataFileName + "_" + fileNum;
+			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
+				queue.put(new IndexItem(indexFileName, dataFileName,line, offset));
+			}
+			
 			if(line != null ) {
 				// 放入缓冲区中
 				rowCache.putInCache(dataFileName.hashCode() + offset
 					, line, type);
+				offset = offset + line.getBytes().length + nextLineByteLength;
+				count++;
 			}
-
-			String writeLine = line + "\n";
-			offset = offset + writeLine.getBytes().length;
-			count++;
+			
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -14,7 +14,7 @@ public class RaceConfig implements Serializable{
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
 	
-	public static int handleThreadNumber = 3;				// 读写线程数
+	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int QueueNumber = 10000;					// 建索引时的一个缓冲队列的大小
 	
 	public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
@@ -53,7 +53,7 @@ public class RaceConfig implements Serializable{
 	}
 
 	public static enum IndexType {
-		OrderTable, BuyerTable, GoodTable, CountableTable
+		OrderId, OrderBuyerId,OrderGoodId
 	}
 	
 	public static String orderId = "orderid";
@@ -80,7 +80,9 @@ public class RaceConfig implements Serializable{
 	public static String orderFileNamePrex = "/order_";
 	public static String buyerIndexFileSuffix = "_buyerIdIndex";
 	public static String goodIndexFileSuffix = "_goodIdIndex";
-	public static String orderIndexFileSuffix = "_orderIndex";		// orderindex里包含了三种类型的索引
+	public static String orderIndexFileSuffix = "_orderIndex";
+	public static String orderBuyerIdIndexFileSuffix = "_orderBuyerIndex";
+	public static String orderGoodIdIndexFileSuffix = "_orderGoodIndex";
 	public static String buyerSurrFileName = "buyerSurrIndex";
 	public static String goodSurrFileName = "goodSurrIndex";
 	
