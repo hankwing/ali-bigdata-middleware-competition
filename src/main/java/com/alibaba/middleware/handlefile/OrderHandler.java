@@ -43,6 +43,7 @@ public class OrderHandler {
 	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch countDownLatch = null;
+	private SimpleCache rowCache = null;
 
 	public OrderHandler(
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
@@ -51,7 +52,7 @@ public class OrderHandler {
 			ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList,
 			List<FilePathWithIndex> orderFileList, HashSet<String> orderAttrList,
 			 int thread, CountDownLatch countDownLatch) {
-
+		rowCache = SimpleCache.getInstance();
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = orderIdIndexList;
 		this.orderBuyerIdIndexList = orderBuyerIdIndexList;
@@ -91,7 +92,7 @@ public class OrderHandler {
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(orderAttrList, record);
-					orderfile.writeLine(file, record, TableName.OrderTable);
+					orderfile.writeLine(file, record);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -101,7 +102,7 @@ public class OrderHandler {
 		}
 
 		// set end signal
-		orderfile.writeLine(null, null, TableName.OrderTable);
+		orderfile.writeLine(null, null);
 		System.out.println("end order handling!");
 	}
 
@@ -199,18 +200,21 @@ public class OrderHandler {
 						}
 
 						Row rowData = Row.createKVMapFromLine(record.getRecordsData());
-						
-
+						long offset = record.getOffset();
+						rowCache.putInCache(dataFileName.hashCode() + offset
+								, record.getRecordsData(), TableName.OrderTable);
 						switch(indexType) {
 						case OrderId:
 							tempAttrList.addAll(rowData.keySet());
 							idHashTable.put(rowData.get(RaceConfig.orderId)
 									.valueAsLong(), record.getOffset());
+							
 							break;
 						case OrderBuyerId:
 							idHashTable.put(
 									rowData.get(RaceConfig.buyerId).valueAsString().hashCode(),
 									record.getOffset());
+							
 							break;
 						case OrderGoodId:
 							idHashTable.put(

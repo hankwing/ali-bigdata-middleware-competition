@@ -71,7 +71,7 @@ public class BuyerHandler{
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					buyerfile.writeLine(file, record, TableName.BuyerTable);
+					buyerfile.writeLine(file, record);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -81,7 +81,7 @@ public class BuyerHandler{
 		}
 
 		// set end signal
-		buyerfile.writeLine(null, null, TableName.BuyerTable);
+		buyerfile.writeLine(null, null);
 		System.out.println("end buyer handling!");
 	}
 
@@ -141,9 +141,12 @@ public class BuyerHandler{
 					Row rowData = Row.createKVMapFromLine(record.getRecordsData());
 					tempAttrList.addAll(rowData.keySet());			// 添加属性
 					String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
-
+					// 放入缓冲区中
+					long offset = record.getOffset();
+					rowCache.putInCache(dataFileName.hashCode() + offset
+						, record.getRecordsData(), TableName.BuyerTable);
 					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
-					buyerIdHashTable.put(buyerid.hashCode(), record.getOffset());
+					buyerIdHashTable.put(buyerid.hashCode(), offset);
 					//surrKey ++;
 				}
 				else if(isEnd ) {

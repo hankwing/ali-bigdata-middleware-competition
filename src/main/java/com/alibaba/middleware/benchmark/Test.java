@@ -30,6 +30,9 @@ import java.util.TreeSet;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.index.ComparableKeys;
+import com.alibaba.middleware.index.DiskHashTable;
+import com.alibaba.middleware.race.OrderSystem.TypeException;
+import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.RecordsUtils;
 
 /**
@@ -47,14 +50,34 @@ public class Test {
 		 String line = null;
 		 long offset = 0;
 		 long mStartTime = System.currentTimeMillis();
-		 
+		 DiskHashTable<Integer, List<Long>> buyerIdHashTable = new DiskHashTable<Integer,List<Long>>(
+					"temp" + RaceConfig.buyerIndexFileSuffix ,"temp", Long.class);
+		 DiskHashTable<Integer, List<Long>> dHashTable = new DiskHashTable<Integer,List<Long>>(
+					"temp" + RaceConfig.buyerIndexFileSuffix ,"temp", Long.class);
+		 HashMap<Integer,Long> map = new HashMap<Integer,Long>();
+		 HashMap<Integer,Long> map2 = new HashMap<Integer,Long>();
+		 HashMap<Integer,Long> map3 = new HashMap<Integer,Long>();
 		try {
 			reader = new BufferedReader(new FileReader("benchmark/order_records.txt"));
 			line = reader.readLine();
 			offset = 0;
 			while( line != null) {
 				offset ++;
+				long id = 0;
+				Row row = Row.createKVMapFromLine(line);
+				try {
+					id = row.getKV("orderid").valueAsLong();
+				} catch (TypeException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				//buyerIdHashTable.put((int) (line.hashCode() + id), offset);
+				//dHashTable.put((int) (line.hashCode() + id), offset);
+				map.put(line.hashCode(), offset);
+				map2.put(line.hashCode(), offset);
+				map3.put(line.hashCode(), offset);
 				line = reader.readLine();
+				
 			}
 			reader.close();
 		} catch (FileNotFoundException e) {
@@ -65,7 +88,8 @@ public class Test {
 			e.printStackTrace();
 		}
 		long mEndTime = System.currentTimeMillis();
-		System.out.println("test2:" + (mEndTime - mStartTime) + "offset:" + offset);
+		//long offset2 = map.get(0);
+		System.out.println("test2:" + (mEndTime - mStartTime) );
 		
 		
 		

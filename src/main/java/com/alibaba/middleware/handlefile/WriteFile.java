@@ -55,7 +55,7 @@ public class WriteFile {
 		}
 	}
 
-	public void writeLine(String dataFileName, String line, TableName type){
+	public void writeLine(String dataFileName, String line){
 		try {
 			/***
 			 * 索引文件为空时创建新的索引文件
@@ -83,9 +83,7 @@ public class WriteFile {
 			}
 			
 			if(line != null ) {
-				// 放入缓冲区中
-				rowCache.putInCache(dataFileName.hashCode() + offset
-					, line, type);
+				
 				offset = offset + line.getBytes().length + nextLineByteLength;
 				count++;
 			}
