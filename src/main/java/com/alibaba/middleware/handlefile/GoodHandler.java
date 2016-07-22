@@ -27,6 +27,11 @@ import com.alibaba.middleware.tools.RecordsUtils;
 public class GoodHandler{
 
 	WriteFile goodfile;
+	MergeSmallFile mergefile;
+	//文件映射，文件编号
+	DataFileMapping dataFileMapping;
+	int dataFileSerialNumber;
+	
 	BufferedReader reader;
 	LinkedBlockingQueue<IndexItem> indexQueue;
 
@@ -38,8 +43,13 @@ public class GoodHandler{
 	CountDownLatch latch = null;
 	private SimpleCache rowCache = null;
 	public ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList = null;
+	
+	public double MEG = Math.pow(1024, 2);
+	List<String> smallFiles = new ArrayList<String>();
 
-	public GoodHandler(List<FilePathWithIndex> goodFileList, 
+	public GoodHandler(
+			DataFileMapping dataFileMapping,
+			List<FilePathWithIndex> goodFileList, 
 			HashSet<String> goodAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList, 
 			 int threadIndex,CountDownLatch latch,
@@ -56,6 +66,10 @@ public class GoodHandler{
 		goodfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}},
 				RaceConfig.storeFolders[threadIndex], 
 				RaceConfig.goodFileNamePrex, (int) RaceConfig.smallFileCapacity);
+		
+		this.dataFileMapping = dataFileMapping;
+		
+		
 	}
 
 	public void HandleGoodFiles(List<String> files){

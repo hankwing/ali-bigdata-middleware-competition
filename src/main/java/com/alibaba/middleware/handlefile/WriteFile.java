@@ -55,7 +55,14 @@ public class WriteFile {
 		}
 	}
 
-	public void writeLine(String dataFileName, String line, TableName tableType){
+	/***
+	 * 生成索引项，其中包括，源数据文件名，数据文件编号
+	 * @param dataFileName
+	 * @param dataFileSerialNumber
+	 * @param line
+	 * @param tableType
+	 */
+	public void writeLine(String dataFileName,  int dataFileSerialNumber, String line, TableName tableType){
 		try {
 			/***
 			 * 索引文件为空时创建新的索引文件
@@ -79,7 +86,7 @@ public class WriteFile {
 			// 将数据放入队列中 供建索引的线程建索引
 			indexFileName = dataFileName + "_" + fileNum;
 			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
-				queue.put(new IndexItem(indexFileName, dataFileName,line, offset));
+				queue.put(new IndexItem(indexFileName,dataFileName, dataFileSerialNumber,line, offset));
 			}
 			
 			if(line != null ) {
