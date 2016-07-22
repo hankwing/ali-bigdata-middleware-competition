@@ -55,20 +55,14 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 		List<String> orderKeys = new ArrayList<String>();
 		List<String> buyerKeys = new ArrayList<String>();
 		List<String> goodKeys = new ArrayList<String>();
-		if( keys == null ) {
-			orderKeys = null;
-			buyerKeys = null;
-			goodKeys = null;
-		}
-		else {
-			for (String key : keys) {
-				if (system.orderAttrList.contains(key)) {
-					orderKeys.add(key);
-				} else if (system.buyerAttrList.contains(key)) {
-					buyerKeys.add(key);
-				} else if (system.goodAttrList.contains(key)) {
-					goodKeys.add(key);
-				}
+
+		for (String key : keys) {
+			if (system.orderAttrList.contains(key)) {
+				orderKeys.add(key);
+			} else if (system.buyerAttrList.contains(key)) {
+				buyerKeys.add(key);
+			} else if (system.goodAttrList.contains(key)) {
+				goodKeys.add(key);
 			}
 		}
 		
@@ -82,12 +76,12 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 			for (FilePathWithIndex filePath : system.orderFileList) {
 				DiskHashTable<Integer, List<Long>> hashTable = system.orderGoodIdIndexList
 						.get(filePath.getFilePath());
-				if (hashTable == null) {
+				/*if (hashTable == null) {
 					System.out.println("weired...");
 					hashTable = system.getHashDiskTable(filePath.getFilePath(),
 							filePath.getOrderGoodIdIndex());
 					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
-				}
+				}*/
 				long resultNum = hashTable.get(surrId).size();
 				if (resultNum != 0) {
 					// find the records offset
