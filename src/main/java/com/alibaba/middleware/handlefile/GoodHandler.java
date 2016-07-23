@@ -152,6 +152,7 @@ public class GoodHandler{
 			}
 		}
 		mergefile.writeLine(null, null, TableName.BuyerTable);
+		mergefile.closeFile();
 		
 		System.out.println("end good handling!");
 	}

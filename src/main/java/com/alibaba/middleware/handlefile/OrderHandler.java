@@ -169,7 +169,8 @@ public class OrderHandler {
 				e.printStackTrace();
 			}
 		}
-		orderfile.writeLine(null, 0, null, TableName.OrderTable);
+		mergefile.writeLine(null, null, TableName.OrderTable);
+		mergefile.closeFile();
 		
 		System.out.println("end order handling!");
 	}

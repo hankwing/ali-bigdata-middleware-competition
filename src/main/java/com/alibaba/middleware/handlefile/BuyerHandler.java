@@ -164,6 +164,8 @@ public class BuyerHandler{
 			}
 		}
 		mergefile.writeLine(null, null, TableName.BuyerTable);
+		mergefile.closeFile();
+		
 		System.out.println("end buyer handling!");
 	}
 
