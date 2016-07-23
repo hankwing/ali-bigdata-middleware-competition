@@ -115,39 +115,44 @@ public class BuyerHandler{
 				e.printStackTrace();
 			}
 		}
-		
-		// 下面开始处理小文件
-		smallFileWriter = new SmallFileWriter(
-				buyerHandlersList, buyerFileMapping,
-				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
-				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.buyerFileNamePrex);
-
 		//处理小文件，合并
-		for(String smallfile:smallFiles){
-			try {
-				reader = new BufferedReader(new FileReader(smallfile));
-			} catch (FileNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+		if( !smallFiles.isEmpty() ) {
+			for(String smallfile:smallFiles) {
+				try {
+					// 下面开始处理小文件
+					smallFileWriter = new SmallFileWriter(
+							buyerHandlersList, buyerFileMapping,
+							new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
+							RaceConfig.storeFolders[threadIndex],
+							RaceConfig.buyerFileNamePrex);
+					
+					reader = new BufferedReader(new FileReader(smallfile));
+				} catch (FileNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				String record = null;
+				try {
+					record = reader.readLine();
+					while (record != null) {
+						//Utils.getAttrsFromRecords(buyerAttrList, record);
+						smallFileWriter.writeLine(record, TableName.BuyerTable);
+						record = reader.readLine();
+					}
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 			
-			String record = null;
-			try {
-				record = reader.readLine();
-				while (record != null) {
-					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					smallFileWriter.writeLine(record, TableName.BuyerTable);
-					record = reader.readLine();
-				}
-				reader.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			smallFileWriter.writeLine(null, TableName.BuyerTable);
+			smallFileWriter.closeFile();
 		}
-		
-		smallFileWriter.writeLine(null, TableName.BuyerTable);
-		smallFileWriter.closeFile();
+		else {
+			buyerfile.writeLine(0, null, TableName.BuyerTable);
+		}
+
 		System.out.println("end buyer handling!");
 	}
 

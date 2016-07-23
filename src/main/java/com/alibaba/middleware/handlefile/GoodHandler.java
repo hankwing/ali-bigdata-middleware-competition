@@ -117,34 +117,39 @@ public class GoodHandler{
 			}
 		}
 
-		// 下面开始处理小文件
-		smallFileWriter = new SmallFileWriter(
-				goodHandlersList, goodFileMapping,
-				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
-				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.goodFileNamePrex);
-		//开始处理小文件
-		for(String smallfile:smallFiles){
+		if( !smallFiles.isEmpty()) {
+			//开始处理小文件
+			for(String smallfile:smallFiles){
 
-			try {
-				reader = new BufferedReader(new FileReader(smallfile));
-				String record = reader.readLine();
-				while (record != null) {
-					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					smallFileWriter.writeLine(record, TableName.GoodTable);
-					record = reader.readLine();
+				try {
+					// 下面开始处理小文件
+					smallFileWriter = new SmallFileWriter(
+							goodHandlersList, goodFileMapping,
+							new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
+							RaceConfig.storeFolders[threadIndex],
+							RaceConfig.goodFileNamePrex);
+					reader = new BufferedReader(new FileReader(smallfile));
+					String record = reader.readLine();
+					while (record != null) {
+						//Utils.getAttrsFromRecords(buyerAttrList, record);
+						smallFileWriter.writeLine(record, TableName.GoodTable);
+						record = reader.readLine();
+					}
+					reader.close();
+				} catch (FileNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
-				reader.close();
-			} catch (FileNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
+			smallFileWriter.writeLine(null, TableName.GoodTable);
+			smallFileWriter.closeFile();
+		}else {
+			goodfile.writeLine(0, null, TableName.BuyerTable);
 		}
-		smallFileWriter.writeLine(null, TableName.GoodTable);
-		smallFileWriter.closeFile();
+		
 		
 		System.out.println("end good handling!");
 	}

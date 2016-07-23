@@ -21,7 +21,7 @@ public class RaceConfig implements Serializable{
 	
 	public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
-	public static long smallFileCapacity = 3000000;
+	public static long smallFileCapacity = 15000000;			// 每个索引项的最大索引条数
 	public static long singleFileMaxLines = 10000000;			// 合并后的文件最大行数
 	/**
 	 * Thread pool config

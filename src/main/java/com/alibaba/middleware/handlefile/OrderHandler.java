@@ -135,39 +135,41 @@ public class OrderHandler {
 
 		}
 
-		// set end signal
-//		orderfile.writeLine(null, 0, null, TableName.OrderTable);
-		// 下面开始处理小文件
-		smallFileWriter = new SmallFileWriter(
-				orderHandlersList, orderFileMapping,
-				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
-				add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}}, 
-				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.orderFileNamePrex);
 		//处理小文件
-		for(String smallfile:smallFiles){
-			try {
-				reader = new BufferedReader(new FileReader(smallfile));
-			} catch (FileNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			
-			String record = null;
-			try {
-				record = reader.readLine();
-				while (record != null) {
-					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					smallFileWriter.writeLine( record, TableName.OrderTable);
-					record = reader.readLine();
+		if( !smallFiles.isEmpty()) {
+			for(String smallfile:smallFiles){
+				try {
+					smallFileWriter = new SmallFileWriter(
+							orderHandlersList, orderFileMapping,
+							new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
+							add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}}, 
+							RaceConfig.storeFolders[threadIndex],
+							RaceConfig.orderFileNamePrex);
+					reader = new BufferedReader(new FileReader(smallfile));
+				} catch (FileNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
 				}
-				reader.close();
-			} catch (IOException e) {
-				e.printStackTrace();
+				
+				String record = null;
+				try {
+					record = reader.readLine();
+					while (record != null) {
+						//Utils.getAttrsFromRecords(buyerAttrList, record);
+						smallFileWriter.writeLine( record, TableName.OrderTable);
+						record = reader.readLine();
+					}
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
+			smallFileWriter.writeLine(null, TableName.OrderTable);
+			smallFileWriter.closeFile();
+		}else {
+			orderfile.writeLine(0, null, TableName.BuyerTable);
 		}
-		smallFileWriter.writeLine(null, TableName.OrderTable);
-		smallFileWriter.closeFile();
+		
 		
 		System.out.println("end order handling!");
 	}
