@@ -117,11 +117,17 @@ public class ConcurrentCache {
     }
 
     public void forceEvict(long num) {
-        orderEvict(num*2);
-        buyerEvict(num);
-        goodEvict(num);
-        goodToOrderIdEvict(num);
-        buyerToOrderIdEvict(num);
+        long orderS = orderCacheMap.size();
+        long buyerS = buyerCacheMap.size();
+        long goodS = goodCacheMap.size();
+        long goodIdS = goodToOrderIdCacheMap.size();
+        long buyerIdS = buyerToOrderIdCacheMap.size();
+        long size = orderS + buyerS + goodS + goodIdS + buyerIdS;
+        orderEvict(num*orderS/size);
+        buyerEvict(num*buyerS/size);
+        goodEvict(num*goodS/size);
+        goodToOrderIdEvict(num*goodIdS/size);
+        buyerToOrderIdEvict(num*buyerIdS/size);
     }
 
     public void orderEvict(long num) {

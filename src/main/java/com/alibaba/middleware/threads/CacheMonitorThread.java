@@ -21,8 +21,8 @@ public class CacheMonitorThread extends SchedulerThread {
     public void run() {
         try {
             if (!isReadyToStop) {
-                //System.out.println("Now Used mem: " + (getTotalMem() - getFreeMem()) + "MB");
-                //System.out.println("Now Max mem: " + Runtime.getRuntime().maxMemory()/mb + "MB");
+                System.out.println("Now Used mem: " + (getTotalMem() - getFreeMem()) + "MB");
+//                System.out.println("Now Max mem: " + Runtime.getRuntime().maxMemory()/mb + "MB");
                 if ((getTotalMem() - getFreeMem()) > getMaxMem() * cacheMemFactor) {
                     System.out.println("Total mem: " + getTotalMem() + "MB");
                     System.out.println("Free mem: " + getFreeMem() + "MB");
