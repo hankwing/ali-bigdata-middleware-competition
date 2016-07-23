@@ -1,10 +1,14 @@
 package com.alibaba.middleware.threads;
 
+import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
+import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystem;
+import com.alibaba.middleware.race.OrderSystem.TypeException;
 import com.alibaba.middleware.race.ResultImpl;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.race.OrderSystem.Result;
@@ -27,13 +31,70 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
     private String goodid;
     private Collection<String> keys;
     private OrderSystemImpl system = null;
+    private SimpleCache rowCache = null;
 
     public QueryOrdersBySalerThread(OrderSystemImpl system,
     		String salerid, String goodid, Collection<String> keys) {
+    	rowCache = SimpleCache.getInstance();
     	this.system = system;
         this.salerid = salerid;
         this.goodid = goodid;
         this.keys = keys;
+    }
+    
+    /**
+     * 判断row是否符合要求 符合则加入结果集
+     * @param row
+     * @param results
+     */
+    public void handleOffsets( List<byte[]> offsets, TreeMap<Long, Result> results, List<String> buyerKeys,
+    		List<String> goodKeys) {
+    	
+    	for( byte[] encodedOffset: offsets) {
+			// 放入缓冲区
+    		// 这里要将offset解析成文件下标+offset的形式才能用
+    		FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
+    		long offset = offsetInfo.offset;
+    		int fileIndex = offsetInfo.fileIndex;
+			Row row = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
+			if(row != null) {
+				row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
+						row : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+								system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable));
+			}
+			else {
+				// 在硬盘里找数据
+				String diskData = RecordsUtils.getStringFromFile(
+						system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable);
+				row = Row.createKVMapFromLine(diskData);
+				rowCache.putInCache(encodedOffset, diskData, TableName.OrderTable);
+				// 放入缓冲区
+			}
+
+			try {
+				long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
+				if( keys == null) {
+					row.putAll(system.getRowById(TableName.BuyerTable, 
+							row.get(RaceConfig.buyerId).valueAsString()));
+					row.putAll(system.getRowById(TableName.GoodTable, 
+							row.get(RaceConfig.goodId).valueAsString()));
+				}
+				else if( !buyerKeys.isEmpty()) {
+					// need query buyerTable
+					row.putAll(system.getRowById(TableName.BuyerTable,
+							row.get(RaceConfig.buyerId).valueAsString()));
+				}
+				if(!goodKeys.isEmpty()) {
+					//System.out.println("weired query!");
+					row.putAll(system.getRowById(TableName.GoodTable,
+							row.get(RaceConfig.goodId).valueAsString()));
+				}
+				results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
+			} catch (TypeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
     }
 
     /**
@@ -48,24 +109,15 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 	 *            待查询的字段，如果为null，则查询所有字段，如果为空，则排除所有字段
 	 * @return 符合条件的订单集合，按照订单id从小至大排序
 	 */
-	@SuppressWarnings("unchecked")
     @Override
     public Iterator<Result> call() throws Exception {
         // TODO
 		// 根据商品ID找到多条订单信息 再筛选出keys 结果集按照订单id插入排序
-		List<String> orderKeys = new ArrayList<String>();
-		List<String> buyerKeys = new ArrayList<String>();
-		List<String> goodKeys = new ArrayList<String>();
-		if( keys == null ) {
-			orderKeys = null;
-			buyerKeys = null;
-			goodKeys = null;
-		}
-		else {
+    	ArrayList<String> buyerKeys = new ArrayList<String>();
+    	ArrayList<String> goodKeys = new ArrayList<String>();
+		if( keys != null) {
 			for (String key : keys) {
-				if (system.orderAttrList.contains(key)) {
-					orderKeys.add(key);
-				} else if (system.buyerAttrList.contains(key)) {
+				if (system.buyerAttrList.contains(key)) {
 					buyerKeys.add(key);
 				} else if (system.goodAttrList.contains(key)) {
 					goodKeys.add(key);
@@ -79,51 +131,33 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 			return null;
 		}
 		else {
-			for (FilePathWithIndex filePath : system.orderFileList) {
-				DiskHashTable<Integer, List<Long>> hashTable = system.orderGoodIdIndexList
-						.get(filePath.getFilePath());
-				if (hashTable == null) {
-					hashTable = system.getHashDiskTable(filePath.getFilePath(),
-							filePath.getOrderGoodIdIndex());
-					system.orderGoodIdIndexList.put(filePath.getFilePath(), hashTable);
-				}
-				long resultNum = hashTable.get(surrId).size();
-				if (resultNum != 0) {
-					// find the records offset
-					// 找到后，按照降序插入TreeMap中
-					
-					for( Long offset: hashTable.get(surrId)) {
-						// 现在缓冲区里找
-						Row row = system.rowCache.getFromCache(offset + filePath.getFilePath().hashCode(),
-								TableName.OrderTable);
-						if(row != null) {
-							row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
-									row : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-											filePath, offset, TableName.OrderTable));
-						}
-						else {
-							row = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-									filePath, offset, TableName.OrderTable));
-						}
-						
-						if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
-							// 放入缓冲区
-							
-							long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
-							// need query buyerTable
-							row.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
-									row.get(RaceConfig.buyerId).valueAsString()));			
-							// need query goodTable
-							row.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
-									row.get(RaceConfig.goodId).valueAsString()));
-							results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
-						}				
-						
-					}
-					
-				}
-
+			// 在缓冲区里找对应的order数据
+			List<byte[]> orderIds = rowCache.getFormIdCache(surrId, IdIndexType.GoodIdToOrderOffsets);
+			if( orderIds != null) {
+				// 找到了对应的orderid列表
+				handleOffsets(orderIds, results,buyerKeys, goodKeys );
+				
 			}
+			else {
+				// 在索引里找offsetlist
+				List<byte[]> offsetList = new ArrayList<byte[]>();
+				for (int filePathIndex : system.orderFileMapping.getAllFileIndexs()) {
+					
+					DiskHashTable<Integer, List<byte[]>> hashTable = system.orderGoodIdIndexList
+							.get(filePathIndex);
+					List<byte[]> offSetresults = hashTable.get(surrId);
+					if (offSetresults.size() != 0) {
+						// find the records offset
+						offsetList.addAll(offSetresults);
+					}
+
+				}
+				
+				handleOffsets( offsetList, results, buyerKeys, goodKeys);
+				// 放入缓冲区
+				rowCache.putInIdCache(surrId, offsetList, IdIndexType.GoodIdToOrderOffsets);
+			}
+			
 		}
 		
 		return results.values().iterator();

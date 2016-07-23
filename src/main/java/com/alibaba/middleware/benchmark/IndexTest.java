@@ -79,9 +79,9 @@ public class IndexTest {
 		    		long startTime = System.currentTimeMillis();
 		    		br = new BufferedReader(new FileReader("orderBench.txt"));
 				    String line = br.readLine();
-				    hashTable = new DiskHashTable<Long,List<Long>>("bucketFile","dataFile", List.class);
+				    hashTable = new DiskHashTable<Long,List<Long>>("bucketFile", List.class);
 				    
-				    while (line != null) {
+				    /*while (line != null) {
 				        String[] values = line.split("\\s+?");
 				        String orderid = values[0].substring(values[0].indexOf(":") + 1);
 				        long value = Long.valueOf( values[1].substring(values[1].indexOf(":") + 1));
@@ -95,7 +95,7 @@ public class IndexTest {
 				        //System.out.println(orderid);
 				        line = br.readLine();
 				    	
-				    }
+				    }*/
 				    System.out.println("constructing complete:" + (System.currentTimeMillis() - startTime) / 1000);
 		    	}
 		    	else if(command.startsWith("lookup")){

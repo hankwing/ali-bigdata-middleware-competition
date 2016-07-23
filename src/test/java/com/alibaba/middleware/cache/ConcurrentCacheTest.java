@@ -10,10 +10,16 @@ import com.alibaba.middleware.conf.RaceConfig;
 public class ConcurrentCacheTest {
 
     public static void main(String[] args) {
-        ConcurrentCache cache = new ConcurrentCache();
+        ConcurrentCache cache = ConcurrentCache.getInstance();
 
-        for (long i = 0; i < 10000; i++) {
+        for (int i = 0; i < 10000; i++) {
             cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.BuyerTable);
+            cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.GoodTable);
+//            cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.OrderTable);
         }
+
+        cache.forceEvict(1000);
+
+        System.out.println(cache.getSize());
     }
 }

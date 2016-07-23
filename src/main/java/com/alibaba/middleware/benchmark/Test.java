@@ -21,6 +21,7 @@ import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -45,8 +46,13 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-
-		 BufferedReader reader;
+		ByteBuffer buffer = ByteBuffer.allocate(12);
+		buffer.putInt(0);
+		buffer.putLong(201238912);
+		
+		ByteBuffer decodedBuffer = ByteBuffer.wrap(buffer.array());
+		System.out.println("int:" + decodedBuffer.getInt()+ " long:" + decodedBuffer.getLong());
+		/*List<RandomAccessFile> files = new ArrayList<RandomAccessFile>();
 		 String line = null;
 		 long offset = 0;
 		 long mStartTime = System.currentTimeMillis();
@@ -58,28 +64,17 @@ public class Test {
 		 HashMap<Integer,Long> map2 = new HashMap<Integer,Long>();
 		 HashMap<Integer,Long> map3 = new HashMap<Integer,Long>();
 		try {
-			reader = new BufferedReader(new FileReader("benchmark/order_records.txt"));
-			line = reader.readLine();
+			
+			
 			offset = 0;
-			while( line != null) {
+			while( offset < 10000) {
+				RandomAccessFile reader = new RandomAccessFile("benchmark/order_records.txt","r");
+				files.add(reader);
 				offset ++;
 				long id = 0;
-				Row row = Row.createKVMapFromLine(line);
-				try {
-					id = row.getKV("orderid").valueAsLong();
-				} catch (TypeException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				//buyerIdHashTable.put((int) (line.hashCode() + id), offset);
-				//dHashTable.put((int) (line.hashCode() + id), offset);
-				map.put(line.hashCode(), offset);
-				map2.put(line.hashCode(), offset);
-				map3.put(line.hashCode(), offset);
-				line = reader.readLine();
 				
 			}
-			reader.close();
+			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -89,7 +84,8 @@ public class Test {
 		}
 		long mEndTime = System.currentTimeMillis();
 		//long offset2 = map.get(0);
-		System.out.println("test2:" + (mEndTime - mStartTime) );
+		System.out.println("test2:" + (mEndTime - mStartTime) );*/
+		
 		
 		
 		

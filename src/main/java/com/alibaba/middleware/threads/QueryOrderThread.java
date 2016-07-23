@@ -45,12 +45,12 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 			resultKV.putKV(RaceConfig.orderId, orderId);
 			if (keys == null) {
 				// 需要返回所有记录
-				Row orderIdRow = system.getRowById(TableName.OrderTable,RaceConfig.orderId,orderId);
+				Row orderIdRow = system.getRowById(TableName.OrderTable,orderId);
 				if( !orderIdRow.isEmpty() ) {
 					resultKV.putAll(orderIdRow);
-					resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+					resultKV.putAll(system.getRowById(TableName.BuyerTable,
 							resultKV.get(RaceConfig.buyerId).valueAsString()));
-					resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+					resultKV.putAll(system.getRowById(TableName.GoodTable,
 							resultKV.get(RaceConfig.goodId).valueAsString()));
 				}
 				else {
@@ -72,17 +72,17 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 						goodKeys.add(key);
 					}
 				}
-				Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,orderId);
+				Row orderIdRow = system.getRowById(TableName.OrderTable,orderId);
 				if( !orderIdRow.isEmpty() ) {
 					resultKV.putAll(orderIdRow);
 					if(!buyerKeys.isEmpty()) {
 						// 需要查询buyer表
-						resultKV.putAll(system.getRowById(TableName.BuyerTable, RaceConfig.buyerId,
+						resultKV.putAll(system.getRowById(TableName.BuyerTable,
 								resultKV.get(RaceConfig.buyerId).valueAsString()));
 					}
 					if( !goodKeys.isEmpty()) {
 						// 需要查询good表
-						resultKV.putAll(system.getRowById(TableName.GoodTable, RaceConfig.goodId,
+						resultKV.putAll(system.getRowById(TableName.GoodTable,
 								resultKV.get(RaceConfig.goodId).valueAsString()));
 					}
 				}
@@ -95,8 +95,8 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 			else {
 				// 这里说明key为空 只需要判断是否存在该条记录即可
 				// 这里需改进
-				Row orderIdRow = system.getRowById(TableName.OrderTable, RaceConfig.orderId,orderId);
-				if(orderIdRow.isEmpty()) {
+				
+				if(system.getRowById(TableName.OrderTable, orderId) == null) {
 					// 没找到相应订单
 					return null;
 				}

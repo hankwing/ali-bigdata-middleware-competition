@@ -10,23 +10,13 @@ import java.io.RandomAccessFile;
  */
 public class FilePathWithIndex {
 
-	public String filePath = null;
+	public int filePathIndex = 0;
 	public long orderIdIndex = 0;
 	public long orderBuyerIdIndex = 0;
 	public long orderGoodIdIndex = 0;
 	public long buyerIdIndex = 0;
 	public long goodIdIndex = 0;
-	public long surrogateIndex = 0;
-	//public RandomAccessFile file = null;
-
-	
-	public void setSurrogateIndex( long offset) {
-		surrogateIndex = offset;
-	}
-	
-	public long getSurrogateIndex() {
-		return surrogateIndex;
-	}
+	//public RandomAccessFile file = null
 	
 	public void setOrderIdIndex( long offset) {
 		orderIdIndex = offset;
@@ -72,22 +62,15 @@ public class FilePathWithIndex {
 	 * 在设置文件的时候同时设置随机读的对象
 	 * @param filePath
 	 */
-	public void setFilePath( String filePath) {
-		this.filePath = filePath;
-		/*try {
-			file = new RandomAccessFile(filePath, "r");
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-		
+	public void setFilePathIndex( int filePathIndex) {
+		this.filePathIndex = filePathIndex;
 	}
 	
 	/*public RandomAccessFile getAccessFile() {
 		return file;
 	}*/
 	
-	public String getFilePath() {
-		return filePath;
+	public int getFilePath() {
+		return filePathIndex;
 	}
 }

@@ -1,34 +1,33 @@
 package com.alibaba.middleware.handlefile;
 
-import com.alibaba.middleware.conf.RaceConfig.IndexType;
-import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.RecordsUtils;
 
 public class IndexItem {
 
 	//这里dataFileName+offset=Value
-	String dataFileName;
+	int dataSerialNumber;
 	String indexFileName;
 	String recordsData = null;
 	//Row rowData = null;
-	long offset = 0;
+	byte[] encodedOffset = null;
 
-	public IndexItem(String indexFileName, String dataFileName, String recordsData, long offset) {
+	public IndexItem(String indexFileName,int dataSerialNumber ,String recordsData, long offset) {
 		this.indexFileName = indexFileName;
-		this.dataFileName = dataFileName;
+		this.dataSerialNumber = dataSerialNumber;
 		this.recordsData = recordsData;
-		this.offset = offset;
+		encodedOffset = RecordsUtils.encodeIndex(dataSerialNumber, offset);
 	}
 	
-	public long getOffset() {
-		return offset;
+	public byte[] getOffset() {
+		return encodedOffset;
+	}
+	
+	public int getFileIndex() {
+		return dataSerialNumber;
 	}
 
 	public String getRecordsData() {
 		return recordsData;
-	}
-
-	public String getDataFileName() {
-		return dataFileName;
 	}
 	
 	public String getIndexFileName(){

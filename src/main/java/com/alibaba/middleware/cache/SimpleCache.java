@@ -9,6 +9,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.race.Row;
 
@@ -20,16 +21,19 @@ import com.alibaba.middleware.race.Row;
  */
 public class SimpleCache {
     private final int capacity;
-    private LinkedHashMap<Long, String> orderCacheMap;
-    private LinkedHashMap<Long,String> buyerCacheMap;
-    private LinkedHashMap<Long, String> goodCacheMap;
-    //private LinkedHashMap<Integer, List<Row>> orderBuyerIdCacheMap;
-    //private LinkedHashMap<Integer, List<Row>> orderGoodIdCacheMap;
+    
+    private LinkedHashMap<byte[], String> orderCacheMap;					// 存的是hashcode+offset-->string
+    private LinkedHashMap<Integer, String> buyerCacheMap;				// 存的是id-->string
+    private LinkedHashMap<Integer, String> goodCacheMap;				// 存的是id-->string
+    private LinkedHashMap<Integer, List<byte[]>> buyerToOrderIdCacheMap;	// 存的是key-->hashcode+offset
+    private LinkedHashMap<Integer, List<byte[]>> goodToOrderIdCacheMap;	// 存的是key-->hashCode+offset
     //private LinkedHashMap<Integer, Row> buyerCacheMap;
     //private LinkedHashMap<Integer, Row> goodCacheMap;
     private ReadWriteLock orderLock;
     private ReadWriteLock buyerLock;
     private ReadWriteLock goodLock;
+    private ReadWriteLock buyerToOrderLock;
+    private ReadWriteLock goodToOrderLock;
     private static SimpleCache instance = null;
 
     public static SimpleCache getInstance() {
@@ -40,33 +44,46 @@ public class SimpleCache {
 
     public SimpleCache(final int capacity) {
         this.capacity = capacity;
-        orderCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
+        orderCacheMap = new LinkedHashMap<byte[], String>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
-//                return size() > capacity;
-                return false;
+            protected boolean removeEldestEntry(Map.Entry<byte[], String> eldest) {
+                return size() > capacity;
             }
         };
         
-        buyerCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
+        buyerCacheMap = new LinkedHashMap<Integer, String>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
-//                return size() > capacity;
-                return false;
+            protected boolean removeEldestEntry(Map.Entry<Integer, String> eldest) {
+                return size() > capacity;
             }
         };
         
-        goodCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
+        goodCacheMap = new LinkedHashMap<Integer, String>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
-//                return size() > capacity;
-                return false;
+            protected boolean removeEldestEntry(Map.Entry<Integer, String> eldest) {
+                return size() > capacity;
+            }
+        };
+        
+        buyerToOrderIdCacheMap = new LinkedHashMap<Integer, List<byte[]>>(capacity/2, 0.95f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Integer, List<byte[]>> eldest) {
+                return size() > capacity;
+            }
+        };
+        
+        goodToOrderIdCacheMap = new LinkedHashMap<Integer, List<byte[]>>(capacity/2, 0.95f, true) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Integer, List<byte[]>> eldest) {
+                return size() > capacity;
             }
         };
         
         orderLock = new ReentrantReadWriteLock(false);
         buyerLock = new ReentrantReadWriteLock(false);
         goodLock = new ReentrantReadWriteLock(false);
+        buyerToOrderLock = new ReentrantReadWriteLock(false);
+        goodToOrderLock = new ReentrantReadWriteLock(false);
     }
 
     /*@Override
@@ -89,30 +106,83 @@ public class SimpleCache {
         return value;
     }*/
     
-    public void putInCache(Long key, String value, TableName tableType) {
+    public void putInCache(Object key, String value, TableName tableType) {
     	switch( tableType) {
     	case OrderTable:
     		//synchronized(orderCacheMap) {
     		orderLock.writeLock().lock();
-    		orderCacheMap.put( key, value);
+    		orderCacheMap.put( (byte[]) key, value);
     		orderLock.writeLock().unlock();
             // }
     		break;
     	case BuyerTable:
     		//synchronized(buyerCacheMap) {
     		buyerLock.writeLock().lock();
-    		buyerCacheMap.put( key, value);
+    		buyerCacheMap.put( (Integer) key, value);
     		buyerLock.writeLock().unlock();
             // }
     		break;
     	case GoodTable:
     		//synchronized(goodCacheMap) {
     		goodLock.writeLock().lock();
-    		goodCacheMap.put( key, value);
+    		goodCacheMap.put( (Integer) key, value);
     		goodLock.writeLock().unlock();
             // }
     		break;
     	}
+    	
+    }
+    
+    /**
+     * 缓存order表里的buyerid和goodid对应的order表里的offset列表
+     * @param key
+     * @param value
+     * @param tableType
+     */
+    public void putInIdCache(Integer key, List<byte[]> offsets, IdIndexType indexType) {
+    	switch( indexType) {
+    	case BuyerIdToOrderOffsets:
+    		//synchronized(orderCacheMap) {
+    		buyerToOrderLock.writeLock().lock();
+    		List<byte[]> list = buyerToOrderIdCacheMap.get(key);
+    		if( list == null) {
+    			buyerToOrderIdCacheMap.put(key, offsets);
+    		}
+    		buyerToOrderLock.writeLock().unlock();
+    		break;
+    	case GoodIdToOrderOffsets:
+    		goodToOrderLock.writeLock().lock();
+    		List<byte[]> goodList = goodToOrderIdCacheMap.get(key);
+    		if( goodList == null) {
+    			goodToOrderIdCacheMap.put(key, offsets);
+    		}
+    		goodToOrderLock.writeLock().unlock();
+    		break;
+    	}
+    }
+
+    /**
+     * 根据buyerid或者goodid得到对应的orderid的offset列表
+     * @param key
+     * @param indexType
+     * @return
+     */
+    public List<byte[]> getFormIdCache(Integer key, IdIndexType indexType) {
+    	List<byte[]> results = null;
+    	switch( indexType) {
+    	case BuyerIdToOrderOffsets:
+    		//synchronized(orderCacheMap) {
+    		buyerToOrderLock.readLock().lock();
+    		results = buyerToOrderIdCacheMap.get(key);
+    		buyerToOrderLock.readLock().unlock();
+    		break;
+    	case GoodIdToOrderOffsets:
+    		goodToOrderLock.readLock().lock();
+    		results = goodToOrderIdCacheMap.get(key);
+    		goodToOrderLock.readLock().unlock();
+    		break;
+    	}
+    	return results;
     	
     }
     
@@ -171,7 +241,7 @@ public class SimpleCache {
     	
     }*/
 
-    public Row getFromCache(long key, TableName tableType) {
+    public Row getFromCache(Object key, TableName tableType) {
     	Row row = null;
     	switch( tableType) {
     	case OrderTable:
