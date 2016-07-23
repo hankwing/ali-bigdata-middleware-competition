@@ -27,7 +27,7 @@ public class RaceConfig implements Serializable{
 	 * Thread pool config
 	 * */
 	public static int rowCacheNumber = 10000000;					// 在内存里最多保留几个row数据
-	public static int monitorThreadNum = 1;
+	public static int monitorThreadNum = 2;
     public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	// JVMMonitorThread
