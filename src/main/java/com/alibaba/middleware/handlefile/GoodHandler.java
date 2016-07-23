@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.BucketCachePool;
+import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
@@ -50,14 +51,14 @@ public class GoodHandler{
 	HashSet<String> goodAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
-	private SimpleCache rowCache = null;
+	private ConcurrentCache rowCache = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
 
 	public double MEG = Math.pow(1024, 2);
 	List<String> smallFiles = new ArrayList<String>();
 
 	public GoodHandler(OrderSystemImpl systemImpl ,int threadIndex,CountDownLatch latch) {
-		rowCache = SimpleCache.getInstance();
+		rowCache = ConcurrentCache.getInstance();
 		this.latch = latch;
 		this.goodAttrList = systemImpl.goodAttrList;
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
@@ -205,7 +206,8 @@ public class GoodHandler{
 					tempAttrList.addAll(rowData.keySet());
 					String goodid = rowData.getKV(RaceConfig.goodId).valueAsString();
 					Integer goodIdHashCode = goodid.hashCode();
-					//rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
+					// 放入缓冲区
+					rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
 					goodIdHashTable.put(goodIdHashCode, record.getOffset());
 					//surrKey ++;
 				}

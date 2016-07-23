@@ -17,6 +17,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.BucketCachePool;
+import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
@@ -28,8 +29,6 @@ import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
-
-import javafx.scene.chart.PieChart.Data;
 
 public class OrderHandler {
 
@@ -54,14 +53,14 @@ public class OrderHandler {
 	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch countDownLatch = null;
-	private SimpleCache rowCache = null;
+	private ConcurrentCache rowCache = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> orderHandlersList = null;
 
 	public double MEG = Math.pow(1024, 2);
 	List<String> smallFiles = new ArrayList<String>();
 
 	public OrderHandler( OrderSystemImpl systemImpl, int thread, CountDownLatch countDownLatch) {
-		rowCache = SimpleCache.getInstance();
+		rowCache = ConcurrentCache.getInstance();
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = systemImpl.orderIdIndexList;
 		this.orderBuyerIdIndexList = systemImpl.orderBuyerIdIndexList;

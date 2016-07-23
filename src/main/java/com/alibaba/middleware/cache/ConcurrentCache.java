@@ -17,7 +17,7 @@ public class ConcurrentCache {
     private ConcurrentLinkedHashMap<Integer, List<byte[]>> buyerToOrderIdCacheMap;
     private ConcurrentLinkedHashMap<Integer, List<byte[]>> goodToOrderIdCacheMap;
 
-    private int initCapacity = 1000000;
+    private int initCapacity = 0;
 
     private static ConcurrentCache instance = null;
 
@@ -25,6 +25,8 @@ public class ConcurrentCache {
      * Init with default initCapacity as 1000000
      * */
     private ConcurrentCache() {
+    	initCapacity = RaceConfig.cacheInitCapacity;
+    	
         orderCacheMap = new ConcurrentLinkedHashMap.Builder<byte[], String>()
                 .maximumWeightedCapacity(Long.MAX_VALUE)
                 .concurrencyLevel(16)

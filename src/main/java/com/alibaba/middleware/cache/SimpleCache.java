@@ -36,11 +36,11 @@ public class SimpleCache {
     private ReadWriteLock goodToOrderLock;
     private static SimpleCache instance = null;
 
-    public static SimpleCache getInstance() {
+    /*public static SimpleCache getInstance() {
         if (instance == null)
             instance = new SimpleCache( RaceConfig.rowCacheNumber);
         return instance;
-    }
+    }*/
 
     public SimpleCache(final int capacity) {
         this.capacity = capacity;

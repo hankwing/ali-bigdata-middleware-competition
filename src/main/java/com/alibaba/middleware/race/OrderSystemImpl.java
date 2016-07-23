@@ -74,7 +74,7 @@ public class OrderSystemImpl implements OrderSystem {
 
 	private ThreadPool threadPool = ThreadPool.getInstance();
     private ExecutorService queryExe = threadPool.getQueryExe();
-    public SimpleCache rowCache = null;
+    public ConcurrentCache rowCache = null;
 
 	/**
 	 * 测试类 construct测试construct方法
@@ -99,9 +99,9 @@ public class OrderSystemImpl implements OrderSystem {
 				// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 
 				List<String> buyerfiles = new ArrayList<String>();
-				//buyerfiles.add("prerun_data/buyer.0.0");
-				//buyerfiles.add("prerun_data/buyer.1.1");
-				buyerfiles.add("benchmark/buyer_records.txt");
+				buyerfiles.add("prerun_data/buyer.0.0");
+				buyerfiles.add("prerun_data/buyer.1.1");
+				//buyerfiles.add("benchmark/buyer_records.txt");
 				//buyerfiles.add("benchmark/buyer_records_2.txt");
 				//buyerfiles.add("benchmark/buyer_records_3.txt");
 				//buyerfiles.add("benchmark/buyer_records_4.txt");
@@ -109,10 +109,10 @@ public class OrderSystemImpl implements OrderSystem {
 				//buyerfiles.add("benchmark/buyer_records_1.txt");
 
 				List<String> goodfiles = new ArrayList<String>();
-				//goodfiles.add("prerun_data/good.0.0");
-				//goodfiles.add("prerun_data/good.1.1");
-				//goodfiles.add("prerun_data/good.2.2");
-				goodfiles.add("benchmark/good_records.txt");
+				goodfiles.add("prerun_data/good.0.0");
+				goodfiles.add("prerun_data/good.1.1");
+				goodfiles.add("prerun_data/good.2.2");
+				//goodfiles.add("benchmark/good_records.txt");
 				//goodfiles.add("benchmark/good_records_2.txt");
 				//goodfiles.add("benchmark/good_records_3.txt");
 				//goodfiles.add("benchmark/good_records_4.txt");
@@ -120,11 +120,11 @@ public class OrderSystemImpl implements OrderSystem {
 				//goodfiles.add("benchmark/good_records_1.txt");
 
 				List<String> orderfiles = new ArrayList<String>();
-				//orderfiles.add("prerun_data/order.0.0");
-				//orderfiles.add("prerun_data/order.0.3");
-				//orderfiles.add("prerun_data/order.1.1");
-				//orderfiles.add("prerun_data/order.2.2");
-				orderfiles.add("benchmark/order_records.txt");
+				orderfiles.add("prerun_data/order.0.0");
+				orderfiles.add("prerun_data/order.0.3");
+				orderfiles.add("prerun_data/order.1.1");
+				orderfiles.add("prerun_data/order.2.2");
+				//orderfiles.add("benchmark/order_records.txt");
 				//orderfiles.add("benchmark/order_records_2.txt");
 				//orderfiles.add("benchmark/order_records_3.txt");
 				//orderfiles.add("benchmark/order_records_4.txt");
@@ -237,7 +237,7 @@ public class OrderSystemImpl implements OrderSystem {
 		//threadPool.addMonitor(jvmMonitorThread);
 		threadPool.addMonitor(cacheMonitorThread);
 		threadPool.startMonitors();
-		rowCache = SimpleCache.getInstance();
+		rowCache = ConcurrentCache.getInstance();
 	}
 
 	/**
