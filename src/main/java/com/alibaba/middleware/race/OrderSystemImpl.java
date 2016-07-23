@@ -26,6 +26,7 @@ import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.threads.*;
+import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
 
 /**
@@ -365,7 +366,7 @@ public class OrderSystemImpl implements OrderSystem {
 								orderHandlersList.get(filePathIndex), offset, TableName.OrderTable);
 						temp = Row.createKVMapFromLine( diskValue );
 						// 放入缓冲区
-						rowCache.putInCache(encodedOffset, diskValue , TableName.OrderTable);
+						rowCache.putInCache(new BytesKey(encodedOffset), diskValue , TableName.OrderTable);
 					}
 					return true;
 				}
@@ -409,7 +410,7 @@ public class OrderSystemImpl implements OrderSystem {
 							String diskValue = RecordsUtils.getStringFromFile(
 									orderHandlersList.get(fileIndex),offset, tableName);
 							temp = Row.createKVMapFromLine(diskValue);
-							rowCache.putInCache(encodedOffset, diskValue, tableName);
+							rowCache.putInCache(new BytesKey(encodedOffset), diskValue, tableName);
 						}
 						result = temp;
 						break;

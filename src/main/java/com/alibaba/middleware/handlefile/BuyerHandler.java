@@ -205,7 +205,7 @@ public class BuyerHandler{
 					String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
 					Integer buyerIdHashCode = buyerid.hashCode();
 					// 放入缓冲区中
-					//rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
+					rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
 					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
 					buyerIdHashTable.put(buyerIdHashCode, record.getOffset());
 					//surrKey ++;

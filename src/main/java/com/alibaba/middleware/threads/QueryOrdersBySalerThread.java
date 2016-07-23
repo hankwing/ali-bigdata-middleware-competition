@@ -14,6 +14,7 @@ import com.alibaba.middleware.race.ResultImpl;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.race.OrderSystem.Result;
 import com.alibaba.middleware.race.OrderSystemImpl;
+import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
@@ -57,7 +58,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
     		FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
     		long offset = offsetInfo.offset;
     		int fileIndex = offsetInfo.fileIndex;
-			Row row = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
+			Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
 			if(row != null) {
 				row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
 						row : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
@@ -68,7 +69,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 				String diskData = RecordsUtils.getStringFromFile(
 						system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable);
 				row = Row.createKVMapFromLine(diskData);
-				rowCache.putInCache(encodedOffset, diskData, TableName.OrderTable);
+				rowCache.putInCache(new BytesKey(encodedOffset), diskData, TableName.OrderTable);
 				// 放入缓冲区
 			}
 

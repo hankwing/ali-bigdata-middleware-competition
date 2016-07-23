@@ -203,7 +203,7 @@ public class GoodHandler{
 					String goodid = rowData.getKV(RaceConfig.goodId).valueAsString();
 					Integer goodIdHashCode = goodid.hashCode();
 					// 放入缓冲区
-					//rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
+					rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
 					goodIdHashTable.put(goodIdHashCode, record.getOffset());
 					//surrKey ++;
 				}

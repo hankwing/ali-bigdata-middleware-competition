@@ -27,6 +27,7 @@ import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
@@ -260,7 +261,7 @@ public class OrderHandler {
 							tempAttrList.addAll(rowData.keySet());
 							long orderId = rowData.get(RaceConfig.orderId).valueAsLong();
 							// 将order表的数据放入缓冲区
-							//rowCache.putInCache(orderId, record.getRecordsData(), TableName.OrderTable);
+							rowCache.putInCache(new BytesKey(record.getOffset()), record.getRecordsData(), TableName.OrderTable);
 							idHashTable.put(orderId, record.getOffset());
 
 							break;

@@ -3,6 +3,7 @@ package com.alibaba.middleware.cache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.BytesKey;
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ import java.util.List;
  * @author Jelly
  */
 public class ConcurrentCache {
-    private ConcurrentLinkedHashMap<byte[], String> orderCacheMap;
+    private ConcurrentLinkedHashMap<BytesKey, String> orderCacheMap;
     private ConcurrentLinkedHashMap<Integer, String> buyerCacheMap;
     private ConcurrentLinkedHashMap<Integer, String> goodCacheMap;
 
@@ -27,7 +28,7 @@ public class ConcurrentCache {
     private ConcurrentCache() {
     	initCapacity = RaceConfig.cacheInitCapacity;
     	
-        orderCacheMap = new ConcurrentLinkedHashMap.Builder<byte[], String>()
+        orderCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, String>()
                 .maximumWeightedCapacity(Long.MAX_VALUE)
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
@@ -65,7 +66,7 @@ public class ConcurrentCache {
     public void putInCache(Object key, String value, TableName tableType) {
         switch (tableType) {
             case OrderTable:
-                orderCacheMap.put((byte[]) key,  value);
+                orderCacheMap.put((BytesKey) key,  value);
                 break;
             case BuyerTable:
                 buyerCacheMap.put((Integer) key, value);

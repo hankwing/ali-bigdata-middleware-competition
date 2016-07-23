@@ -17,6 +17,7 @@ import com.alibaba.middleware.race.ResultImpl;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.race.OrderSystem.KeyValue;
 import com.alibaba.middleware.race.OrderSystemImpl;
+import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
@@ -106,7 +107,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 				long longValue = 0;
 				double doubleValue = 0;
 				
-				Row row = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
+				Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
 				FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
 				long offset = offsetInfo.offset;
 				int fileIndex = offsetInfo.fileIndex;
@@ -121,7 +122,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 					String diskData = RecordsUtils.getStringFromFile(system.orderHandlersList.get(fileIndex),
 							offset, TableName.OrderTable);
 					row = Row.createKVMapFromLine(diskData);
-					rowCache.putInCache(encodedOffset, diskData, TableName.OrderTable);
+					rowCache.putInCache(new BytesKey(encodedOffset), diskData, TableName.OrderTable);
 					//放入缓冲区
 				}	
 				

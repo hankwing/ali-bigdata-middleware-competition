@@ -29,7 +29,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.ComparableKeys;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystem.TypeException;
@@ -52,6 +54,18 @@ public class Test {
 		
 		ByteBuffer decodedBuffer = ByteBuffer.wrap(buffer.array());
 		System.out.println("int:" + decodedBuffer.getInt()+ " long:" + decodedBuffer.getLong());
+		
+		ConcurrentCache cache = ConcurrentCache.getInstance();
+		
+		cache.putInCache(buffer.array(), "hehe:hehe", TableName.OrderTable);
+		
+		ByteBuffer buffer2 = ByteBuffer.allocate(12);
+		buffer2.putInt(0);
+		buffer2.putLong(201238912);
+		
+		Row row = cache.getFromCache(buffer2.array(), TableName.OrderTable);
+		
+		System.out.println(row);
 		/*List<RandomAccessFile> files = new ArrayList<RandomAccessFile>();
 		 String line = null;
 		 long offset = 0;
