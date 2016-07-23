@@ -17,6 +17,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.BucketCachePool;
+import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
@@ -52,14 +53,14 @@ public class OrderHandler {
 	HashSet<String> orderAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch countDownLatch = null;
-	private SimpleCache rowCache = null;
+	private ConcurrentCache rowCache = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> orderHandlersList = null;
 
 	public double MEG = Math.pow(1024, 2);
 	List<String> smallFiles = new ArrayList<String>();
 
 	public OrderHandler( OrderSystemImpl systemImpl, int thread, CountDownLatch countDownLatch) {
-		rowCache = SimpleCache.getInstance();
+		rowCache = ConcurrentCache.getInstance();
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = systemImpl.orderIdIndexList;
 		this.orderBuyerIdIndexList = systemImpl.orderBuyerIdIndexList;
@@ -133,9 +134,6 @@ public class OrderHandler {
 
 		}
 
-		// set end signal
-//		orderfile.writeLine(null, 0, null, TableName.OrderTable);
-		// 下面开始处理小文件
 		smallFileWriter = new SmallFileWriter(
 				orderHandlersList, orderFileMapping,
 				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
@@ -145,6 +143,7 @@ public class OrderHandler {
 		//处理小文件
 		for(String smallfile:smallFiles){
 			try {
+				
 				reader = new BufferedReader(new FileReader(smallfile));
 			} catch (FileNotFoundException e1) {
 				// TODO Auto-generated catch block
@@ -166,7 +165,6 @@ public class OrderHandler {
 		}
 		smallFileWriter.writeLine(null, TableName.OrderTable);
 		smallFileWriter.closeFile();
-		
 		System.out.println("end order handling!");
 	}
 

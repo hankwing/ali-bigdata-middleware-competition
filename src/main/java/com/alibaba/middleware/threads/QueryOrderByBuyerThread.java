@@ -1,5 +1,6 @@
 package com.alibaba.middleware.threads;
 
+import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
@@ -29,14 +30,14 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
     private long endTime;
     private String buyerid;
     private OrderSystemImpl system;
-    private SimpleCache rowCache = null;
+    private ConcurrentCache rowCache = null;
 
     public QueryOrderByBuyerThread(OrderSystemImpl system, long startTime, long endTime, String buyerid) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.buyerid = buyerid;
         this.system = system;
-        rowCache = SimpleCache.getInstance();
+        rowCache = ConcurrentCache.getInstance();
     }
     
     /**
@@ -119,7 +120,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 		}
 		else {
 			// 先在缓存里找有没有对应的orderId列表
-			List<byte[]> offsetList = rowCache.getFormIdCache(surrId, IdIndexType.BuyerIdToOrderOffsets);
+			List<byte[]> offsetList = rowCache.getFromIdCache(surrId, IdIndexType.BuyerIdToOrderOffsets);
 			if( offsetList != null) {
 				// 在缓冲区里找到了buyerid对应的orderid列表
 				handleOffsetList(offsetList, results);

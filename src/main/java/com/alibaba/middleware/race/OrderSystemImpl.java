@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -24,11 +25,7 @@ import com.alibaba.middleware.handlefile.ConstructSystem;
 import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.DiskHashTable;
-import com.alibaba.middleware.threads.QueryOrderByBuyerThread;
-import com.alibaba.middleware.threads.QueryOrderThread;
-import com.alibaba.middleware.threads.QueryOrdersBySalerThread;
-import com.alibaba.middleware.threads.SumOrdersByGoodThread;
-import com.alibaba.middleware.threads.ThreadPool;
+import com.alibaba.middleware.threads.*;
 import com.alibaba.middleware.tools.RecordsUtils;
 
 /**
@@ -77,7 +74,7 @@ public class OrderSystemImpl implements OrderSystem {
 
 	private ThreadPool threadPool = ThreadPool.getInstance();
     private ExecutorService queryExe = threadPool.getQueryExe();
-    public SimpleCache rowCache = null;
+    public ConcurrentCache rowCache = null;
 
 	/**
 	 * 测试类 construct测试construct方法
@@ -136,9 +133,9 @@ public class OrderSystemImpl implements OrderSystem {
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
-				storeFolders.add("folder1/");
-				storeFolders.add("folder2/");
-				storeFolders.add("folder3/");
+				storeFolders.add("disk1/");
+				storeFolders.add("disk2/");
+				storeFolders.add("disk3/");
 
 				try {
 					orderSystem.construct(orderfiles, buyerfiles, goodfiles,
@@ -235,10 +232,12 @@ public class OrderSystemImpl implements OrderSystem {
 		//buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
 		//goodIdSurrKeyFile = new FilePathWithIndex();
 
-		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
+//		JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
+		CacheMonitorThread cacheMonitorThread = new CacheMonitorThread(ConcurrentCache.getInstance());
 		//threadPool.addMonitor(jvmMonitorThread);
-		//threadPool.startMonitors();
-		rowCache = SimpleCache.getInstance();
+		threadPool.addMonitor(cacheMonitorThread);
+		threadPool.startMonitors();
+		rowCache = ConcurrentCache.getInstance();
 	}
 
 	/**
