@@ -22,11 +22,11 @@ import com.alibaba.middleware.race.Row;
 public class SimpleCache {
     private final int capacity;
     
-    private LinkedHashMap<Long, String> orderCacheMap;					// 存的是hashcode+offset-->string
+    private LinkedHashMap<byte[], String> orderCacheMap;					// 存的是hashcode+offset-->string
     private LinkedHashMap<Integer, String> buyerCacheMap;				// 存的是id-->string
     private LinkedHashMap<Integer, String> goodCacheMap;				// 存的是id-->string
-    private LinkedHashMap<Integer, List<Long>> buyerToOrderIdCacheMap;	// 存的是key-->hashcode+offset
-    private LinkedHashMap<Integer, List<Long>> goodToOrderIdCacheMap;	// 存的是key-->hashCode+offset
+    private LinkedHashMap<Integer, List<byte[]>> buyerToOrderIdCacheMap;	// 存的是key-->hashcode+offset
+    private LinkedHashMap<Integer, List<byte[]>> goodToOrderIdCacheMap;	// 存的是key-->hashCode+offset
     //private LinkedHashMap<Integer, Row> buyerCacheMap;
     //private LinkedHashMap<Integer, Row> goodCacheMap;
     private ReadWriteLock orderLock;
@@ -44,9 +44,9 @@ public class SimpleCache {
 
     public SimpleCache(final int capacity) {
         this.capacity = capacity;
-        orderCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
+        orderCacheMap = new LinkedHashMap<byte[], String>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<byte[], String> eldest) {
                 return size() > capacity;
             }
         };
@@ -65,16 +65,16 @@ public class SimpleCache {
             }
         };
         
-        buyerToOrderIdCacheMap = new LinkedHashMap<Integer, List<Long>>(capacity/2, 0.95f, true) {
+        buyerToOrderIdCacheMap = new LinkedHashMap<Integer, List<byte[]>>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Integer, List<Long>> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Integer, List<byte[]>> eldest) {
                 return size() > capacity;
             }
         };
         
-        goodToOrderIdCacheMap = new LinkedHashMap<Integer, List<Long>>(capacity/2, 0.95f, true) {
+        goodToOrderIdCacheMap = new LinkedHashMap<Integer, List<byte[]>>(capacity/2, 0.95f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Integer, List<Long>> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Integer, List<byte[]>> eldest) {
                 return size() > capacity;
             }
         };
@@ -111,7 +111,7 @@ public class SimpleCache {
     	case OrderTable:
     		//synchronized(orderCacheMap) {
     		orderLock.writeLock().lock();
-    		orderCacheMap.put( (Long) key, value);
+    		orderCacheMap.put( (byte[]) key, value);
     		orderLock.writeLock().unlock();
             // }
     		break;
@@ -139,12 +139,12 @@ public class SimpleCache {
      * @param value
      * @param tableType
      */
-    public void putInIdCache(Integer key, List<Long> offsets, IdIndexType indexType) {
+    public void putInIdCache(Integer key, List<byte[]> offsets, IdIndexType indexType) {
     	switch( indexType) {
     	case BuyerIdToOrderOffsets:
     		//synchronized(orderCacheMap) {
     		buyerToOrderLock.writeLock().lock();
-    		List<Long> list = buyerToOrderIdCacheMap.get(key);
+    		List<byte[]> list = buyerToOrderIdCacheMap.get(key);
     		if( list == null) {
     			buyerToOrderIdCacheMap.put(key, offsets);
     		}
@@ -152,7 +152,7 @@ public class SimpleCache {
     		break;
     	case GoodIdToOrderOffsets:
     		goodToOrderLock.writeLock().lock();
-    		List<Long> goodList = goodToOrderIdCacheMap.get(key);
+    		List<byte[]> goodList = goodToOrderIdCacheMap.get(key);
     		if( goodList == null) {
     			goodToOrderIdCacheMap.put(key, offsets);
     		}
@@ -168,8 +168,8 @@ public class SimpleCache {
      * @param indexType
      * @return
      */
-    public List<Long> getFormIdCache(Integer key, IdIndexType indexType) {
-    	List<Long> results = null;
+    public List<byte[]> getFormIdCache(Integer key, IdIndexType indexType) {
+    	List<byte[]> results = null;
     	switch( indexType) {
     	case BuyerIdToOrderOffsets:
     		//synchronized(orderCacheMap) {

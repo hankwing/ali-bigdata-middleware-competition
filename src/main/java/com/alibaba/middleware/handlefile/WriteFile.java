@@ -2,8 +2,10 @@ package com.alibaba.middleware.handlefile;
 
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 
@@ -53,8 +55,8 @@ public class WriteFile {
 		this.indexQueues = indexQueues;
 		nextLineByteLength = "\n".getBytes().length;
 		
-		//索引文件前缀
-		indexFilePrefix = new String(path + name) + "_";
+		//索引文件地址前缀
+		indexFilePrefix = new String(path + name);
 		indexFileName = null;
 		//rowCache = SimpleCache.getInstance();
 
@@ -72,7 +74,7 @@ public class WriteFile {
 	 * @param line
 	 * @param tableType
 	 */
-	public void writeLine(String dataFileName, int dataFileSerialNumber, String line, TableName tableType){
+	public void writeLine(int dataFileSerialNumber, String line, TableName tableType){
 		try {
 			/***
 			 * 索引文件为空时创建新的索引文件
@@ -91,9 +93,8 @@ public class WriteFile {
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
-			indexFileName = indexFilePrefix + "_" + indexFileNumber;
 			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
-				queue.put(new IndexItem(indexFileName,dataFileName, dataFileSerialNumber,line, offset));
+				queue.put(new IndexItem(indexFileName, dataFileSerialNumber,line, offset));
 			}
 			
 			if(line != null ) {

@@ -72,15 +72,15 @@ public class HashBucket<K,T> implements Serializable{
 		context.writeBucket(bucketKey);
 	}
 	
-	public List<Long> getAddress(  String bucketIndex, K key) {
-		List<Long> results = new ArrayList<Long>();
+	public List<byte[]> getAddress(  String bucketIndex, K key) {
+		List<byte[]> results = new ArrayList<byte[]>();
 		Map<K, T> partialResult = keyToAddress.get(bucketIndex);
 		if( partialResult != null  && partialResult.get(key) != null ) {
-			if( classType == Long.class) {
-				results.add((Long) partialResult.get(key));
+			if( classType == byte[].class) {
+				results.add( (byte[]) partialResult.get(key));
 			}
 			else {
-				results.addAll((Collection<? extends Long>) partialResult.get(key));
+				results.addAll((Collection<? extends byte[]>) partialResult.get(key));
 			}
 			
 		}
@@ -92,7 +92,7 @@ public class HashBucket<K,T> implements Serializable{
 		
 	}
 	
-	public void putAddress( String bucketIndex, K key, Long value) {
+	public void putAddress( String bucketIndex, K key, byte[] value) {
 
 		if( recordNum + 1 > capacity) {
 			if( nextBucket == null) {
@@ -111,7 +111,7 @@ public class HashBucket<K,T> implements Serializable{
 			}
 			
 			if( classType == List.class) {
-				List<Long> valueList = (List<Long>) values.get(key);
+				List<byte[]> valueList = (List<byte[]>) values.get(key);
 				if(valueList == null) {
 					valueList = new ArrayList();
 					values.put(key, (T) valueList);
@@ -128,10 +128,10 @@ public class HashBucket<K,T> implements Serializable{
 	
 	public void putAddress( String bucketIndex, K key, T value) {
 
-		if( classType == Long.class) {
-			putAddress( bucketIndex, key, (Long)value);
+		if( classType == byte[].class) {
+			putAddress( bucketIndex, key, (byte[])value);
 		}
-		else if( recordNum + ((List<Long>) value).size() > capacity) {
+		else if( recordNum + ((List<byte[]>) value).size() > capacity) {
 			if( nextBucket == null) {
 				nextBucket = new HashBucket<K,T>(context, 0, classType);	// 溢出桶无需管理
 			}
@@ -139,20 +139,20 @@ public class HashBucket<K,T> implements Serializable{
 			nextBucket.putAddress(bucketIndex, key, value);
 		}
 		else {
-			recordNum += ((List<Long>) value).size();
-			Map<K, List<Long>> values = (Map<K, List<Long>>) keyToAddress.get(bucketIndex);
+			recordNum += ((List<byte[]>) value).size();
+			Map<K, List<byte[]>> values = (Map<K, List<byte[]>>) keyToAddress.get(bucketIndex);
 			if(values == null) {
-				values = new HashMap<K, List<Long>>();
+				values = new HashMap<K, List<byte[]>>();
 				keyToAddress.put(bucketIndex, (Map<K, T>) values);
 			}
 			
-			List<Long> valueList = values.get(key);
+			List<byte[]> valueList = values.get(key);
 			if( valueList == null) {
-				valueList = new ArrayList<Long>();
+				valueList = new ArrayList<byte[]>();
 				values.put(key, valueList);
 			}
 			
-			valueList.addAll(((List<Long>) value));
+			valueList.addAll(((List<byte[]>) value));
 		}
 		
 	}

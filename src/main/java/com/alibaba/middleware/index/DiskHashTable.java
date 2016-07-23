@@ -37,7 +37,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	private int bucketNum;
 	private long recordNum;
 	private String bucketFilePath = null; // save the buckets data
-	private String dataFilePath = null;
+	//private String dataFilePath = null;
 	// 保存桶数据 但一加载此类时这个Map是空的 当调用查询时才会从物理地址里load进相应的桶数据
 	private transient Map<Integer, HashBucket<K,T>> bucketList = null;
 
@@ -69,14 +69,13 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param dataFilePath
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public DiskHashTable(String bucketFilePath, String dataFilePath, Class<?> classType){
+	public DiskHashTable(String bucketFilePath, Class<?> classType){
 		usedBits = 1;
 		bucketNum = 10;
 		recordNum = 0;
 		readWriteLock = new ReentrantReadWriteLock();
 		this.classType = classType;
 		this.bucketFilePath = bucketFilePath;
-		this.dataFilePath = dataFilePath;
 		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
 		bucketCachePool = BucketCachePool.getInstance();
@@ -291,7 +290,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param key
 	 * @return
 	 */
-	public List<Long> get(K key) {
+	public List<byte[]> get(K key) {
 
 		HashBucket<K,T> bucket = null;
 		int bucketIndex = getBucketIndex( key);
@@ -320,7 +319,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param value
 	 * @return
 	 */
-	public boolean put(K key, long value) {
+	public boolean put(K key, byte[] value) {
 
 		HashBucket<K,T> bucket = null;
 		int bucketIndex = getBucketIndex(key);

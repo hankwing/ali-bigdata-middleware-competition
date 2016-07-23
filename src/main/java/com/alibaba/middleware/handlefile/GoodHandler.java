@@ -21,6 +21,7 @@ import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
+import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
@@ -36,49 +37,39 @@ import com.alibaba.middleware.tools.RecordsUtils;
 public class GoodHandler{
 
 	WriteFile goodfile;
-	MergeSmallFile mergefile;
+	SmallFileWriter smallFileWriter;
 	//文件映射，文件编号
-	DataFileMapping dataFileMapping;
+	DataFileMapping goodFileMapping;
 	int dataFileSerialNumber;
 
 	BufferedReader reader;
 	LinkedBlockingQueue<IndexItem> indexQueue;
 
 	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
-	ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList = null;
-	List<FilePathWithIndex> goodFileList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> goodIdIndexList = null;
 	HashSet<String> goodAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
 	private SimpleCache rowCache = null;
-	public ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
 
 	public double MEG = Math.pow(1024, 2);
 	List<String> smallFiles = new ArrayList<String>();
 
-	public GoodHandler(
-			DataFileMapping dataFileMapping,
-			List<FilePathWithIndex> goodFileList, 
-			HashSet<String> goodAttrList,
-			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList, 
-			int threadIndex,CountDownLatch latch,
-			ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList) {
+	public GoodHandler(OrderSystemImpl systemImpl ,int threadIndex,CountDownLatch latch) {
 		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
-		this.goodFileList = goodFileList;
-		this.goodAttrList = goodAttrList;
+		this.goodAttrList = systemImpl.goodAttrList;
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
-		this.goodIdIndexList = goodIdIndexList;
+		this.goodIdIndexList = systemImpl.goodIdIndexList;
 		this.threadIndex = threadIndex;
-		this.fileHandlersList = fileHandlersList;
+		this.goodHandlersList = systemImpl.goodHandlersList;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		goodfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}},
 				RaceConfig.storeFolders[threadIndex], 
 				RaceConfig.goodFileNamePrex, (int) RaceConfig.smallFileCapacity);
 
-		this.dataFileMapping = dataFileMapping;
-
-
+		this.goodFileMapping = systemImpl.goodFileMapping;
 	}
 
 	public void HandleGoodFiles(List<String> files){
@@ -86,82 +77,82 @@ public class GoodHandler{
 		new Thread(new GoodIndexConstructor()).start();					// 同时开启建索引线程
 		for (String file : files) {
 
-			dataFileMapping.addDataFile(file);
-			dataFileSerialNumber = dataFileMapping.getDataFileSerialNumber();
-
 			File bf = new File(file);
-			if (bf.length() < (long)(100*MEG)) {
+			if (bf.length() < RaceConfig.smallFileSizeThreathod) {
 
 				smallFiles.add(file);
 
 			}else{
 				try {
+					// 属于大文件
+					dataFileSerialNumber = goodFileMapping.addDataFileName(file);
 					reader = new BufferedReader(new FileReader(file));
 					// 建立文件句柄
-					LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(file);
+					LinkedBlockingQueue<RandomAccessFile> handlersQueue = goodHandlersList.get(file);
 					if( handlersQueue == null) {
 						handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
-						fileHandlersList.put(file, handlersQueue);
+						goodHandlersList.put(dataFileSerialNumber, handlersQueue);
 					}
 
 					for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
 						handlersQueue.add(new RandomAccessFile(file, "r"));
 					}
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				}
-				String record = null;
-				try {
-					record = reader.readLine();
+					
+					String record = reader.readLine();
 					while (record != null) {
 						//Utils.getAttrsFromRecords(goodAttrList, record);
-						goodfile.writeLine(file, dataFileSerialNumber, record, TableName.GoodTable);
+						goodfile.writeLine(dataFileSerialNumber, record, TableName.GoodTable);
 						record = reader.readLine();
 					}
 					reader.close();
+					
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
 				} catch (IOException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
 			}
 		}
-		// set end signal
-		goodfile.writeLine(null, 0, null, TableName.GoodTable);
 
-		//处理小文件
+		// 下面开始处理小文件
+		smallFileWriter = new SmallFileWriter(
+				goodHandlersList, goodFileMapping,
+				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
+				RaceConfig.storeFolders[threadIndex],
+				RaceConfig.goodFileNamePrex);
+		//开始处理小文件
 		for(String smallfile:smallFiles){
 
 			try {
 				reader = new BufferedReader(new FileReader(smallfile));
-			} catch (FileNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-
-			String record = null;
-			try {
-				record = reader.readLine();
+				String record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					mergefile.writeLine(smallfile, record, TableName.BuyerTable);
+					smallFileWriter.writeLine(record, TableName.GoodTable);
 					record = reader.readLine();
 				}
 				reader.close();
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
 			} catch (IOException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		mergefile.writeLine(null, null, TableName.BuyerTable);
+		smallFileWriter.writeLine(null, TableName.GoodTable);
 		
 		System.out.println("end good handling!");
 	}
 
 	// good表的建索引线程  需要建的索引包括：代理键索引和goodId的索引
 	public class GoodIndexConstructor implements Runnable {
-
+		
+		int fileIndex = 0;
 		String indexFileName = null;
-		String dataFileName = null;
-		DiskHashTable<Integer, List<Long>> goodIdHashTable = null;
+		DiskHashTable<Integer, List<byte[]>> goodIdHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
 		//long surrKey = 1;
@@ -184,27 +175,22 @@ public class GoodHandler{
 					if( !record.getIndexFileName().equals(indexFileName)) {
 						if( indexFileName == null) {
 							// 第一次建立索引文件
-							dataFileName = record.getDataFileName();
+							fileIndex = record.getFileIndex();
 							indexFileName = record.getIndexFileName();
-							goodIdHashTable = new DiskHashTable<Integer,List<Long>>(
-									indexFileName + RaceConfig.goodIndexFileSuffix,dataFileName, Long.class);
+							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
+									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);
 
 						}
 						else {
 							// 保存当前goodId的索引  并写入索引List
-							FilePathWithIndex smallFile = new FilePathWithIndex();
-
-							smallFile.setFilePath(dataFileName);
-							smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+							goodIdHashTable.writeAllBuckets();
 							//smallFile.setGoodIdIndex(0);
-							goodIdIndexList.put(dataFileName, goodIdHashTable);
+							goodIdIndexList.put(fileIndex, goodIdHashTable);
 
-							goodFileList.add(smallFile);
-
-							dataFileName = record.getDataFileName();
+							fileIndex = record.getFileIndex();
 							indexFileName = record.getIndexFileName();
-							goodIdHashTable = new DiskHashTable<Integer,List<Long>>(
-									indexFileName + RaceConfig.goodIndexFileSuffix, dataFileName, Long.class);
+							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
+									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);
 
 						}
 					}
@@ -224,16 +210,11 @@ public class GoodHandler{
 					synchronized (goodAttrList) {
 						goodAttrList.addAll(tempAttrList);
 					}
-
-					FilePathWithIndex smallFile = new FilePathWithIndex();
-
-					smallFile.setFilePath(dataFileName);
-					smallFile.setGoodIdIndex(goodIdHashTable.writeAllBuckets());
+					goodIdHashTable.writeAllBuckets();
 
 					//smallFile.setGoodIdIndex(0);
 					BucketCachePool.getInstance().removeAllBucket();
-					goodFileList.add(smallFile);
-					goodIdIndexList.put(dataFileName, goodIdHashTable);
+					goodIdIndexList.put(fileIndex, goodIdHashTable);
 					latch.countDown();
 					break;
 				}

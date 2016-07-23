@@ -46,6 +46,12 @@ public class Test {
 
 	public static void main(String[] args) {
 		
+		ByteBuffer buffer = ByteBuffer.allocate(12);
+		buffer.putInt(0);
+		buffer.putLong(201238912);
+		
+		ByteBuffer decodedBuffer = ByteBuffer.wrap(buffer.array());
+		System.out.println("int:" + decodedBuffer.getInt()+ " long:" + decodedBuffer.getLong());
 		/*List<RandomAccessFile> files = new ArrayList<RandomAccessFile>();
 		 String line = null;
 		 long offset = 0;
@@ -80,20 +86,7 @@ public class Test {
 		//long offset2 = map.get(0);
 		System.out.println("test2:" + (mEndTime - mStartTime) );*/
 		
-		LinkedHashMap<Integer, String> offsetOrderCacheMap;	// 按照fileName.hashCode+offset缓存订单表数据
-	    
-	    LinkedHashMap<Integer, String> orderCacheMap;
-	    
-	    offsetOrderCacheMap = new LinkedHashMap<Integer, String>();
-	    orderCacheMap = new LinkedHashMap<Integer, String>();
-	    
-	    String data = "data";
-	    offsetOrderCacheMap.put(1, data);
-	    orderCacheMap.put(1, data);
-	    
-	    offsetOrderCacheMap.remove(1);
-	    
-		System.out.println("data:" + orderCacheMap.get(1));
+		
 		
 		
 		

@@ -8,6 +8,7 @@ import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
+import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.KeyValueImpl;
 import com.alibaba.middleware.race.OrderSystem.TypeException;
@@ -78,36 +79,43 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			return null;
 		} else {
 			// 先在缓冲区里找
-			List<Long> offsetList = rowCache.getFormIdCache(surrId,
+			List<byte[]> offsetList = rowCache.getFormIdCache(surrId,
 					IdIndexType.GoodIdToOrderOffsets);
 			if (offsetList == null) {
 				// 说明没有找到 则在索引里找offsets
-				for (FilePathWithIndex filePath : system.orderFileList) {
-					DiskHashTable<Integer, List<Long>> hashTable = system.orderGoodIdIndexList
-							.get(filePath.getFilePath());
-					offsetList.addAll(hashTable.get(surrId));
+				offsetList = new ArrayList<byte[]>();
+				for (int filePathIndex : system.orderFileMapping.getAllFileIndexs()) {
+					DiskHashTable<Integer, List<byte[]>> hashTable = system.orderGoodIdIndexList
+							.get(filePathIndex);
+					List<byte[]> semiList = hashTable.get(surrId);
+					if( semiList != null) {
+						offsetList.addAll(semiList);
+					}
+					
 				}
 				
 				// 放入缓冲区
 				rowCache.putInIdCache(surrId, offsetList, IdIndexType.GoodIdToOrderOffsets);
 			}
 			
-			for (Long offset : offsetList) {
+			for (byte[] encodedOffset : offsetList) {
 				
-				Row row = rowCache.getFromCache(offset + filePath.getFilePath().hashCode(),
-						TableName.OrderTable);
+				Row row = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
+				FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
+				long offset = offsetInfo.offset;
+				int fileIndex = offsetInfo.fileIndex;
+				
 				if(row != null) {
 					row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
 							row : Row.createKVMapFromLine(
-									RecordsUtils.getStringFromFile(system.fileHandlersList.get(fileName),
+									RecordsUtils.getStringFromFile(system.orderHandlersList.get(fileIndex),
 											offset, TableName.OrderTable));
 				}
 				else {
-					String diskData = RecordsUtils.getStringFromFile(system.fileHandlersList.get(fileName),
+					String diskData = RecordsUtils.getStringFromFile(system.orderHandlersList.get(fileIndex),
 							offset, TableName.OrderTable);
 					row = Row.createKVMapFromLine(diskData);
-					rowCache.putInCache(
-							row.getKV(RaceConfig.orderId).valueAsLong(), diskData, TableName.OrderTable);
+					rowCache.putInCache(encodedOffset, diskData, TableName.OrderTable);
 					//放入缓冲区
 				}	
 				

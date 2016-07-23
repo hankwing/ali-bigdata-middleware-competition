@@ -4,14 +4,17 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
+import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.race.Row;
 
 
@@ -149,6 +152,31 @@ public class RecordsUtils {
 		return result;
 		
 		
+	}
+	
+	/**
+	 * 将文件地址下标+offset编码为byte数组
+	 * @param dataSerialNumber
+	 * @param offset
+	 * @return
+	 */
+	public static byte[] encodeIndex(int dataSerialNumber, long offset){
+		ByteBuffer buffer = ByteBuffer.allocate(12);
+		//放入源数据文件编号
+		buffer.putInt(dataSerialNumber);
+		buffer.putLong(offset);
+		//buffer.clear();
+		return buffer.array();
+	}
+	
+	/**
+	 * 解析indexBytes为文件下标+offset
+	 * @param dataFileMapping
+	 * @param indexBytes
+	 */
+	public static FileIndexWithOffset decodeIndex(byte[] indexBytes){
+		ByteBuffer buffer = ByteBuffer.wrap(indexBytes);
+		return new FileIndexWithOffset( buffer.getInt(), buffer.getLong());
 	}
 	
 	/**

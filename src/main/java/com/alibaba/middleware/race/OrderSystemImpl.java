@@ -31,6 +31,8 @@ import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.ConstructSystem;
+import com.alibaba.middleware.handlefile.DataFileMapping;
+import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.threads.*;
 import com.alibaba.middleware.tools.FilePathWithIndex;
@@ -45,23 +47,29 @@ import com.alibaba.middleware.tools.RecordsUtils;
 public class OrderSystemImpl implements OrderSystem {
 
 	// 存订单表里的orderId索引<文件名（尽量短名）,内存里缓存的索引DiskHashTable>
-	public ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<Long, byte[]>> orderIdIndexList = null;
 	// 订单表里的buyerId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderBuyerIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
 	// 订单表里的goodId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderGoodIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
 	// 订单表里的可计算字段索引Map
-	public ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList = null;
+	public ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
 	// buyerId里的buyerId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> buyerIdIndexList = null;
 	// goodId里的goodId代理键索引
-	public ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> goodIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> goodIdIndexList = null;
 	// 文件句柄池
-	public ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> orderHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
 
-	public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; // 保存order表所有文件的名字
-	public CopyOnWriteArrayList<FilePathWithIndex> buyerFileList = null; // 保存buyer表所有文件的名字
-	public CopyOnWriteArrayList<FilePathWithIndex> goodFileList = null; // 保存good表所有文件的名字
+	//public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; 
+	//public CopyOnWriteArrayList<FilePathWithIndex> buyerFileList = null; 
+	//public CopyOnWriteArrayList<FilePathWithIndex> goodFileList = null; 
+	
+	public DataFileMapping orderFileMapping = null;						// 保存order表所有文件的名字
+	public DataFileMapping buyerFileMapping = null;						// 保存buyer表所有文件的名字
+	public DataFileMapping goodFileMapping = null;						// 保存good表所有文件的名字
 
 	public HashSet<String> orderAttrList = null; // 保存order表的所有字段名称
 	public HashSet<String> buyerAttrList = null; // 保存buyer表的所有字段名称
@@ -209,22 +217,24 @@ public class OrderSystemImpl implements OrderSystem {
 		// 初始化操作
 
 		// 存订单表里的orderId索引<文件名（尽量短名）,内存里缓存的索引DiskHashTable>
-		orderIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Long, Long>>();
+		orderIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Long, byte[]>>();
 		// 订单表里的buyerId代理键索引
-		orderBuyerIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
+		orderBuyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
 		// 订单表里的goodId代理键索引
-		orderGoodIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
+		orderGoodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
 		// 订单表里的可计算字段索引Map
-		orderCountableIndexList = new ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>>();
+		orderCountableIndexList = new ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>>();
 		// buyerId里的buyerId代理键索引
-		buyerIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
+		buyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
 		// goodId里的goodId代理键索引
-		goodIdIndexList = new ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>>();
-		fileHandlersList = new ConcurrentHashMap<String,LinkedBlockingQueue<RandomAccessFile>>();
+		goodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
+		orderHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+		buyerHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+		goodHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
 		
-		orderFileList = new CopyOnWriteArrayList<FilePathWithIndex>(); // 保存order表所有文件的名字
-		buyerFileList = new CopyOnWriteArrayList<FilePathWithIndex>(); // 保存buyer表所有文件的名字
-		goodFileList = new CopyOnWriteArrayList<FilePathWithIndex>(); // 保存good表所有文件的名字
+		orderFileMapping = new DataFileMapping();
+		buyerFileMapping = new DataFileMapping();
+		goodFileMapping = new DataFileMapping();
 
 		orderAttrList = new HashSet<String>(); // 保存order表的所有字段名称
 		buyerAttrList = new HashSet<String>(); // 保存buyer表的所有字段名称
@@ -249,27 +259,9 @@ public class OrderSystemImpl implements OrderSystem {
 			InterruptedException {
 		// 将存储目录存起来 之后建小文件及索引文件的时候用
 		RaceConfig.storeFolders = storeFolders.toArray(new String[0]);
-		
-		/* = new DiskHashTable<String,Long>(
-				RaceConfig.storeFolders[0] + 
-				RaceConfig.buyerSurrFileName,
-				RaceConfig.storeFolders[0] +
-				RaceConfig.buyerSurrFileName, Long.class);
-		
-		goodIdSurrKeyIndex = new DiskHashTable<String,Long>(
-				RaceConfig.storeFolders[0] +
-				RaceConfig.goodSurrFileName,
-				RaceConfig.storeFolders[0] +
-				RaceConfig.goodSurrFileName, Long.class);*/
-		//buyerIdSurrKeyIndex = new HashMap<Integer,Integer>();
-		//goodIdSurrKeyIndex = new HashMap<Integer,Integer>();
 		long startTime = System.currentTimeMillis();
 
-		ConstructSystem constructSystem = new ConstructSystem(orderIdIndexList,
-				orderBuyerIdIndexList, orderGoodIdIndexList,
-				orderCountableIndexList, orderFileList, buyerFileList,
-				goodFileList, orderAttrList, buyerAttrList, goodAttrList,
-				 buyerIdIndexList,goodIdIndexList, fileHandlersList);
+		ConstructSystem constructSystem = new ConstructSystem(this);
 		constructSystem.startHandling(buyerFiles, goodFiles, orderFiles,
 				storeFolders, RaceConfig.handleThreadNumber);
 
@@ -357,28 +349,31 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @throws TypeException 
 	 */
 	public boolean isRecordExist(long orderid) throws TypeException {
-		for (FilePathWithIndex filePath : orderFileList) {
-			String fileName = filePath.getFilePath();
-			DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
-			List<Long> results = hashTable.get(orderid);
+		
+		for (int filePathIndex : orderFileMapping.getAllFileIndexs()) {
+			DiskHashTable<Long, byte[]> hashTable = orderIdIndexList.get(filePathIndex);
+			List<byte[]> results = hashTable.get(orderid);
 			
 			if (results.size() != 0) {
 				// find the records offset
-				for( Long offset : results) {
-					Row temp = rowCache.getFromCache(offset + fileName.hashCode(), TableName.OrderTable);
+				for( byte[] encodedOffset : results) {
+					// 解码获得long型的offset
+					FileIndexWithOffset fileInfo= RecordsUtils.decodeIndex(encodedOffset);
+					long offset = fileInfo.offset;
+					Row temp = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
 					if(temp != null) {
 						temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
 								temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-										fileHandlersList.get(fileName), offset, 
+										orderHandlersList.get(filePathIndex), offset, 
 										TableName.OrderTable));
 					}
 					else {
 						// 从文件里读数据
 						String diskValue = RecordsUtils.getStringFromFile(
-								fileHandlersList.get(fileName), offset, TableName.OrderTable);
+								orderHandlersList.get(filePathIndex), offset, TableName.OrderTable);
 						temp = Row.createKVMapFromLine( diskValue );
 						// 放入缓冲区
-						rowCache.putInCache(fileName.hashCode() + offset, diskValue , TableName.OrderTable);
+						rowCache.putInCache(encodedOffset, diskValue , TableName.OrderTable);
 					}
 					return true;
 				}
@@ -401,27 +396,28 @@ public class OrderSystemImpl implements OrderSystem {
 		String idString = String.valueOf(id);
 		switch (tableName) {
 		case OrderTable:
-			for (FilePathWithIndex filePath : orderFileList) {
-				String fileName = filePath.getFilePath();
+			for (int fileIndex : orderFileMapping.getAllFileIndexs()) {
 				long orderid = Long.valueOf(idString);
-				DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
-				List<Long> results = hashTable.get(orderid);
+				DiskHashTable<Long, byte[]> hashTable = orderIdIndexList.get(fileIndex);
+				List<byte[]> results = hashTable.get(orderid);
 				
 				if (results.size() != 0) {
 					// find the records offset
-					for( Long offset : results) {
-						//先在索引里找
-						Row temp = rowCache.getFromCache(offset + fileName.hashCode(), tableName);
+					for( byte[] encodedOffset : results) {
+						//解码byte数组
+						FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
+						long offset = offsetInfo.offset;
+						Row temp = rowCache.getFromCache(encodedOffset, tableName);
 						if(temp != null) {
 							temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
 									temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-											fileHandlersList.get(fileName), offset, TableName.OrderTable));
+											orderHandlersList.get(fileIndex), offset, tableName));
 						}
 						else {
 							String diskValue = RecordsUtils.getStringFromFile(
-									fileHandlersList.get(fileName),offset, TableName.OrderTable);
+									orderHandlersList.get(fileIndex),offset, tableName);
 							temp = Row.createKVMapFromLine(diskValue);
-							rowCache.putInCache(fileName.hashCode() + offset, diskValue, TableName.OrderTable);
+							rowCache.putInCache(encodedOffset, diskValue, tableName);
 						}
 						result = temp;
 						break;
@@ -441,14 +437,15 @@ public class OrderSystemImpl implements OrderSystem {
 			}
 			else {
 				// 在索引里找
-				for (FilePathWithIndex filePath : buyerFileList) {
-					DiskHashTable<Integer, List<Long>> hashTable = buyerIdIndexList
-							.get(filePath.getFilePath());
-					List<Long> results = hashTable.get(surrId);
+				for (int filePathIndex : buyerFileMapping.getAllFileIndexs()) {
+					DiskHashTable<Integer, List<byte[]>> hashTable = buyerIdIndexList
+							.get(filePathIndex);
+					List<byte[]> results = hashTable.get(surrId);
 					if (results.size() != 0) {
-						for( Long offset : results) {
+						for( byte[] encodedOffset : results) {
+							long offset = RecordsUtils.decodeIndex(encodedOffset).offset;
 							String records = RecordsUtils.getStringFromFile(
-									fileHandlersList.get(filePath.getFilePath()), offset, tableName);
+									buyerHandlersList.get(filePathIndex), offset, tableName);
 							Row temp = Row.createKVMapFromLine(records);
 							if( temp.getKV(RaceConfig.buyerId).valueAsString().equals(id)) {
 								result = temp;
@@ -466,19 +463,19 @@ public class OrderSystemImpl implements OrderSystem {
 		case GoodTable:
 			Integer goodSurrId = String.valueOf(id).hashCode();
 			// 先在缓冲区里找
-			result = rowCache.getFromCache(goodSurrId, TableName.GoodTable);
+			result = rowCache.getFromCache(goodSurrId, tableName);
 			if( result != null) {
 				return result;
 			}
 			else {
-				for (FilePathWithIndex filePath : goodFileList) {
-					DiskHashTable<Integer, List<Long>> hashTable = goodIdIndexList
-							.get(filePath.getFilePath());
-					List<Long> results = hashTable.get(goodSurrId);
+				for (int filePathIndex : goodFileMapping.getAllFileIndexs()) {
+					DiskHashTable<Integer, List<byte[]>> hashTable = goodIdIndexList.get(filePathIndex);
+					List<byte[]> results = hashTable.get(goodSurrId);
 					if (results.size() != 0) {
-						for( Long offset : results) {
+						for( byte[] encodedOffset : results) {
+							long offset = RecordsUtils.decodeIndex(encodedOffset).offset;
 							String records = RecordsUtils.getStringFromFile(
-									fileHandlersList.get(filePath.getFilePath()), offset, tableName);
+									goodHandlersList.get(filePathIndex), offset, tableName);
 							Row temp = Row.createKVMapFromLine(records);
 							if( temp.getKV(RaceConfig.goodId).valueAsString().equals(id)) {
 								result = temp;

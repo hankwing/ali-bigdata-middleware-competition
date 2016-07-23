@@ -1,26 +1,33 @@
 package com.alibaba.middleware.handlefile;
 
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DataFileMapping {
 	ConcurrentHashMap<Integer, String> dataFileMapping;
-	int dataFileSerialNumber;
+	AtomicInteger dataFileSerialNumber;
 	
 	public DataFileMapping() {
 		dataFileMapping = new ConcurrentHashMap<Integer, String>();
-		dataFileSerialNumber = 0;
+		dataFileSerialNumber = new AtomicInteger(0);
 	}
 	
-	public void addDataFile(String file){
-		dataFileMapping.put(dataFileSerialNumber, file);
-		dataFileSerialNumber++;
+	public int addDataFileName(String file){
+		dataFileMapping.put(dataFileSerialNumber.get(), file);
+		
+		return dataFileSerialNumber.getAndIncrement();
 	}
 	
-	public String getDataFile(int dataFileSerialNumber){
+	public String getDataFileName(int dataFileSerialNumber){
 		return dataFileMapping.get(dataFileSerialNumber);
 	}
 	
-	public int getDataFileSerialNumber(){
-		return dataFileSerialNumber;
+	public Integer[] getAllFileIndexs() {
+		return dataFileMapping.keySet().toArray(new Integer[0]);
 	}
+	
+	/*public AtomicInteger getDataFileSerialNumber(){
+		return dataFileSerialNumber;
+	}*/
 }
