@@ -1,41 +1,34 @@
 package com.alibaba.middleware.race;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.ConstructSystem;
 import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.DiskHashTable;
-import com.alibaba.middleware.threads.*;
-import com.alibaba.middleware.tools.FilePathWithIndex;
+import com.alibaba.middleware.threads.QueryOrderByBuyerThread;
+import com.alibaba.middleware.threads.QueryOrderThread;
+import com.alibaba.middleware.threads.QueryOrdersBySalerThread;
+import com.alibaba.middleware.threads.SumOrdersByGoodThread;
+import com.alibaba.middleware.threads.ThreadPool;
 import com.alibaba.middleware.tools.RecordsUtils;
 
 /**
@@ -53,7 +46,7 @@ public class OrderSystemImpl implements OrderSystem {
 	// 订单表里的goodId代理键索引
 	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
 	// 订单表里的可计算字段索引Map
-	public ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
+	//public ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
 	// buyerId里的buyerId代理键索引
 	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> buyerIdIndexList = null;
 	// goodId里的goodId代理键索引
@@ -223,7 +216,7 @@ public class OrderSystemImpl implements OrderSystem {
 		// 订单表里的goodId代理键索引
 		orderGoodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
 		// 订单表里的可计算字段索引Map
-		orderCountableIndexList = new ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>>();
+		//orderCountableIndexList = new ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>>();
 		// buyerId里的buyerId代理键索引
 		buyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
 		// goodId里的goodId代理键索引

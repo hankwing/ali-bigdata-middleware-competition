@@ -13,7 +13,7 @@ public class DataFileMapping {
 		dataFileSerialNumber = new AtomicInteger(0);
 	}
 	
-	public int addDataFileName(String file){
+	public synchronized int addDataFileName(String file){
 		dataFileMapping.put(dataFileSerialNumber.get(), file);
 		
 		return dataFileSerialNumber.getAndIncrement();

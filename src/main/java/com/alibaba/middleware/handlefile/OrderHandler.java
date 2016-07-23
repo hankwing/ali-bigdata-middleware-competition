@@ -48,7 +48,7 @@ public class OrderHandler {
 	ConcurrentHashMap<Integer, DiskHashTable<Long, byte[]>> orderIdIndexList = null;
 	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
 	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
-	ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
+	//ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
 	//DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
 	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
 	HashSet<String> orderAttrList = null;
@@ -66,7 +66,7 @@ public class OrderHandler {
 		this.orderIdIndexList = systemImpl.orderIdIndexList;
 		this.orderBuyerIdIndexList = systemImpl.orderBuyerIdIndexList;
 		this.orderGoodIdIndexList = systemImpl.orderGoodIdIndexList;
-		this.orderCountableIndexList = systemImpl.orderCountableIndexList;
+		//this.orderCountableIndexList = systemImpl.orderCountableIndexList;
 		this.orderAttrList = systemImpl.orderAttrList;
 		this.orderHandlersList = systemImpl.orderHandlersList;
 		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;

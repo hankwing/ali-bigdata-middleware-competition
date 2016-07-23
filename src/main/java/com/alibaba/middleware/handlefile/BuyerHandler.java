@@ -7,7 +7,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,15 +16,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
-import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
-import com.alibaba.middleware.tools.FilePathWithIndex;
-
-import javafx.scene.chart.PieChart.Data;
 
 /***
  * 卖家信息处理
