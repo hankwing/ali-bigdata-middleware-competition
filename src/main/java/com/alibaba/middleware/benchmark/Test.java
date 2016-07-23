@@ -21,6 +21,7 @@ import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -45,7 +46,7 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-		List<RandomAccessFile> files = new ArrayList<RandomAccessFile>();
+		/*List<RandomAccessFile> files = new ArrayList<RandomAccessFile>();
 		 String line = null;
 		 long offset = 0;
 		 long mStartTime = System.currentTimeMillis();
@@ -77,8 +78,22 @@ public class Test {
 		}
 		long mEndTime = System.currentTimeMillis();
 		//long offset2 = map.get(0);
-		System.out.println("test2:" + (mEndTime - mStartTime) );
+		System.out.println("test2:" + (mEndTime - mStartTime) );*/
 		
+		LinkedHashMap<Integer, String> offsetOrderCacheMap;	// 按照fileName.hashCode+offset缓存订单表数据
+	    
+	    LinkedHashMap<Integer, String> orderCacheMap;
+	    
+	    offsetOrderCacheMap = new LinkedHashMap<Integer, String>();
+	    orderCacheMap = new LinkedHashMap<Integer, String>();
+	    
+	    String data = "data";
+	    offsetOrderCacheMap.put(1, data);
+	    orderCacheMap.put(1, data);
+	    
+	    offsetOrderCacheMap.remove(1);
+	    
+		System.out.println("data:" + orderCacheMap.get(1));
 		
 		
 		

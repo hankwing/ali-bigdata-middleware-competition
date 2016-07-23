@@ -21,11 +21,12 @@ import com.alibaba.middleware.race.Row;
  */
 public class SimpleCache {
     private final int capacity;
-    private LinkedHashMap<Long, String> orderCacheMap;
-    private LinkedHashMap<Integer,String> buyerCacheMap;
-    private LinkedHashMap<Integer, String> goodCacheMap;
-    private LinkedHashMap<Integer, List<Long>> buyerToOrderIdCacheMap;
-    private LinkedHashMap<Integer, List<Long>> goodToOrderIdCacheMap;
+    
+    private LinkedHashMap<Long, String> orderCacheMap;					// 存的是hashcode+offset-->string
+    private LinkedHashMap<Integer, String> buyerCacheMap;				// 存的是id-->string
+    private LinkedHashMap<Integer, String> goodCacheMap;				// 存的是id-->string
+    private LinkedHashMap<Integer, List<Long>> buyerToOrderIdCacheMap;	// 存的是key-->hashcode+offset
+    private LinkedHashMap<Integer, List<Long>> goodToOrderIdCacheMap;	// 存的是key-->hashCode+offset
     //private LinkedHashMap<Integer, Row> buyerCacheMap;
     //private LinkedHashMap<Integer, Row> goodCacheMap;
     private ReadWriteLock orderLock;
@@ -133,32 +134,28 @@ public class SimpleCache {
     }
     
     /**
-     * 缓存order表里的buyerid和goodid对应的orderid列表
+     * 缓存order表里的buyerid和goodid对应的order表里的offset列表
      * @param key
      * @param value
      * @param tableType
      */
-    public void putInIdCache(Integer key, long value, IdIndexType indexType) {
+    public void putInIdCache(Integer key, List<Long> offsets, IdIndexType indexType) {
     	switch( indexType) {
     	case BuyerIdToOrderId:
     		//synchronized(orderCacheMap) {
     		buyerToOrderLock.writeLock().lock();
     		List<Long> list = buyerToOrderIdCacheMap.get(key);
     		if( list == null) {
-    			list = new ArrayList<Long>();
-    			buyerToOrderIdCacheMap.put(key, list);
+    			buyerToOrderIdCacheMap.put(key, offsets);
     		}
-    		list.add( value);
     		buyerToOrderLock.writeLock().unlock();
     		break;
     	case GoodIdToOrderId:
     		goodToOrderLock.writeLock().lock();
     		List<Long> goodList = goodToOrderIdCacheMap.get(key);
     		if( goodList == null) {
-    			goodList = new ArrayList<Long>();
-    			goodToOrderIdCacheMap.put(key, goodList);
+    			goodToOrderIdCacheMap.put(key, offsets);
     		}
-    		goodList.add(value);
     		goodToOrderLock.writeLock().unlock();
     		break;
     	}
@@ -166,7 +163,7 @@ public class SimpleCache {
     }
 
     /**
-     * 根据buyerid或者goodid得到对应的orderid列表
+     * 根据buyerid或者goodid得到对应的orderid的offset列表
      * @param key
      * @param indexType
      * @return

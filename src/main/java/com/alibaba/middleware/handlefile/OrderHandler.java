@@ -257,20 +257,12 @@ public class OrderHandler {
 						case OrderBuyerId:
 							Integer buyerIdHashCode = rowData.get(
 									RaceConfig.buyerId).valueAsString().hashCode();
-							// 将buyerid对应的orderid放入缓冲区
-							//rowCache.putInIdCache(buyerIdHashCode, 
-							//		rowData.getKV(RaceConfig.orderId).valueAsLong(), 
-							//		IdIndexType.BuyerIdToOrderId);
 							idHashTable.put(buyerIdHashCode, record.getOffset());
 
 							break;
 						case OrderGoodId:
 							Integer goodIdHashCode = rowData.get(
 									RaceConfig.goodId).valueAsString().hashCode();
-							// 将goodid对应的orderid放入缓冲区
-							//rowCache.putInIdCache(goodIdHashCode, 
-							//		rowData.getKV(RaceConfig.orderId).valueAsLong(),
-							//		IdIndexType.GoodIdToOrderId);
 							idHashTable.put(goodIdHashCode, record.getOffset());
 							break;
 						}

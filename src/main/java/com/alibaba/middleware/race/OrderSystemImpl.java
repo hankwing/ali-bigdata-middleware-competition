@@ -107,6 +107,8 @@ public class OrderSystemImpl implements OrderSystem {
 				//buyerfiles.add("benchmark/buyer_records_2.txt");
 				//buyerfiles.add("benchmark/buyer_records_3.txt");
 				//buyerfiles.add("benchmark/buyer_records_4.txt");
+				//buyerfiles.add("benchmark/buyer_records.txt");
+				//buyerfiles.add("benchmark/buyer_records_1.txt");
 
 				List<String> goodfiles = new ArrayList<String>();
 				goodfiles.add("prerun_data/good.0.0");
@@ -116,6 +118,8 @@ public class OrderSystemImpl implements OrderSystem {
 				//goodfiles.add("benchmark/good_records_2.txt");
 				//goodfiles.add("benchmark/good_records_3.txt");
 				//goodfiles.add("benchmark/good_records_4.txt");
+				//goodfiles.add("benchmark/good_records.txt");
+				//goodfiles.add("benchmark/good_records_1.txt");
 
 				List<String> orderfiles = new ArrayList<String>();
 				orderfiles.add("prerun_data/order.0.0");
@@ -126,6 +130,8 @@ public class OrderSystemImpl implements OrderSystem {
 				//orderfiles.add("benchmark/order_records_2.txt");
 				//orderfiles.add("benchmark/order_records_3.txt");
 				//orderfiles.add("benchmark/order_records_4.txt");
+				//orderfiles.add("benchmark/order_records_1.txt");
+				//orderfiles.add("benchmark/order_records.txt");
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
@@ -343,6 +349,46 @@ public class OrderSystemImpl implements OrderSystem {
 
 		return surrogateKey;
 	}*/
+	
+	/**
+	 * 判断是否存在该orderid对应的记录
+	 * 
+	 * @return
+	 * @throws TypeException 
+	 */
+	public boolean isRecordExist(long orderid) throws TypeException {
+		for (FilePathWithIndex filePath : orderFileList) {
+			String fileName = filePath.getFilePath();
+			DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
+			List<Long> results = hashTable.get(orderid);
+			
+			if (results.size() != 0) {
+				// find the records offset
+				for( Long offset : results) {
+					Row temp = rowCache.getFromCache(offset + fileName.hashCode(), TableName.OrderTable);
+					if(temp != null) {
+						temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
+								temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+										fileHandlersList.get(fileName), offset, 
+										TableName.OrderTable));
+					}
+					else {
+						// 从文件里读数据
+						String diskValue = RecordsUtils.getStringFromFile(
+								fileHandlersList.get(fileName), offset, TableName.OrderTable);
+						temp = Row.createKVMapFromLine( diskValue );
+						// 放入缓冲区
+						rowCache.putInCache(fileName.hashCode() + offset, diskValue , TableName.OrderTable);
+					}
+					return true;
+				}
+				break;
+			}
+		}
+		
+		return false;
+	}
+
 
 	/**
 	 * 根据各个表的主键查找索引返回相应的表记录 无记录则返回null
@@ -355,36 +401,34 @@ public class OrderSystemImpl implements OrderSystem {
 		String idString = String.valueOf(id);
 		switch (tableName) {
 		case OrderTable:
-			// 先在缓冲区里找
-			result = rowCache.getFromCache(id, tableName);
-			if( result != null) {
-				// 说明在缓冲区里找到了
-				return result;
-			} else {
-				// 在索引里找
-				for (FilePathWithIndex filePath : orderFileList) {
-					String fileName = filePath.getFilePath();
-					long orderid = Long.valueOf(idString);
-					DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
-					List<Long> results = hashTable.get(orderid);
-					
-					if (results.size() != 0) {
-						// find the records offset
-						for( Long offset : results) {
-							String records = RecordsUtils.getStringFromFile(
-									fileHandlersList.get(filePath.getFilePath()), offset, tableName);
-							Row temp = Row.createKVMapFromLine(records);
-							if( temp.getKV(RaceConfig.orderId).valueAsLong() == orderid) {
-								// 确认row是我们要找的,放入缓冲区
-								rowCache.putInCache(orderid, records, tableName);
-								result = temp;
-								break;
-							}
+			for (FilePathWithIndex filePath : orderFileList) {
+				String fileName = filePath.getFilePath();
+				long orderid = Long.valueOf(idString);
+				DiskHashTable<Long, Long> hashTable = orderIdIndexList.get(fileName);
+				List<Long> results = hashTable.get(orderid);
+				
+				if (results.size() != 0) {
+					// find the records offset
+					for( Long offset : results) {
+						//先在索引里找
+						Row temp = rowCache.getFromCache(offset + fileName.hashCode(), tableName);
+						if(temp != null) {
+							temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
+									temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+											fileHandlersList.get(fileName), offset, TableName.OrderTable));
 						}
+						else {
+							String diskValue = RecordsUtils.getStringFromFile(
+									fileHandlersList.get(fileName),offset, TableName.OrderTable);
+							temp = Row.createKVMapFromLine(diskValue);
+							rowCache.putInCache(fileName.hashCode() + offset, diskValue, TableName.OrderTable);
+						}
+						result = temp;
 						break;
 					}
+					break;
 				}
-			}		
+			}	
 			break;
 		case BuyerTable:
 			// 将事实键转为代理键

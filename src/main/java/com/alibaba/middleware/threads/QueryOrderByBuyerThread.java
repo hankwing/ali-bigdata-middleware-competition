@@ -43,9 +43,22 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
      * @param row
      * @param results
      */
-    public void addResultRow( Row row, TreeMap<Long, List<Result>> results) {
-		
+    public void handleOffsetList( List<Long> offsets, TreeMap<Long, List<Result>> results) {
+		// 这里要将offset解析成文件下标+offset的形式才能用
 		try {
+			for( long offset : offsets) {
+				// 先在缓冲区里找
+				Row row = system.rowCache.getFromCache(offset, TableName.OrderTable);
+				if(row != null) {
+					row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
+							row : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+									system.fileHandlersList.get(key), offset, TableName.OrderTable));
+				}
+				else {
+					row = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+							filePath, offset, TableName.OrderTable));
+				}
+			}
 			long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
 			long orderid = row.getKV(RaceConfig.orderId).valueAsLong();
 			if( row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) &&
@@ -95,8 +108,8 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 		}
 		else {
 			// 先在缓存里找有没有对应的orderId列表
-			List<Long> orderIds = rowCache.getFormIdCache(surrId, IdIndexType.BuyerIdToOrderId);
-			if( orderIds != null) {
+			List<Long> offsetList = rowCache.getFormIdCache(surrId, IdIndexType.BuyerIdToOrderId);
+			if( offsetList != null) {
 				// 在缓冲区里找到了buyerid对应的orderid列表
 				for( long orderId : orderIds) {
 					Row row = system.getRowById(TableName.OrderTable, orderId);
