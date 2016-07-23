@@ -79,7 +79,7 @@ public class OrderHandler {
 		add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}},
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.orderFileNamePrex,
-				(int) RaceConfig.smallFileCapacity);
+				(int) RaceConfig.bigIndexFileCapacity);
 
 		//文件映射
 		this.orderFileMapping = systemImpl.orderFileMapping;

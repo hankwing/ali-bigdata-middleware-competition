@@ -23,7 +23,7 @@ public class WriteFile {
 	 * 文件的偏移量为 offset
 	 * 文件纪录的计数 count
 	 */
-	private long MAX_LINES = RaceConfig.smallFileCapacity;
+	private long MAX_LINES = 0;
 	private long offset;
 	private int count;
 	

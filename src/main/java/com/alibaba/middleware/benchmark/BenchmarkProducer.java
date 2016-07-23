@@ -59,10 +59,10 @@ public class BenchmarkProducer {
 					goodTableRecordsNum, goodTableReAttr, goodTableOpAttr);
 			
 			Random random = new Random();
-			for( int i =1 ; i < 21; i++) {
+			for( int i =1 ; i < 5; i++) {
 				// then produce order table
-				orderTableProducer("benchmark/order_records_+"+ i + ".txt", orderTableDatabaseFileName,
-						random.nextInt(50000000), orderTableReAttr, orderTableOpAttr);
+				orderTableProducer("benchmark/order_records_"+ i + ".txt", orderTableDatabaseFileName,
+						random.nextInt(500000), orderTableReAttr, orderTableOpAttr);
 			}
 			
 			

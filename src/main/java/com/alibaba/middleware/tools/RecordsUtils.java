@@ -125,6 +125,8 @@ public class RecordsUtils {
 		try {
 			RandomAccessFile fileReader = file.take();
 			fileReader.seek(offset);
+			//result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
+			//		StandardCharsets.UTF_8);
 			result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
 					StandardCharsets.UTF_8);
 			

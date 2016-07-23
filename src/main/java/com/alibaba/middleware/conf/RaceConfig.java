@@ -15,16 +15,17 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreathod = (long) (300* Math.pow(1024, 2));
 	
-	public static int handleThreadNumber = 1;				// 读写线程数
+	public static int handleThreadNumber = 3;				// 读写线程数
 	public static int QueueNumber = 10000;					// 建索引时的一个缓冲队列的大小
 	public static int fileHandleNumber = 15;				// 每个文件预先打开的句柄数
 	
 	public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
-	public static long smallFileCapacity = 15000000;			// 每个索引项的最大索引条数
+	public static long smallIndexFileCapacity = 15000000;			// 小表索引项的最大索引条数
+	public static long bigIndexFileCapacity = 10000000;			// 大表索引项的最大索引条数
 	public static long singleFileMaxLines = 10000000;			// 合并后的文件最大行数
 	
-	public static int cacheInitCapacity = 1000000;
+	public static int cacheInitCapacity = 5000000;
 	/**
 	 * Thread pool config
 	 * */
