@@ -35,7 +35,7 @@ public class SimpleCache {
     private ReadWriteLock buyerToOrderLock;
     private ReadWriteLock goodToOrderLock;
     private static SimpleCache instance = null;
-    
+
     public static SimpleCache getInstance() {
         if (instance == null)
             instance = new SimpleCache( RaceConfig.rowCacheNumber);
@@ -159,7 +159,6 @@ public class SimpleCache {
     		goodToOrderLock.writeLock().unlock();
     		break;
     	}
-    	
     }
 
     /**
