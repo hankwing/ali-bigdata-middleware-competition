@@ -212,7 +212,7 @@ public class BuyerHandler{
 					// 将代理键索引写出去  并保存相应数据   将buyerid索引写出去  并保存相应数据
 					//buyerIdSurrKeyFile.setFilePath(RaceConfig.buyerSurrFileName);
 					//buyerIdSurrKeyFile.setSurrogateIndex(buyerIdSurrKeyIndex.writeAllBuckets());
-					synchronized (buyerAttrList) {
+					synchronized (buyerAttrList) { 
 						buyerAttrList.addAll(tempAttrList);
 					}
 					BucketCachePool.getInstance().removeAllBucket();
