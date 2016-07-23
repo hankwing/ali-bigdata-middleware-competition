@@ -88,7 +88,8 @@ public class GoodHandler{
 					dataFileSerialNumber = goodFileMapping.addDataFileName(file);
 					reader = new BufferedReader(new FileReader(file));
 					// 建立文件句柄
-					LinkedBlockingQueue<RandomAccessFile> handlersQueue = goodHandlersList.get(file);
+					LinkedBlockingQueue<RandomAccessFile> handlersQueue = 
+							goodHandlersList.get(dataFileSerialNumber);
 					if( handlersQueue == null) {
 						handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 						goodHandlersList.put(dataFileSerialNumber, handlersQueue);

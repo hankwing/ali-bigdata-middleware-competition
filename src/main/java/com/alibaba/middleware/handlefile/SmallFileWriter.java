@@ -77,7 +77,7 @@ public class SmallFileWriter {
 			this.writer = new BufferedWriter(new FileWriter(dataFileName));
 			dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName);
 			
-			LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(dataFileName);
+			LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(dataFileSerialNumber);
 			if( handlersQueue == null) {
 				handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 				fileHandlersList.put(dataFileSerialNumber, handlersQueue);
@@ -114,7 +114,7 @@ public class SmallFileWriter {
 				offset = 0;
 				count = 0;
 				// 加入文件句柄缓冲池
-				LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(dataFileName);
+				LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(dataFileSerialNumber);
 				if( handlersQueue == null) {
 					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 					fileHandlersList.put(dataFileSerialNumber, handlersQueue);

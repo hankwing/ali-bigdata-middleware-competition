@@ -106,7 +106,8 @@ public class OrderHandler {
 					
 					reader = new BufferedReader(new FileReader(file));
 					// 建立文件句柄
-					LinkedBlockingQueue<RandomAccessFile> handlersQueue = orderHandlersList.get(file);
+					LinkedBlockingQueue<RandomAccessFile> handlersQueue = 
+							orderHandlersList.get(dataFileSerialNumber);
 					if( handlersQueue == null) {
 						handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 						orderHandlersList.put(dataFileSerialNumber, handlersQueue);

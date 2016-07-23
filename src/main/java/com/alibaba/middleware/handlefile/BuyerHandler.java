@@ -76,7 +76,7 @@ public class BuyerHandler{
 	 * 处理每一行数据
 	 * @param files
 	 */
-	public void handeBuyerFiles(List<String> files){
+	public void handeBuyerFiles(List<String> files) {
 		System.out.println("start buyer handling!");
 		new Thread(new BuyerIndexConstructor( )).start();					// 同时开启建索引线程
 
@@ -90,7 +90,8 @@ public class BuyerHandler{
 					// 属于大文件
 					dataFileSerialNumber = buyerFileMapping.addDataFileName(file);
 					// 建立文件句柄
-					LinkedBlockingQueue<RandomAccessFile> handlersQueue = buyerHandlersList.get(file);
+					LinkedBlockingQueue<RandomAccessFile> handlersQueue = 
+							buyerHandlersList.get(dataFileSerialNumber);
 					if( handlersQueue == null) {
 						handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 						buyerHandlersList.put(dataFileSerialNumber, handlersQueue);
