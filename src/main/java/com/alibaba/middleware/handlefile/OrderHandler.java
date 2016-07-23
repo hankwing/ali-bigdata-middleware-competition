@@ -166,6 +166,7 @@ public class OrderHandler {
 			}
 		}
 		smallFileWriter.writeLine(null, TableName.OrderTable);
+		smallFileWriter.closeFile();
 		
 		System.out.println("end order handling!");
 	}

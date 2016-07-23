@@ -143,6 +143,7 @@ public class GoodHandler{
 			}
 		}
 		smallFileWriter.writeLine(null, TableName.GoodTable);
+		smallFileWriter.closeFile();
 		
 		System.out.println("end good handling!");
 	}

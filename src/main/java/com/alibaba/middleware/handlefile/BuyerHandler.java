@@ -152,6 +152,7 @@ public class BuyerHandler{
 		}
 		
 		smallFileWriter.writeLine(null, TableName.BuyerTable);
+		smallFileWriter.closeFile();
 		System.out.println("end buyer handling!");
 	}
 
