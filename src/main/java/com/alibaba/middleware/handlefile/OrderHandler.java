@@ -261,7 +261,7 @@ public class OrderHandler {
 							tempAttrList.addAll(rowData.keySet());
 							long orderId = rowData.get(RaceConfig.orderId).valueAsLong();
 							// 将order表的数据放入缓冲区
-							rowCache.putInCache(new BytesKey(record.getOffset()), record.getRecordsData(), TableName.OrderTable);
+							//rowCache.putInCache(new BytesKey(record.getOffset()), record.getRecordsData(), TableName.OrderTable);
 							idHashTable.put(orderId, record.getOffset());
 
 							break;
