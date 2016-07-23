@@ -1,5 +1,6 @@
 package com.alibaba.middleware.threads;
 
+import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
@@ -29,9 +30,11 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
     private String goodid;
     private Collection<String> keys;
     private OrderSystemImpl system = null;
+    private SimpleCache rowCache = null;
 
     public QueryOrdersBySalerThread(OrderSystemImpl system,
     		String salerid, String goodid, Collection<String> keys) {
+    	rowCache = SimpleCache.getInstance();
     	this.system = system;
         this.salerid = salerid;
         this.goodid = goodid;
@@ -43,9 +46,27 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
      * @param row
      * @param results
      */
-    public void addToResults( Row row, TreeMap<Long, Result> results, List<String> buyerKeys,
+    public void handleOffsets( List<Long> offsets, TreeMap<Long, Result> results, List<String> buyerKeys,
     		List<String> goodKeys) {
-    	if( row.getKV(RaceConfig.goodId).valueAsString().equals(goodid)) {
+    	
+    	for( Long offset: offsets) {
+			// 放入缓冲区
+    		// 这里要将offset解析成文件下标+offset的形式才能用
+			Row row = system.rowCache.getFromCache(offset, TableName.OrderTable);
+			if(row != null) {
+				row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
+						row : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+								system.fileHandlersList.get(key), offset, TableName.OrderTable));
+			}
+			else {
+				// 在硬盘里找数据
+				String diskData = RecordsUtils.getStringFromFile(
+						system.fileHandlersList.get(key), offset, TableName.OrderTable);
+				row = Row.createKVMapFromLine(diskData);
+				rowCache.putInCache(offset, diskData, TableName.OrderTable);
+				// 放入缓冲区
+			}
+
 			try {
 				long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
 				if( keys == null) {
@@ -69,7 +90,6 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-						
 		}
     }
 
@@ -108,38 +128,31 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 		}
 		else {
 			// 在缓冲区里找对应的order数据
-			List<Long> orderIds = system.rowCache.getFormIdCache(surrId, IdIndexType.GoodIdToOrderId);
+			List<Long> orderIds = system.rowCache.getFormIdCache(surrId, IdIndexType.GoodIdToOrderOffsets);
 			if( orderIds != null) {
 				// 找到了对应的orderid列表
-				for(long orderId : orderIds) {
-					Row row = system.getRowById(TableName.OrderTable, orderId);
-					if( row != null) {
-						addToResults(row, results,buyerKeys ,goodKeys);
-					}
-				}
+				handleOffsets(orderIds, results,buyerKeys, goodKeys );
 				
 			}
 			else {
+				// 在索引里找offsetlist
+				List<Long> offsetList = new ArrayList<Long>();
 				for (FilePathWithIndex filePath : system.orderFileList) {
+					
 					DiskHashTable<Integer, List<Long>> hashTable = system.orderGoodIdIndexList
 							.get(filePath.getFilePath());
 					List<Long> offSetresults = hashTable.get(surrId);
 					if (offSetresults.size() != 0) {
 						// find the records offset
 						// 找到后，按照降序插入TreeMap中
-						for( Long offset: offSetresults) {
-							// 放入缓冲区
-							String record = RecordsUtils.getStringFromFile(
-									system.fileHandlersList.get(filePath.getFilePath()), offset, TableName.OrderTable);
-							Row	row = Row.createKVMapFromLine(record);
-							system.rowCache.putInCache(
-									row.getKV(RaceConfig.orderId).valueAsLong(), record, TableName.OrderTable);
-							addToResults(row, results, buyerKeys, goodKeys);
-						}
-						
+						offsetList.addAll(offSetresults);
 					}
 
 				}
+				
+				handleOffsets( offsetList, results, buyerKeys, goodKeys);
+				// 放入缓冲区
+				rowCache.putInIdCache(surrId, offsetList, IdIndexType.GoodIdToOrderOffsets);
 			}
 			
 		}

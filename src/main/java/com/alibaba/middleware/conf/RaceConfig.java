@@ -58,7 +58,7 @@ public class RaceConfig implements Serializable{
 	}
 	
 	public static enum IdIndexType {
-		BuyerIdToOrderId, GoodIdToOrderId
+		BuyerIdToOrderOffsets, GoodIdToOrderOffsets
 	}
 	
 	public static String orderId = "orderid";

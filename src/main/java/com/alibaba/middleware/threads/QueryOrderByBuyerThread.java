@@ -44,10 +44,11 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
      * @param results
      */
     public void handleOffsetList( List<Long> offsets, TreeMap<Long, List<Result>> results) {
-		// 这里要将offset解析成文件下标+offset的形式才能用
+		
 		try {
 			for( long offset : offsets) {
 				// 先在缓冲区里找
+				// 这里要将offset解析成文件下标+offset的形式才能用
 				Row row = system.rowCache.getFromCache(offset, TableName.OrderTable);
 				if(row != null) {
 					row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
@@ -55,28 +56,33 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 									system.fileHandlersList.get(key), offset, TableName.OrderTable));
 				}
 				else {
-					row = Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
-							filePath, offset, TableName.OrderTable));
+					// 在硬盘里找数据
+					String diskData = RecordsUtils.getStringFromFile(
+							system.fileHandlersList.get(key), offset, TableName.OrderTable);
+					row = Row.createKVMapFromLine(diskData);
+					rowCache.putInCache(offset, diskData, TableName.OrderTable);
+					// 放入缓冲区
 				}
-			}
-			long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
-			long orderid = row.getKV(RaceConfig.orderId).valueAsLong();
-			if( row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) &&
-					createTime >= startTime && createTime < endTime) {
-				// 判断买家id是否符合  并且时间范围符合要求
 				
-				row.putAll(system.getRowById(TableName.BuyerTable,
-						row.get(RaceConfig.buyerId).valueAsString()));			
-				// need query goodTable
-				row.putAll(system.getRowById(TableName.GoodTable,
-						row.get(RaceConfig.goodId).valueAsString()));
-				List<Result> smallResults = results.get(createTime);
-				if(smallResults == null) {
-					smallResults = new ArrayList<Result>();
-					results.put(createTime, smallResults);
+				long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
+				long orderid = row.getKV(RaceConfig.orderId).valueAsLong();
+				if(createTime >= startTime && createTime < endTime) {
+					// 判断时间范围符合要求
+					
+					row.putAll(system.getRowById(TableName.BuyerTable,
+							row.get(RaceConfig.buyerId).valueAsString()));			
+					// need query goodTable
+					row.putAll(system.getRowById(TableName.GoodTable,
+							row.get(RaceConfig.goodId).valueAsString()));
+					List<Result> smallResults = results.get(createTime);
+					if(smallResults == null) {
+						smallResults = new ArrayList<Result>();
+						results.put(createTime, smallResults);
+					}
+					smallResults.add(new ResultImpl(orderid, row));
 				}
-				smallResults.add(new ResultImpl(orderid, row));
 			}
+			
 		} catch (TypeException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -108,37 +114,27 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 		}
 		else {
 			// 先在缓存里找有没有对应的orderId列表
-			List<Long> offsetList = rowCache.getFormIdCache(surrId, IdIndexType.BuyerIdToOrderId);
+			List<Long> offsetList = rowCache.getFormIdCache(surrId, IdIndexType.BuyerIdToOrderOffsets);
 			if( offsetList != null) {
 				// 在缓冲区里找到了buyerid对应的orderid列表
-				for( long orderId : orderIds) {
-					Row row = system.getRowById(TableName.OrderTable, orderId);
-					if( row != null) {
-						addResultRow(row, results);
-					}
-				}
+				handleOffsetList(offsetList, results);
 			}
 			else {
+				// 没找到则在索引里找offsetlist
+				List<Long> offsets = new ArrayList<Long>();
 				for (FilePathWithIndex filePath : system.orderFileList) {
 					DiskHashTable<Integer, List<Long>> hashTable = system.orderBuyerIdIndexList.get(filePath
 							.getFilePath());
 					List<Long> offSetresults = hashTable.get(surrId);
 					if (offSetresults.size() != 0) {
 						// find the records offset
-						// 找到后，按照降序插入TreeMap中
-						for( Long offset: offSetresults) {
-							String record = RecordsUtils.getStringFromFile(
-									system.fileHandlersList.get(filePath.getFilePath()), offset, TableName.OrderTable);
-							Row row = Row.createKVMapFromLine(record);
-							// 放入缓冲区
-							rowCache.putInCache(row.getKV(RaceConfig.orderId).valueAsLong(),
-									record, TableName.OrderTable);
-							addResultRow(row, results);
-							
-						}
+						offsets.addAll(offSetresults);
+						
 					}
-
 				}
+				// 将offsetlist放入缓冲区
+				rowCache.putInIdCache(surrId, offsets, IdIndexType.BuyerIdToOrderOffsets);
+				handleOffsetList(offsets, results);
 			}
 			
 		}

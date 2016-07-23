@@ -141,7 +141,7 @@ public class SimpleCache {
      */
     public void putInIdCache(Integer key, List<Long> offsets, IdIndexType indexType) {
     	switch( indexType) {
-    	case BuyerIdToOrderId:
+    	case BuyerIdToOrderOffsets:
     		//synchronized(orderCacheMap) {
     		buyerToOrderLock.writeLock().lock();
     		List<Long> list = buyerToOrderIdCacheMap.get(key);
@@ -150,7 +150,7 @@ public class SimpleCache {
     		}
     		buyerToOrderLock.writeLock().unlock();
     		break;
-    	case GoodIdToOrderId:
+    	case GoodIdToOrderOffsets:
     		goodToOrderLock.writeLock().lock();
     		List<Long> goodList = goodToOrderIdCacheMap.get(key);
     		if( goodList == null) {
@@ -171,13 +171,13 @@ public class SimpleCache {
     public List<Long> getFormIdCache(Integer key, IdIndexType indexType) {
     	List<Long> results = null;
     	switch( indexType) {
-    	case BuyerIdToOrderId:
+    	case BuyerIdToOrderOffsets:
     		//synchronized(orderCacheMap) {
     		buyerToOrderLock.readLock().lock();
     		results = buyerToOrderIdCacheMap.get(key);
     		buyerToOrderLock.readLock().unlock();
     		break;
-    	case GoodIdToOrderId:
+    	case GoodIdToOrderOffsets:
     		goodToOrderLock.readLock().lock();
     		results = goodToOrderIdCacheMap.get(key);
     		goodToOrderLock.readLock().unlock();
