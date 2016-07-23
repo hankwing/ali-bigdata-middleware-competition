@@ -4,13 +4,16 @@ package com.alibaba.middleware.handlefile;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
-import com.alibaba.middleware.race.Row;
 
+/***
+ * 普通文件处理，
+ * 1）将记录生成对应的索引
+ * 2）一定数量的索引生成索引文件
+ * @author legend
+ *
+ */
 public class WriteFile {
 
 	/**
@@ -21,10 +24,16 @@ public class WriteFile {
 	private long MAX_LINES = RaceConfig.smallFileCapacity;
 	private long offset;
 	private int count;
-	private int fileNum;
 	
-	private String dataFileName;
+	
+	/**
+	 * 索引文件前缀 indexFilePrefix
+	 * 索引文件名 indexFileName
+	 * 索引文件编号 indexFileNumber
+	 */
+	private String indexFilePrefix;
 	private String indexFileName;
+	private int indexFileNumber;
 	private List<LinkedBlockingQueue<IndexItem>> indexQueues = null;
 	//private SimpleCache rowCache = null;
 	private int nextLineByteLength = 0;
@@ -39,12 +48,13 @@ public class WriteFile {
 	public WriteFile(List<LinkedBlockingQueue<IndexItem>> indexQueues, String path,String name, long maxLines) {
 		this.offset = 0;
 		this.count = 0;
-		this.fileNum = 0;
+		this.indexFileNumber = 0;
 		this.MAX_LINES = maxLines;
 		this.indexQueues = indexQueues;
 		nextLineByteLength = "\n".getBytes().length;
 		
-		dataFileName = null;
+		//索引文件前缀
+		indexFilePrefix = new String(path + name) + "_";
 		indexFileName = null;
 		//rowCache = SimpleCache.getInstance();
 
@@ -55,31 +65,35 @@ public class WriteFile {
 		}
 	}
 
-	public void writeLine(String dataFileName, String line, TableName tableType){
+	/***
+	 * 生成索引项，其中包括，源数据文件名，数据文件编号
+	 * @param dataFileName
+	 * @param dataFileSerialNumber
+	 * @param line
+	 * @param tableType
+	 */
+	public void writeLine(String dataFileName, int dataFileSerialNumber, String line, TableName tableType){
 		try {
 			/***
 			 * 索引文件为空时创建新的索引文件
-			 * 数据文件变化时创建新的索引文件
 			 */
-			if (indexFileName == null || !this.dataFileName.equals(dataFileName)) {
-				fileNum = 0;
-				indexFileName = dataFileName + "_" + fileNum;
-				fileNum++;
+			if (indexFileName == null) {
+				indexFileNumber = 0;
+				indexFileName = indexFilePrefix + "_" + indexFileNumber;
 				offset = 0;
 				count = 0;
-				this.dataFileName = dataFileName;
 			}
 			
 			if (count == MAX_LINES) {
-				indexFileName = dataFileName + "_" + fileNum;
-				fileNum++;
+				indexFileNumber++;
+				indexFileName = indexFilePrefix + "_" + indexFileNumber;
 				offset = 0;
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
-			indexFileName = dataFileName + "_" + fileNum;
+			indexFileName = indexFilePrefix + "_" + indexFileNumber;
 			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
-				queue.put(new IndexItem(indexFileName, dataFileName,line, offset));
+				queue.put(new IndexItem(indexFileName,dataFileName, dataFileSerialNumber,line, offset));
 			}
 			
 			if(line != null ) {
@@ -99,8 +113,5 @@ public class WriteFile {
 	
 	public String getIndexFileName() {
 		return indexFileName;
-	}
-	public String getDataFileName() {
-		return dataFileName;
 	}
 }

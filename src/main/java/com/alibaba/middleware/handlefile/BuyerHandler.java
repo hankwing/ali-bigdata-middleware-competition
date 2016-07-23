@@ -1,11 +1,13 @@
 package com.alibaba.middleware.handlefile;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,9 +24,25 @@ import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 
+import javafx.scene.chart.PieChart.Data;
+
+/***
+ * 卖家信息处理
+ * 1）小文件合并
+ * 2）索引项：文件编号+文件偏移量
+ * 3）索引文件：索引项固定数目
+ * @author legend
+ *
+ */
 public class BuyerHandler{
 
+	//普通文件、合并小文件
 	WriteFile buyerfile;
+	MergeSmallFile mergefile;
+	//文件编号映射，文件序列号
+	DataFileMapping dataFileMapping;
+	int dataFileSerialNumber;
+
 	BufferedReader reader;
 	//阻塞队列用于存索引
 	LinkedBlockingQueue<IndexItem> indexQueue;
@@ -37,7 +55,12 @@ public class BuyerHandler{
 	public SimpleCache rowCache = null;
 	public ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList = null;
 
-	public BuyerHandler(List<FilePathWithIndex> buyerFileList, 
+	public double MEG = Math.pow(1024, 2);
+	List<String> smallFiles = new ArrayList<String>();
+
+	public BuyerHandler(
+			DataFileMapping dataFileMapping,
+			List<FilePathWithIndex> buyerFileList, 
 			HashSet<String> buyerAttrList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> buyerIdIndexList, 
 			int threadIndex, CountDownLatch latch, 
@@ -54,7 +77,9 @@ public class BuyerHandler{
 		buyerfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.buyerFileNamePrex, (int) RaceConfig.smallFileCapacity);
-
+		
+		//文件映射
+		this.dataFileMapping =  dataFileMapping;
 	}
 
 	/**
@@ -66,27 +91,71 @@ public class BuyerHandler{
 		new Thread(new BuyerIndexConstructor( )).start();					// 同时开启建索引线程
 
 		for (String file : files) {
+			//添加到映射文件中
+			dataFileMapping.addDataFile(file);
+			dataFileSerialNumber = dataFileMapping.getDataFileSerialNumber();
+			
 			try {
-				reader = new BufferedReader(new FileReader(file));
-				// 建立文件句柄
-				LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(file);
-				if( handlersQueue == null) {
-					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
-					fileHandlersList.put(file, handlersQueue);
+				//如果属于小文件，则保存到List中，否则进行处理
+				File bf = new File(file);
+				if (bf.length() < (long)(100*MEG)) {
+					smallFiles.add(file);
+				}else {
+					reader = new BufferedReader(new FileReader(bf));
+					// 建立文件句柄
+					LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(file);
+					if( handlersQueue == null) {
+						handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+						fileHandlersList.put(file, handlersQueue);
+					}
+
+					for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+						handlersQueue.add(new RandomAccessFile(file, "r"));
+					}
+					String record = null;
+					try {
+						record = reader.readLine();
+						while (record != null) {
+							//Utils.getAttrsFromRecords(buyerAttrList, record);
+							buyerfile.writeLine(file, dataFileSerialNumber, record, TableName.BuyerTable);
+							record = reader.readLine();
+						}
+						reader.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					
 				}
 				
-				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					handlersQueue.add(new RandomAccessFile(file, "r"));
-				}
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			}
+		}
+
+		// set end signal
+//		buyerfile.writeLine(null, 0, null, TableName.BuyerTable);
+
+		mergefile = new MergeSmallFile(
+				dataFileMapping,
+				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
+				RaceConfig.storeFolders[threadIndex],
+				RaceConfig.buyerFileNamePrex, (int) RaceConfig.smallFileCapacity);
+
+		//处理小文件，合并
+		for(String smallfile:smallFiles){
+			try {
+				reader = new BufferedReader(new FileReader(smallfile));
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
 			String record = null;
 			try {
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					buyerfile.writeLine(file, record, TableName.BuyerTable);
+					mergefile.writeLine(smallfile, record, TableName.BuyerTable);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -94,9 +163,7 @@ public class BuyerHandler{
 				e.printStackTrace();
 			}
 		}
-
-		// set end signal
-		buyerfile.writeLine(null, null, TableName.BuyerTable);
+		mergefile.writeLine(null, null, TableName.BuyerTable);
 		System.out.println("end buyer handling!");
 	}
 
@@ -118,7 +185,7 @@ public class BuyerHandler{
 
 			while( true) {
 				IndexItem record = indexQueue.poll();
-				
+
 				if( record != null ) {
 					if( record.getRecordsData() == null) {
 						isEnd = true;
@@ -152,7 +219,7 @@ public class BuyerHandler{
 
 						}
 					}
-					
+
 					Row rowData = Row.createKVMapFromLine(record.getRecordsData());
 					tempAttrList.addAll(rowData.keySet());			// 添加属性
 					String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
