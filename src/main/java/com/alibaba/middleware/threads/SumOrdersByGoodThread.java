@@ -101,6 +101,11 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			
 			for (byte[] encodedOffset : offsetList) {
 				
+				boolean isGoodKey = false;
+				boolean isLong = true;
+				long longValue = 0;
+				double doubleValue = 0;
+				
 				Row row = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
 				FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
 				long offset = offsetInfo.offset;
@@ -120,10 +125,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 					//放入缓冲区
 				}	
 				
-				boolean isGoodKey = false;
-				long longValue = 0;
-				Double doubleValue = 0.0;
-				boolean isLong = true;
+				
 
 				if (!buyerKeys.isEmpty()) {
 					// need query buyerTable
@@ -144,7 +146,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 						if (keyValue != null) {
 							isGoodKey = true;
 							isFound = true;
-							longValue = row.getKV(key)
+							longSum = row.getKV(key)
 									.valueAsLong() * offsetList.size();
 							break;
 						} else {
@@ -157,7 +159,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 						// 不是long型的
 						try {
 							isLong = false;
-							doubleValue = row.getKV(key)
+							doubleSum = row.getKV(key)
 									.valueAsDouble() * offsetList.size();
 							break;
 						} catch (TypeException e2) {
@@ -172,15 +174,6 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 				if (keyValue == null) {
 					// // 该条记录不存在这个key
 					continue;
-				} else if (isGoodKey) {
-					// 在good表里找到了这个key
-					if (isLong) {
-						longSum += longValue;
-						break;
-					} else {
-						doubleSum += doubleValue;
-						break;
-					}
 				} else {
 					// 该记录存在该key
 					try {
