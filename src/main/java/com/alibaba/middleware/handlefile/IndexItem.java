@@ -22,7 +22,7 @@ public class IndexItem {
 	}
 	
 	/**
-	 * 
+	 * 解析indexBytes
 	 * @param dataFileMapping
 	 * @param indexBytes
 	 */

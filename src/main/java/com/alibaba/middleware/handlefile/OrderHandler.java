@@ -1,6 +1,7 @@
 package com.alibaba.middleware.handlefile;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -27,10 +28,18 @@ import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
+import javafx.scene.chart.PieChart.Data;
+
 public class OrderHandler {
 
 	HashMap<String, WriteFile> columnFiles;
+
 	WriteFile orderfile;
+	MergeSmallFile mergefile;
+	//文件编号映射，文件序列号
+	DataFileMapping dataFileMapping;
+	int dataFileSerialNumber;
+
 	BufferedReader reader;
 	LinkedBlockingQueue<IndexItem> orderIndexQueue;
 	LinkedBlockingQueue<IndexItem> orderBuyerIndexQueue;
@@ -48,14 +57,18 @@ public class OrderHandler {
 	private SimpleCache rowCache = null;
 	public ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList = null;
 
+	public double MEG = Math.pow(1024, 2);
+	List<String> smallFiles = new ArrayList<String>();
+
 	public OrderHandler(
+			DataFileMapping dataFileMapping,
 			ConcurrentHashMap<String, DiskHashTable<Long, Long>> orderIdIndexList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderBuyerIdIndexList,
 			ConcurrentHashMap<String, DiskHashTable<Integer, List<Long>>> orderGoodIdIndexList,
 			ConcurrentHashMap<String, List<DiskHashTable<Integer, List<Long>>>> orderCountableIndexList,
 			List<FilePathWithIndex> orderFileList, HashSet<String> orderAttrList,
 			int thread, CountDownLatch countDownLatch,
-			 ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList) {
+			ConcurrentHashMap<String, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList) {
 		rowCache = SimpleCache.getInstance();
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = orderIdIndexList;
@@ -76,6 +89,10 @@ public class OrderHandler {
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.orderFileNamePrex,
 				(int) RaceConfig.smallFileCapacity);
+
+		//文件映射
+		this.dataFileMapping = dataFileMapping;
+
 	}
 
 	public void HandleOrderFiles(List<String> files) {
@@ -87,37 +104,48 @@ public class OrderHandler {
 		// 建order表里的goodid索引
 		new Thread(new OrderIndexConstructor(IndexType.OrderGoodId, orderGoodIndexQueue)).start();
 		for (String file : files) {
-			try {
-				reader = new BufferedReader(new FileReader(file));
-				// 建立文件句柄
-				LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(file);
-				if( handlersQueue == null) {
-					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
-					fileHandlersList.put(file, handlersQueue);
+
+			dataFileMapping.addDataFile(file);
+			dataFileSerialNumber = dataFileMapping.getDataFileSerialNumber();
+
+			File bf = new File(file);
+			if (bf.length() < (long)(100*MEG)) {
+				smallFiles.add(file);
+			}else {
+				try {
+					reader = new BufferedReader(new FileReader(file));
+					// 建立文件句柄
+					LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(file);
+					if( handlersQueue == null) {
+						handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+						fileHandlersList.put(file, handlersQueue);
+					}
+
+					for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+						handlersQueue.add(new RandomAccessFile(file, "r"));
+					}
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
 				}
-				
-				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					handlersQueue.add(new RandomAccessFile(file, "r"));
-				}
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			}
-			String record = null;
-			try {
-				record = reader.readLine();
-				while (record != null) {
-					//Utils.getAttrsFromRecords(orderAttrList, record);
-					orderfile.writeLine(file, record, TableName.OrderTable);
+				String record = null;
+				try {
 					record = reader.readLine();
+					while (record != null) {
+						//Utils.getAttrsFromRecords(orderAttrList, record);
+						orderfile.writeLine(file, dataFileSerialNumber, record, TableName.OrderTable);
+						record = reader.readLine();
+					}
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
-				reader.close();
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
+
+
 		}
 
 		// set end signal
-		orderfile.writeLine(null, null, TableName.OrderTable);
+		orderfile.writeLine(null, 0, null, TableName.OrderTable);
 		System.out.println("end order handling!");
 	}
 
@@ -135,7 +163,7 @@ public class OrderHandler {
 		public OrderIndexConstructor( IndexType indexType, LinkedBlockingQueue<IndexItem> indexQueue) {
 			this.indexType = indexType;
 			this.indexQueue = indexQueue;
-			
+
 		}
 
 		@SuppressWarnings("unchecked")
@@ -224,7 +252,7 @@ public class OrderHandler {
 							// 将order表的数据放入缓冲区
 							//rowCache.putInCache(orderId, record.getRecordsData(), TableName.OrderTable);
 							idHashTable.put(orderId, record.getOffset());
-							
+
 							break;
 						case OrderBuyerId:
 							Integer buyerIdHashCode = rowData.get(
@@ -234,7 +262,7 @@ public class OrderHandler {
 							//		rowData.getKV(RaceConfig.orderId).valueAsLong(), 
 							//		IdIndexType.BuyerIdToOrderId);
 							idHashTable.put(buyerIdHashCode, record.getOffset());
-							
+
 							break;
 						case OrderGoodId:
 							Integer goodIdHashCode = rowData.get(
@@ -271,7 +299,7 @@ public class OrderHandler {
 							break;
 						}	
 						BucketCachePool.getInstance().removeAllBucket();
-						
+
 						countDownLatch.countDown();
 						break;
 

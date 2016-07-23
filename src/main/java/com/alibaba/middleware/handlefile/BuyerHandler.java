@@ -36,6 +36,7 @@ import javafx.scene.chart.PieChart.Data;
  */
 public class BuyerHandler{
 
+	//普通文件、合并小文件
 	WriteFile buyerfile;
 	MergeSmallFile mergefile;
 	//文件编号映射，文件序列号
@@ -79,8 +80,6 @@ public class BuyerHandler{
 		
 		//文件映射
 		this.dataFileMapping =  dataFileMapping;
-		
-
 	}
 
 	/**
@@ -97,41 +96,44 @@ public class BuyerHandler{
 			dataFileSerialNumber = dataFileMapping.getDataFileSerialNumber();
 			
 			try {
+				//如果属于小文件，则保存到List中，否则进行处理
 				File bf = new File(file);
 				if (bf.length() < (long)(100*MEG)) {
 					smallFiles.add(file);
-				}
+				}else {
+					reader = new BufferedReader(new FileReader(bf));
+					// 建立文件句柄
+					LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(file);
+					if( handlersQueue == null) {
+						handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+						fileHandlersList.put(file, handlersQueue);
+					}
 
-				reader = new BufferedReader(new FileReader(bf));
-				// 建立文件句柄
-				LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(file);
-				if( handlersQueue == null) {
-					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
-					fileHandlersList.put(file, handlersQueue);
+					for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+						handlersQueue.add(new RandomAccessFile(file, "r"));
+					}
+					String record = null;
+					try {
+						record = reader.readLine();
+						while (record != null) {
+							//Utils.getAttrsFromRecords(buyerAttrList, record);
+							buyerfile.writeLine(file, dataFileSerialNumber, record, TableName.BuyerTable);
+							record = reader.readLine();
+						}
+						reader.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					
 				}
-
-				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					handlersQueue.add(new RandomAccessFile(file, "r"));
-				}
+				
 			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			}
-			String record = null;
-			try {
-				record = reader.readLine();
-				while (record != null) {
-					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					buyerfile.writeLine(file, dataFileSerialNumber, record, TableName.BuyerTable);
-					record = reader.readLine();
-				}
-				reader.close();
-			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 
 		// set end signal
-		buyerfile.writeLine(null, 0, null, TableName.BuyerTable);
+//		buyerfile.writeLine(null, 0, null, TableName.BuyerTable);
 
 		mergefile = new MergeSmallFile(
 				dataFileMapping,

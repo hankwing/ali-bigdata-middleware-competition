@@ -23,6 +23,9 @@ import com.alibaba.middleware.tools.FilePathWithIndex;
  */
 public class ConstructSystem {
 
+	//文件映射表
+	public DataFileMapping dataFileMapping;
+	
 	// 代理映射表
 	// AgentMapping agentBuyerMapping;
 	// AgentMapping agentGoodMapping;
@@ -70,7 +73,7 @@ public class ConstructSystem {
 		public void run() {
 			// TODO Auto-generated method stub
 			if( !files.isEmpty()) {
-				BuyerHandler buyerHandler = new BuyerHandler( buyerFileList, buyerAttrList,
+				BuyerHandler buyerHandler = new BuyerHandler(dataFileMapping, buyerFileList, buyerAttrList,
 						 buyerIdIndexList, threadIndex, countDownLatch, fileHandersList);
 				buyerHandler.handeBuyerFiles(files);
 			}
@@ -96,7 +99,7 @@ public class ConstructSystem {
 		public void run() {
 			// TODO Auto-generated method stub
 			if( !files.isEmpty()) {
-				GoodHandler goodHandler = new GoodHandler( goodFileList, goodAttrList,
+				GoodHandler goodHandler = new GoodHandler( dataFileMapping, goodFileList, goodAttrList,
 						 goodIdIndexList, threadIndex, countDownLatch, fileHandersList);
 				goodHandler.HandleGoodFiles(files);
 			}
@@ -121,7 +124,7 @@ public class ConstructSystem {
 		public void run() {
 			// TODO Auto-generated method stub
 			if( !files.isEmpty()) {
-				OrderHandler orderHandler = new OrderHandler(orderIdIndexList, orderBuyerIdIndexList,
+				OrderHandler orderHandler = new OrderHandler(dataFileMapping ,orderIdIndexList, orderBuyerIdIndexList,
 						orderGoodIdIndexList, orderCountableIndexList, orderFileList, orderAttrList,
 						threadIndex, countDownLatch, fileHandersList);
 				orderHandler.HandleOrderFiles(files);

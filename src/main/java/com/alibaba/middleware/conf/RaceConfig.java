@@ -90,6 +90,7 @@ public class RaceConfig implements Serializable{
 	public static String orderGoodIdIndexFileSuffix = "_orderGoodIndex";
 	public static String buyerSurrFileName = "buyerSurrIndex";
 	public static String goodSurrFileName = "goodSurrIndex";
+	public static String indexFileSuffix = "_index";
 	
 	
 }

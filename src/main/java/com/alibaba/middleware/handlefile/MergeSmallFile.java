@@ -8,10 +8,16 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 
 import javafx.scene.chart.PieChart.Data;
 
+/***
+ * 融合小文件，生成一定数目记录的文件，根据合并后的文件创建索引
+ * @author legend
+ *
+ */
 public class MergeSmallFile {
 
 	/**
@@ -24,11 +30,17 @@ public class MergeSmallFile {
 	private long offset;
 	private int count;
 
+	/**
+	 * 写出缓冲区 writer
+	 * 源数据文件前缀 dataFilePerfix
+	 * 源数据文件名 dataFileName
+	 * 索引文件名 indexFileName
+	 */
 	private BufferedWriter writer;
-	private String filePerfix;
+	private String dataFilePerfix;
 	private String dataFileName;
+	private int dataFileNumber;
 	private String indexFileName;
-	private int fileNum;
 
 	//建立索引
 	private List<LinkedBlockingQueue<IndexItem>> indexQueues = null;
@@ -36,7 +48,7 @@ public class MergeSmallFile {
 	
 	//数据文件映射
 	private DataFileMapping dataFileMapping;
-	int dataFileSerialNumber = 0;
+	private int dataFileSerialNumber;
 
 	public MergeSmallFile(
 			DataFileMapping dataFileMapping,
@@ -44,7 +56,7 @@ public class MergeSmallFile {
 			String path,String name, int maxLines) {
 		this.offset = 0;
 		this.count = 0;
-		this.fileNum = 0;
+		this.dataFileNumber = 0;
 		this.indexQueues = indexQueues;
 		this.MAX_LINES = maxLines;
 		
@@ -58,31 +70,39 @@ public class MergeSmallFile {
 			file.mkdirs();
 		}
 
-		filePerfix = new String(path + name);
+		dataFilePerfix = new String(path + name);
 		try {
-			dataFileName = filePerfix + String.valueOf(fileNum);
-			indexFileName = dataFileName + "_";
+			dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
+			indexFileName = dataFileName + RaceConfig.indexFileSuffix;
 			this.writer = new BufferedWriter(new FileWriter(dataFileName));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void writeLine(String dataFileName, String line, TableName tableType){
+	/***
+	 * 合并小文件
+	 * @param file
+	 * @param line
+	 * @param tableType
+	 */
+	public void writeLine(String file, String line, TableName tableType){
 		try {
 
-			//当记录达到一定数目进行创建新的源数据文件
+			//当记录达到一定数目进行创建新的源数据文件,即将小文件进行合并
 			if (count == MAX_LINES) {
 				writer.close();
 				//创建新的文件
-				fileNum++;
-				dataFileName = filePerfix + String.valueOf(fileNum);
+				dataFileNumber++;
+				dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
 				
-				//添加到文件映射中
-				dataFileMapping.addDataFile(dataFileName);
-				dataFileSerialNumber = dataFileMapping.getDataFileSerialNumber();
+				//添加到文件映射中,这里注意线程同步问题
+				synchronized (dataFileMapping) {
+					dataFileMapping.addDataFile(dataFileName);
+					dataFileSerialNumber = dataFileMapping.getDataFileSerialNumber();
+				}
 				
-				indexFileName = dataFileName+"_";
+				indexFileName = dataFileName+"_index";
 				writer = new BufferedWriter(new FileWriter(dataFileName));
 				offset = 0;
 				count = 0;
