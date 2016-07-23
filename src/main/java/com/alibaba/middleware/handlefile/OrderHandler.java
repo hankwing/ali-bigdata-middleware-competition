@@ -145,7 +145,32 @@ public class OrderHandler {
 		}
 
 		// set end signal
+//		orderfile.writeLine(null, 0, null, TableName.OrderTable);
+		
+		//处理小文件
+		for(String smallfile:smallFiles){
+			try {
+				reader = new BufferedReader(new FileReader(smallfile));
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			String record = null;
+			try {
+				record = reader.readLine();
+				while (record != null) {
+					//Utils.getAttrsFromRecords(buyerAttrList, record);
+					mergefile.writeLine(smallfile, record, TableName.OrderTable);
+					record = reader.readLine();
+				}
+				reader.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		orderfile.writeLine(null, 0, null, TableName.OrderTable);
+		
 		System.out.println("end order handling!");
 	}
 
