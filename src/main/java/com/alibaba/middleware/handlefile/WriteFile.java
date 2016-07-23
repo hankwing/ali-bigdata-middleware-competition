@@ -81,14 +81,14 @@ public class WriteFile {
 			 */
 			if (indexFileName == null) {
 				indexFileNumber = 0;
-				indexFileName = indexFilePrefix + indexFileNumber;
+				indexFileName = indexFilePrefix + "_" + indexFileNumber;
 				offset = 0;
 				count = 0;
 			}
 			
 			if (count == MAX_LINES) {
 				indexFileNumber++;
-				indexFileName = indexFilePrefix + indexFileNumber;
+				indexFileName = indexFilePrefix + "_" + indexFileNumber;
 				offset = 0;
 				count = 0;
 			}

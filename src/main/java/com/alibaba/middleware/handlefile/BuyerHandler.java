@@ -14,7 +14,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.BucketCachePool;
-import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -46,12 +45,12 @@ public class BuyerHandler{
 	HashSet<String> buyerAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
-	ConcurrentCache rowCache = null;
+	SimpleCache rowCache = null;
 	ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList = null;
 	List<String> smallFiles = new ArrayList<String>();
 
 	public BuyerHandler( OrderSystemImpl systemImpl, int threadIndex, CountDownLatch latch) {
-		rowCache = ConcurrentCache.getInstance();
+		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.buyerAttrList = systemImpl.buyerAttrList;
 		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
@@ -116,44 +115,39 @@ public class BuyerHandler{
 				e.printStackTrace();
 			}
 		}
+		
+		// 下面开始处理小文件
+		smallFileWriter = new SmallFileWriter(
+				buyerHandlersList, buyerFileMapping,
+				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
+				RaceConfig.storeFolders[threadIndex],
+				RaceConfig.buyerFileNamePrex);
+
 		//处理小文件，合并
-		if( !smallFiles.isEmpty() ) {
-			for(String smallfile:smallFiles) {
-				try {
-					// 下面开始处理小文件
-					smallFileWriter = new SmallFileWriter(
-							buyerHandlersList, buyerFileMapping,
-							new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
-							RaceConfig.storeFolders[threadIndex],
-							RaceConfig.buyerFileNamePrex);
-					
-					reader = new BufferedReader(new FileReader(smallfile));
-				} catch (FileNotFoundException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				
-				String record = null;
-				try {
-					record = reader.readLine();
-					while (record != null) {
-						//Utils.getAttrsFromRecords(buyerAttrList, record);
-						smallFileWriter.writeLine(record, TableName.BuyerTable);
-						record = reader.readLine();
-					}
-					reader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+		for(String smallfile:smallFiles){
+			try {
+				reader = new BufferedReader(new FileReader(smallfile));
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
 			}
 			
-			smallFileWriter.writeLine(null, TableName.BuyerTable);
-			smallFileWriter.closeFile();
+			String record = null;
+			try {
+				record = reader.readLine();
+				while (record != null) {
+					//Utils.getAttrsFromRecords(buyerAttrList, record);
+					smallFileWriter.writeLine(record, TableName.BuyerTable);
+					record = reader.readLine();
+				}
+				reader.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
-		else {
-			buyerfile.writeLine(0, null, TableName.BuyerTable);
-		}
-
+		
+		smallFileWriter.writeLine(null, TableName.BuyerTable);
+		smallFileWriter.closeFile();
 		System.out.println("end buyer handling!");
 	}
 
@@ -208,8 +202,7 @@ public class BuyerHandler{
 					tempAttrList.addAll(rowData.keySet());			// 添加属性
 					String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
 					Integer buyerIdHashCode = buyerid.hashCode();
-					// 放入缓冲区中
-					rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
+					//rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
 					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
 					buyerIdHashTable.put(buyerIdHashCode, record.getOffset());
 					//surrKey ++;

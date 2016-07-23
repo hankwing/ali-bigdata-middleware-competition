@@ -14,7 +14,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.BucketCachePool;
-import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
@@ -51,14 +50,14 @@ public class GoodHandler{
 	HashSet<String> goodAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
-	private ConcurrentCache rowCache = null;
+	private SimpleCache rowCache = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
 
 	public double MEG = Math.pow(1024, 2);
 	List<String> smallFiles = new ArrayList<String>();
 
 	public GoodHandler(OrderSystemImpl systemImpl ,int threadIndex,CountDownLatch latch) {
-		rowCache = ConcurrentCache.getInstance();
+		rowCache = SimpleCache.getInstance();
 		this.latch = latch;
 		this.goodAttrList = systemImpl.goodAttrList;
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
@@ -118,39 +117,34 @@ public class GoodHandler{
 			}
 		}
 
-		if( !smallFiles.isEmpty()) {
-			//开始处理小文件
-			for(String smallfile:smallFiles){
+		// 下面开始处理小文件
+		smallFileWriter = new SmallFileWriter(
+				goodHandlersList, goodFileMapping,
+				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
+				RaceConfig.storeFolders[threadIndex],
+				RaceConfig.goodFileNamePrex);
+		//开始处理小文件
+		for(String smallfile:smallFiles){
 
-				try {
-					// 下面开始处理小文件
-					smallFileWriter = new SmallFileWriter(
-							goodHandlersList, goodFileMapping,
-							new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
-							RaceConfig.storeFolders[threadIndex],
-							RaceConfig.goodFileNamePrex);
-					reader = new BufferedReader(new FileReader(smallfile));
-					String record = reader.readLine();
-					while (record != null) {
-						//Utils.getAttrsFromRecords(buyerAttrList, record);
-						smallFileWriter.writeLine(record, TableName.GoodTable);
-						record = reader.readLine();
-					}
-					reader.close();
-				} catch (FileNotFoundException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+			try {
+				reader = new BufferedReader(new FileReader(smallfile));
+				String record = reader.readLine();
+				while (record != null) {
+					//Utils.getAttrsFromRecords(buyerAttrList, record);
+					smallFileWriter.writeLine(record, TableName.GoodTable);
+					record = reader.readLine();
 				}
+				reader.close();
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			smallFileWriter.writeLine(null, TableName.GoodTable);
-			smallFileWriter.closeFile();
-		}else {
-			goodfile.writeLine(0, null, TableName.BuyerTable);
 		}
-		
+		smallFileWriter.writeLine(null, TableName.GoodTable);
+		smallFileWriter.closeFile();
 		
 		System.out.println("end good handling!");
 	}
@@ -206,8 +200,7 @@ public class GoodHandler{
 					tempAttrList.addAll(rowData.keySet());
 					String goodid = rowData.getKV(RaceConfig.goodId).valueAsString();
 					Integer goodIdHashCode = goodid.hashCode();
-					// 放入缓冲区
-					rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
+					//rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
 					goodIdHashTable.put(goodIdHashCode, record.getOffset());
 					//surrKey ++;
 				}

@@ -3,7 +3,6 @@ package com.alibaba.middleware.threads;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
@@ -28,11 +27,11 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 	private String goodid;
 	private String key;
 	private OrderSystemImpl system = null;
-	private ConcurrentCache rowCache = null;
+	private SimpleCache rowCache = null;
 
 	public SumOrdersByGoodThread(OrderSystemImpl system, String goodid,
 			String key) {
-		rowCache = ConcurrentCache.getInstance();
+		rowCache = SimpleCache.getInstance();
 		this.system = system;
 		this.goodid = goodid;
 		this.key = key;
@@ -80,7 +79,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			return null;
 		} else {
 			// 先在缓冲区里找
-			List<byte[]> offsetList = rowCache.getFromIdCache(surrId,
+			List<byte[]> offsetList = rowCache.getFormIdCache(surrId,
 					IdIndexType.GoodIdToOrderOffsets);
 			if (offsetList == null) {
 				// 说明没有找到 则在索引里找offsets
