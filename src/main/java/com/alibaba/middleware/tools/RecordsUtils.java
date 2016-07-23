@@ -116,7 +116,7 @@ public class RecordsUtils {
 	 * @return
 	 */
 	public static String getStringFromFile(LinkedBlockingQueue<RandomAccessFile> file
-			,Long offset, TableName tableType){
+			, Long offset, TableName tableType){
 		String result = null;
 		
 		try {
@@ -124,7 +124,7 @@ public class RecordsUtils {
 			fileReader.seek(offset);
 			result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
 					StandardCharsets.UTF_8);
-				
+			
 			/*for( int i = 0; i< RaceConfig.cacheNumberOneRead ; i++ ) {
 				// 每从文件读一次数据即放入缓冲区一定数量大小的String
 				String line = fileReader.readLine();

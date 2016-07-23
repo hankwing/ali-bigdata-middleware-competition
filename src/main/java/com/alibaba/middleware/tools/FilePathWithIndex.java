@@ -16,17 +16,7 @@ public class FilePathWithIndex {
 	public long orderGoodIdIndex = 0;
 	public long buyerIdIndex = 0;
 	public long goodIdIndex = 0;
-	public long surrogateIndex = 0;
-	//public RandomAccessFile file = null;
-
-	
-	public void setSurrogateIndex( long offset) {
-		surrogateIndex = offset;
-	}
-	
-	public long getSurrogateIndex() {
-		return surrogateIndex;
-	}
+	//public RandomAccessFile file = null
 	
 	public void setOrderIdIndex( long offset) {
 		orderIdIndex = offset;
