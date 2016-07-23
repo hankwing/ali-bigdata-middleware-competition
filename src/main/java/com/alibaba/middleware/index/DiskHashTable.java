@@ -108,7 +108,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			
 			long offset = 0;
 			
-			if (byteArrayOs == null || fos == null) {
+			if (byteArrayOs == null || bufferedFout == null) {
 				byteArrayOs = new ByteArrayOutputStream();
 				fos = new FileOutputStream(bucketFilePath, true);
 
@@ -194,7 +194,7 @@ public class DiskHashTable<K,T> implements Serializable {
 
 			}
 			bufferedFout.flush();
-			//bufferedFout.close();
+			bufferedFout.close();
 			
 			// write this HashTable to dataFile and return offset
 			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map

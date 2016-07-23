@@ -120,10 +120,7 @@ public class OrderSystemImpl implements OrderSystem {
 				//orderfiles.add("prerun_data/order.0.3");
 				//orderfiles.add("prerun_data/order.1.1");
 				//orderfiles.add("prerun_data/order.2.2");
-				orderfiles.add("benchmark/order_records_1.txt");
-				orderfiles.add("benchmark/order_records_2.txt");
-				orderfiles.add("benchmark/order_records_3.txt");
-				orderfiles.add("benchmark/order_records_4.txt");
+				
 				orderfiles.add("benchmark/order_records_+5.txt");
 				orderfiles.add("benchmark/order_records_+6.txt");
 				orderfiles.add("benchmark/order_records_+7.txt");
