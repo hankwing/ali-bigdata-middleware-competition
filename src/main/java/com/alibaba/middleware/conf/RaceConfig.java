@@ -31,14 +31,14 @@ public class RaceConfig implements Serializable{
     public static int monitorInitDelayInMills = 20 *1000;			// 20s后开始检测内存
     public static int monitorFixedDelayInMills = 10 * 1000;			// 每10s检测一次内存
 	public static float memFactor = 0.9f;
+	public static float cacheMemFactor = 0.92f;
+	public static long forceEvictNum = 10000;
 	public static int gcCounterThreshold = 2;
 	public static int removeBucketNum = 100;
 
 	/**
 	 * Cache pool config
 	 * */
-	// JCS Cache Config
-	public static String cacheConfig = "/Users/Jelly/Developer/orderQuerySystem/cache.ccf";
 	public static int hash_index_block_capacity = 10000;			// 一个索引桶里的数据量
 
 	public static String booleanTrueValue = "true";

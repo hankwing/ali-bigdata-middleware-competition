@@ -31,7 +31,7 @@ public class SimpleCache {
     private ReadWriteLock buyerLock;
     private ReadWriteLock goodLock;
     private static SimpleCache instance = null;
-    
+
     public static SimpleCache getInstance() {
         if (instance == null)
             instance = new SimpleCache( RaceConfig.rowCacheNumber);
@@ -43,21 +43,24 @@ public class SimpleCache {
         orderCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
-                return size() > capacity;
+//                return size() > capacity;
+                return false;
             }
         };
         
         buyerCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
-                return size() > capacity;
+//                return size() > capacity;
+                return false;
             }
         };
         
         goodCacheMap = new LinkedHashMap<Long, String>(capacity/2, 0.95f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
-                return size() > capacity;
+//                return size() > capacity;
+                return false;
             }
         };
         
