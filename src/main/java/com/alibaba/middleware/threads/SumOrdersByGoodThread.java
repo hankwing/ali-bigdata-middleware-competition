@@ -86,7 +86,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			if (offsetList == null) {
 				// 说明没有找到 则在索引里找offsets
 				offsetList = new ArrayList<byte[]>();
-				for (int filePathIndex : system.orderFileMapping.getAllFileIndexs()) {
+				for (int filePathIndex : system.orderIndexMapping.getAllFileIndexs()) {
 					DiskHashTable<Integer, List<byte[]>> hashTable = system.orderGoodIdIndexList
 							.get(filePathIndex);
 					List<byte[]> semiList = hashTable.get(surrId);

@@ -41,6 +41,7 @@ public class GoodHandler{
 	SmallFileWriter smallFileWriter;
 	//文件映射，文件编号
 	DataFileMapping goodFileMapping;
+	DataFileMapping goodIndexMapping;				// 存buyer表里索引的文件信息
 	int dataFileSerialNumber;
 
 	BufferedReader reader;
@@ -71,6 +72,7 @@ public class GoodHandler{
 				RaceConfig.goodFileNamePrex, (int) RaceConfig.smallIndexFileCapacity);
 
 		this.goodFileMapping = systemImpl.goodFileMapping;
+		this.goodIndexMapping = systemImpl.goodIndexMapping;
 	}
 
 	public void HandleGoodFiles(List<String> files){
@@ -179,8 +181,8 @@ public class GoodHandler{
 					if( !record.getIndexFileName().equals(indexFileName)) {
 						if( indexFileName == null) {
 							// 第一次建立索引文件
-							fileIndex = record.getFileIndex();
 							indexFileName = record.getIndexFileName();
+							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);
 
@@ -189,10 +191,9 @@ public class GoodHandler{
 							// 保存当前goodId的索引  并写入索引List
 							goodIdHashTable.writeAllBuckets();
 							//smallFile.setGoodIdIndex(0);
-							goodIdIndexList.put(fileIndex, goodIdHashTable);
-
-							fileIndex = record.getFileIndex();
+							goodIdIndexList.put(fileIndex, goodIdHashTable);	
 							indexFileName = record.getIndexFileName();
+							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);
 

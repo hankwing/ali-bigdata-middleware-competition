@@ -38,7 +38,6 @@ public class SmallFileWriter {
 	private String dataFilePerfix;
 	private String dataFileName;
 	private int dataFileNumber;
-	private String indexFileName;
 	private ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList;
 
 	//建立索引
@@ -73,7 +72,6 @@ public class SmallFileWriter {
 		dataFilePerfix = new String(path + name);
 		try {
 			dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
-			indexFileName = dataFileName + RaceConfig.indexFileSuffix;
 			this.writer = new BufferedWriter(new FileWriter(dataFileName));
 			dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName);
 			
@@ -108,8 +106,6 @@ public class SmallFileWriter {
 				dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
 
 				dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName);
-				
-				indexFileName = dataFileName+ RaceConfig.indexFileSuffix;
 				writer = new BufferedWriter(new FileWriter(dataFileName));
 				offset = 0;
 				count = 0;
@@ -130,7 +126,7 @@ public class SmallFileWriter {
 				
 				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
-						queue.put(new IndexItem(indexFileName, dataFileSerialNumber, line, offset));
+						queue.put(new IndexItem(dataFileName, dataFileSerialNumber, line, offset));
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -176,14 +172,6 @@ public class SmallFileWriter {
 	 */
 	public String getDataFileName() {
 		return dataFileName;
-	}
-
-	/***
-	 * 获得索引文件名称
-	 * @return
-	 */
-	public String getIndexFileName(){
-		return indexFileName;
 	}
 
 }

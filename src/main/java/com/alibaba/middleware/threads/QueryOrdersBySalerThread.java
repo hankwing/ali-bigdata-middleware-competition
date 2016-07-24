@@ -143,7 +143,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 			else {
 				// 在索引里找offsetlist
 				List<byte[]> offsetList = new ArrayList<byte[]>();
-				for (int filePathIndex : system.orderFileMapping.getAllFileIndexs()) {
+				for (int filePathIndex : system.orderIndexMapping.getAllFileIndexs()) {
 					
 					DiskHashTable<Integer, List<byte[]>> hashTable = system.orderGoodIdIndexList
 							.get(filePathIndex);

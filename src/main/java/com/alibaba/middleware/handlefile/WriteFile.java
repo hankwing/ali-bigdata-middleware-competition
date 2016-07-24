@@ -2,11 +2,9 @@ package com.alibaba.middleware.handlefile;
 
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 
 /***
@@ -26,6 +24,7 @@ public class WriteFile {
 	private long MAX_LINES = 0;
 	private long offset;
 	private int count;
+	private int oldDataFileSerialNumber = 0;
 	
 	
 	/**
@@ -47,7 +46,7 @@ public class WriteFile {
 	 * @param name	文件名
 	 * @param maxLines	每个小文件最大记录数
 	 */	
-	public WriteFile(List<LinkedBlockingQueue<IndexItem>> indexQueues, String path,String name, long maxLines) {
+	public WriteFile(List<LinkedBlockingQueue<IndexItem>> indexQueues, String path, String name, long maxLines) {
 		this.offset = 0;
 		this.count = 0;
 		this.indexFileNumber = 0;
@@ -80,16 +79,22 @@ public class WriteFile {
 			 * 索引文件为空时创建新的索引文件
 			 */
 			if (indexFileName == null) {
+				oldDataFileSerialNumber = dataFileSerialNumber;
 				indexFileNumber = 0;
 				indexFileName = indexFilePrefix + indexFileNumber;
 				offset = 0;
 				count = 0;
 			}
 			
+			if( oldDataFileSerialNumber != dataFileSerialNumber) {
+				// 说明是不同的文件了 这时候要清零offset
+				oldDataFileSerialNumber = dataFileSerialNumber;
+				offset = 0;
+			}
+			
 			if (count == MAX_LINES) {
 				indexFileNumber++;
 				indexFileName = indexFilePrefix + indexFileNumber;
-				offset = 0;
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引

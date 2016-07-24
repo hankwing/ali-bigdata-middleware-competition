@@ -14,7 +14,17 @@ public class DataFileMapping {
 	}
 	
 	public synchronized int addDataFileName(String file){
-		dataFileMapping.put(dataFileSerialNumber.get(), file);
+		if( !dataFileMapping.containsValue(file) ) {
+			dataFileMapping.put(dataFileSerialNumber.get(), file);
+		}
+		else {
+			// find the key
+			for( int key : dataFileMapping.keySet().toArray(new Integer[0])) {
+				if( dataFileMapping.get(key).equals(file)) {
+					return key;
+				}
+			}
+		}
 		
 		return dataFileSerialNumber.getAndIncrement();
 	}

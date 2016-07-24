@@ -59,7 +59,7 @@ public class BenchmarkProducer {
 					goodTableRecordsNum, goodTableReAttr, goodTableOpAttr);
 			
 			Random random = new Random();
-			for( int i =1 ; i < 5; i++) {
+			for( int i =5 ; i < 15; i++) {
 				// then produce order table
 				orderTableProducer("benchmark/order_records_"+ i + ".txt", orderTableDatabaseFileName,
 						random.nextInt(500000), orderTableReAttr, orderTableOpAttr);
@@ -143,7 +143,7 @@ public class BenchmarkProducer {
 		FileOutputStream fos = new FileOutputStream(fileName);
 		FileOutputStream fosDatabase = new FileOutputStream(databaseFileName);
 		Writer writer = new BufferedWriter(new OutputStreamWriter(fos));
-		Writer writerDatabase = new BufferedWriter(new OutputStreamWriter(fosDatabase));
+		//Writer writerDatabase = new BufferedWriter(new OutputStreamWriter(fosDatabase));
 		
 		// read buyerid from buyer table
 		ArrayList<String> buyerIds = new ArrayList<String>();
@@ -213,13 +213,13 @@ public class BenchmarkProducer {
 			recordsDatabase.append("\n");
 			
 			writer.write(records.toString());
-			writerDatabase.write(recordsDatabase.toString());
+			//writerDatabase.write(recordsDatabase.toString());
 		}
 		
 		writer.flush();
 		writer.close();
-		writerDatabase.flush();
-		writerDatabase.close();
+		//writerDatabase.flush();
+		//writerDatabase.close();
 		
 	}
 	

@@ -163,15 +163,8 @@ public class DiskHashTable<K,T> implements Serializable {
 			if (bufferedFout == null || offsetOos == null) {
 				byteArrayOs = new ByteArrayOutputStream();
 				
-				fos = new FileOutputStream(bucketFilePath, true);
-				
-				if (fos.getChannel().position() > 4) {
-					// 追加模式
-					offsetOos = new AppendingObjectOutputStream(byteArrayOs);
-				} else {
-					// 第一次打开桶文件 需要写入头数据
-					offsetOos = new ObjectOutputStream(byteArrayOs);
-				}
+				fos = new FileOutputStream(bucketFilePath);
+				offsetOos = new ObjectOutputStream(byteArrayOs);
 				
 				bufferedFout = new BufferedOutputStream(fos);
 				bufferedFout.write(byteArrayOs.toByteArray());

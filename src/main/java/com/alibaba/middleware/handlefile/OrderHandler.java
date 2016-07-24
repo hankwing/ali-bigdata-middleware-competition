@@ -39,6 +39,7 @@ public class OrderHandler {
 	SmallFileWriter smallFileWriter;
 	//文件编号映射，文件序列号
 	DataFileMapping orderFileMapping;
+	DataFileMapping orderIndexMapping;
 	int dataFileSerialNumber;
 
 	BufferedReader reader;
@@ -83,6 +84,7 @@ public class OrderHandler {
 
 		//文件映射
 		this.orderFileMapping = systemImpl.orderFileMapping;
+		this.orderIndexMapping = systemImpl.orderIndexMapping;
 
 	}
 
@@ -201,7 +203,7 @@ public class OrderHandler {
 							if (indexFileName == null) {
 								// 第一次建立索引文件
 								indexFileName = record.getIndexFileName();
-								fileIndex = record.getFileIndex();
+								fileIndex = orderIndexMapping.addDataFileName(indexFileName);
 								switch(indexType) {
 								case OrderId:
 									idHashTable = new DiskHashTable<Long, byte[]>(
@@ -227,7 +229,6 @@ public class OrderHandler {
 									// 保存当前goodId的索引 并写入索引List
 									idHashTable.writeAllBuckets();
 									orderIdIndexList.put(fileIndex, idHashTable);
-									fileIndex = record.getFileIndex();
 									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											indexFileName
@@ -236,7 +237,6 @@ public class OrderHandler {
 								case OrderBuyerId:
 									orderBuyerIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
-									fileIndex = record.getFileIndex();
 									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
@@ -245,13 +245,14 @@ public class OrderHandler {
 								case OrderGoodId:
 									orderGoodIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
-									fileIndex = record.getFileIndex();
 									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
 											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class);
 									break;
-								}	
+								}
+								
+								fileIndex = orderIndexMapping.addDataFileName(indexFileName);
 							}
 						}
 

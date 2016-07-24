@@ -37,6 +37,8 @@ public class BuyerHandler{
 	SmallFileWriter smallFileWriter;
 	//文件编号映射，文件序列号
 	DataFileMapping buyerFileMapping;
+	
+	DataFileMapping buyerIndexMapping;				// 存buyer表里索引的文件信息
 	int dataFileSerialNumber;
 	BufferedReader reader;
 	//阻塞队列用于存索引
@@ -65,6 +67,7 @@ public class BuyerHandler{
 		
 		//文件映射
 		this.buyerFileMapping =  systemImpl.buyerFileMapping;
+		this.buyerIndexMapping = systemImpl.buyerIndexMapping;
 	}
 
 	/**
@@ -126,8 +129,6 @@ public class BuyerHandler{
 		//处理小文件，合并
 			for(String smallfile:smallFiles) {
 				try {
-					
-					
 					reader = new BufferedReader(new FileReader(smallfile));
 				} catch (FileNotFoundException e1) {
 					// TODO Auto-generated catch block
@@ -181,8 +182,9 @@ public class BuyerHandler{
 					if( !record.getIndexFileName().equals(indexFileName)) {
 						if( indexFileName == null) {
 							// 第一次建立索引文件
-							fileIndex = record.dataSerialNumber;
 							indexFileName = record.getIndexFileName();
+							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
+							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									indexFileName + RaceConfig.buyerIndexFileSuffix, List.class);
 
@@ -192,8 +194,9 @@ public class BuyerHandler{
 							buyerIdHashTable.writeAllBuckets();
 							//smallFile.setBuyerIdIndex(0);
 							buyerIdIndexList.put(fileIndex, buyerIdHashTable);
-							fileIndex = record.dataSerialNumber;
 							indexFileName = record.getIndexFileName();
+							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
+							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									indexFileName + RaceConfig.buyerIndexFileSuffix, List.class);
 

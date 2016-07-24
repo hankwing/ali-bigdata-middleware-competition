@@ -46,7 +46,7 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 			if (keys == null) {
 				// 需要返回所有记录
 				Row orderIdRow = system.getRowById(TableName.OrderTable,orderId);
-				if( !orderIdRow.isEmpty() ) {
+				if( orderIdRow !=null ) {
 					resultKV.putAll(orderIdRow);
 					resultKV.putAll(system.getRowById(TableName.BuyerTable,
 							resultKV.get(RaceConfig.buyerId).valueAsString()));
@@ -73,7 +73,7 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 					}
 				}
 				Row orderIdRow = system.getRowById(TableName.OrderTable,orderId);
-				if( !orderIdRow.isEmpty() ) {
+				if( orderIdRow !=null ) {
 					resultKV.putAll(orderIdRow);
 					if(!buyerKeys.isEmpty()) {
 						// 需要查询buyer表
