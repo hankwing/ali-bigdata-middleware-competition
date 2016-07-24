@@ -79,10 +79,10 @@ public class GoodHandler{
 		System.out.println("start good handling!");
 		new Thread(new GoodIndexConstructor()).start();					// 同时开启建索引线程
 		for (String file : files) {
-
+			System.out.println("good file:" + file);
 			File bf = new File(file);
 			if (bf.length() < RaceConfig.smallFileSizeThreathod) {
-
+				System.out.println("small good file:" + file);
 				smallFiles.add(file);
 
 			}else{

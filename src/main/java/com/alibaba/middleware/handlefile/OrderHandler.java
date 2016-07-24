@@ -97,9 +97,10 @@ public class OrderHandler {
 		// 建order表里的goodid索引
 		new Thread(new OrderIndexConstructor(IndexType.OrderGoodId, orderGoodIndexQueue)).start();
 		for (String file : files) {
-			
+			System.out.println("order file:" + file);
 			File bf = new File(file);
 			if (bf.length() < RaceConfig.smallFileSizeThreathod) {
+				System.out.println("small order file:" + file);
 				smallFiles.add(file);
 			}else {
 				try {

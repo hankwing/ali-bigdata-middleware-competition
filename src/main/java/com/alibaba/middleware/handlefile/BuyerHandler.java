@@ -80,9 +80,11 @@ public class BuyerHandler{
 
 		for (String file : files) {
 			try {
+				System.out.println("buyer file:" + file);
 				File bf = new File(file);
 				if (bf.length() < RaceConfig.smallFileSizeThreathod) {
 					// 属于小文件
+					System.out.println("small buyer file:" + file);
 					smallFiles.add(file);
 				}else {
 					// 属于大文件
