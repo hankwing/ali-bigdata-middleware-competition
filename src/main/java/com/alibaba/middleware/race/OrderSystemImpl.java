@@ -108,14 +108,14 @@ public class OrderSystemImpl implements OrderSystem {
 				//buyerfiles.add("prerun_data/buyer.0.0");
 				//buyerfiles.add("prerun_data/buyer.1.1");
 				buyerfiles.add("benchmark/buyer_records_1.txt");
-				buyerfiles.add("benchmark/buyer_records_2.txt");
+				//buyerfiles.add("benchmark/buyer_records_2.txt");
 
 				List<String> goodfiles = new ArrayList<String>();
 				//goodfiles.add("prerun_data/good.0.0");
 				//goodfiles.add("prerun_data/good.1.1");
 				//goodfiles.add("prerun_data/good.2.2");
 				goodfiles.add("benchmark/good_records_1.txt");
-				goodfiles.add("benchmark/good_records_2.txt");
+				//goodfiles.add("benchmark/good_records_2.txt");
 				//goodfiles.add("benchmark/good_records_3.txt");
 				//goodfiles.add("benchmark/good_records_4.txt");
 				//goodfiles.add("benchmark/good_records.txt");
@@ -130,15 +130,19 @@ public class OrderSystemImpl implements OrderSystem {
 				orderfiles.add("benchmark/order_records_1.txt");
 				orderfiles.add("benchmark/order_records_2.txt");
 				orderfiles.add("benchmark/order_records_4.txt");
-				orderfiles.add("benchmark/order_records_5.txt");
-				orderfiles.add("benchmark/order_records_6.txt");
-				orderfiles.add("benchmark/order_records_7.txt");
-				orderfiles.add("benchmark/order_records_8.txt");
-				orderfiles.add("benchmark/order_records_9.txt");
-				orderfiles.add("benchmark/order_records_10.txt");
-				orderfiles.add("benchmark/order_records_11.txt");
-				orderfiles.add("benchmark/order_records_12.txt");
-				orderfiles.add("benchmark/order_records_13.txt");
+				orderfiles.add("benchmark/order_records_+5.txt");
+				orderfiles.add("benchmark/order_records_+6.txt");
+				orderfiles.add("benchmark/order_records_+7.txt");
+				orderfiles.add("benchmark/order_records_+8.txt");
+				orderfiles.add("benchmark/order_records_+9.txt");
+				orderfiles.add("benchmark/order_records_+10.txt");
+				orderfiles.add("benchmark/order_records_+11.txt");
+				orderfiles.add("benchmark/order_records_+12.txt");
+				orderfiles.add("benchmark/order_records_+13.txt");
+				orderfiles.add("benchmark/order_records_+14.txt");
+				orderfiles.add("benchmark/order_records_+15.txt");
+				orderfiles.add("benchmark/order_records_+16.txt");
+				orderfiles.add("benchmark/order_records_+17.txt");
 
 				List<String> storeFolders = new ArrayList<String>();
 				// 添加三个盘符
@@ -250,7 +254,7 @@ public class OrderSystemImpl implements OrderSystem {
 		threadPool.addMonitor(jvmMonitorThread);
 		threadPool.addMonitor(cacheMonitorThread);
 		threadPool.startMonitors();
-		rowCache = ConcurrentCache.getInstance();
+		
 	}
 
 	/**
@@ -271,6 +275,7 @@ public class OrderSystemImpl implements OrderSystem {
 				storeFolders, RaceConfig.handleThreadNumber);
 
 		long endTime = System.currentTimeMillis();
+		rowCache = ConcurrentCache.getInstance();	// 这时候再开启rowCache
 		System.out.println("construct time:" + (endTime - startTime) / 1000);
 	}
 
