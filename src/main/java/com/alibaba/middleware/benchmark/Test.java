@@ -28,6 +28,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.conf.RaceConfig;
@@ -48,7 +49,7 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-		ByteBuffer buffer = ByteBuffer.allocate(12);
+		/*ByteBuffer buffer = ByteBuffer.allocate(12);
 		buffer.putInt(0);
 		buffer.putLong(201238912);
 		
@@ -65,7 +66,17 @@ public class Test {
 		
 		Row row = cache.getFromCache(buffer2.array(), TableName.OrderTable);
 		
-		System.out.println(row);
+		System.out.println(row);*/
+		
+		
+		Map<Integer, Long> bucketAddressList = new ConcurrentHashMap<Integer, Long>(); // 桶对应的物理地址
+		for(int i = 0; i< 400000; i++) {
+			Long longValue = new Long(i);
+			bucketAddressList.put(i, longValue);
+		}
+		
+		int a = 0;
+		
 		/*List<RandomAccessFile> files = new ArrayList<RandomAccessFile>();
 		 String line = null;
 		 long offset = 0;
