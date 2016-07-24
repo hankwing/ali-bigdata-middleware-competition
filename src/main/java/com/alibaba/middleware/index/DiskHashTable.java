@@ -51,6 +51,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	private transient BucketCachePool bucketCachePool = null;
 	private transient LinkedBlockingQueue<BucketReader>
 		bucketReaderPool = null;
+	private long bucketAddressOffset = 0;					// 存桶对应物理地址的map的offset
 	private Map<Integer, Long> bucketAddressList = null; // 桶对应的物理地址
 	private Class<?> classType = null;
 	
@@ -155,7 +156,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * 索引建立完之后 将所有桶数据写到外存 不调用单个写桶的函数 因为会频繁调用flush影响效率 
 	 * 返回值：此DiskHashTable被写入dataFile的哪个位置，方便之后调用
 	 */
-	public long writeAllBuckets() {
+	public void writeAllBuckets() {
 		long thisOffset = 0;
 		try {
 			//timer.cancel();
@@ -183,11 +184,8 @@ public class DiskHashTable<K,T> implements Serializable {
 				// bucketWriter.writeObject(writeBucket.getValue());
 				bufferedFout.write(byteArrayOs.toByteArray());
 				offsetOos.reset();
-				
-
 			}
-			bufferedFout.flush();
-			bufferedFout.close();
+			
 			
 			// write this HashTable to dataFile and return offset
 			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map
@@ -197,13 +195,17 @@ public class DiskHashTable<K,T> implements Serializable {
 				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
 				bucketReaderPool.add(new BucketReader(streamIn, bucketReader));
 			}
-			// 先不把元数据写出去了
-			/*fos = new FileOutputStream(dataFilePath, true);
+			// 把桶对应物理地址的map写出去  减少内存开销
+			byteArrayOs.reset();
 			ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
-			thisOffset = byteArrayOs.size();
-			oos.writeObject(this);
+			bucketAddressOffset = lastOffset ;
+			oos.writeObject(bucketAddressList);
+			bucketAddressList = null;				// 清空桶的地址列表数据  空出内存
+			oos.flush();
+			bufferedFout.write(byteArrayOs.toByteArray());
 			oos.close();
-			fos.write(byteArrayOs.toByteArray());*/
+			bufferedFout.flush();
+			bufferedFout.close();
 			readWriteLock.writeLock().unlock();
 
 		} catch (FileNotFoundException e) {
@@ -213,8 +215,38 @@ public class DiskHashTable<K,T> implements Serializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		return thisOffset;
+
+	}
+	
+	/**
+	 * 根据偏移量读取桶对应物理地址的偏移量
+	 * 
+	 * @param filePath
+	 * @param offSet
+	 * @return
+	 */
+	public Map<Integer, Long> getHashDiskTable(long offSet) {
+		Map<Integer, Long> bucketAddressList = null;
+		FileInputStream streamIn;
+		try {
+			streamIn = new FileInputStream(bucketFilePath);
+			streamIn.getChannel().position(offSet);
+			ObjectInputStream objectinputstream = new ObjectInputStream(
+					streamIn);
+ 
+			bucketAddressList = (Map<Integer, Long>) objectinputstream.readObject();
+			objectinputstream.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return bucketAddressList;
 
 	}
 
@@ -225,7 +257,6 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @return
 	 */
 	public HashBucket<K,T> readBucket(int bucketKey) {
-
 		HashBucket<K,T> fileBucket = bucketList.get( bucketKey);
 		try {
 			if( fileBucket == null) {
@@ -237,6 +268,10 @@ public class DiskHashTable<K,T> implements Serializable {
 				}*/
 				BucketReader reader = bucketReaderPool.take();
 				//}
+				if(bucketAddressList == null) {
+					// 需要从文件中读出该map
+					bucketAddressList = getHashDiskTable(bucketAddressOffset);
+				}
 				reader.streamIn.getChannel().position(bucketAddressList.get(bucketKey));
 				
 				fileBucket = (HashBucket<K,T>) reader.bucketReader.readObject();

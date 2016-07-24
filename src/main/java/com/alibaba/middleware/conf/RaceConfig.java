@@ -45,7 +45,7 @@ public class RaceConfig implements Serializable{
 	/**
 	 * Cache pool config
 	 * */
-	public static int hash_index_block_capacity = 10000;			// 一个索引桶里的数据量
+	public static int hash_index_block_capacity = 20000;			// 一个索引桶里的数据量
 
 	public static String booleanTrueValue = "true";
 	public static String booleanFalseValue = "false";

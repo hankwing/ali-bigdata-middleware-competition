@@ -47,7 +47,7 @@ public class IndexTest {
 		    		// write 将内存中的索引文件写出去
 		    		
 		    		long startTime = System.currentTimeMillis();
-		    		hashTableOffset = hashTable.writeAllBuckets();
+		    		//hashTableOffset = hashTable.writeAllBuckets();
 	    			System.out.println("write all bucket complete:"
 	    			+ (System.currentTimeMillis() - startTime) / 1000);
 		    		
