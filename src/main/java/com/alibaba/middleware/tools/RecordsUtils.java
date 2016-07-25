@@ -178,10 +178,10 @@ public class RecordsUtils {
 	 * @param dataFileMapping
 	 * @param indexBytes
 	 */
-	public static FileIndexWithOffset decodeIndex(byte[] indexBytes){
+	/*public static FileIndexWithOffset decodeIndex(byte[] indexBytes){
 		ByteBuffer buffer = ByteBuffer.wrap(indexBytes);
 		return new FileIndexWithOffset( buffer.getInt(), buffer.getLong());
-	}
+	}*/
 	
 	/**
 	 * 得到一行数据里某个key的value 用于good和buyer表

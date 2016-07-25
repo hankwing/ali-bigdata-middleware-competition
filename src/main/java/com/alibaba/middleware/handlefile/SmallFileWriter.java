@@ -126,7 +126,7 @@ public class SmallFileWriter {
 				
 				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
-						queue.put(new IndexItem(dataFileName, dataFileSerialNumber, line, offset));
+						queue.put(new IndexItem(dataFileNumber, dataFileSerialNumber, line, offset));
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -141,7 +141,7 @@ public class SmallFileWriter {
 				// 还需要发送结束IndexItem
 				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
-						queue.put(new IndexItem(null, dataFileSerialNumber, line, offset));
+						queue.put(new IndexItem(0, dataFileSerialNumber, line, offset));
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -170,8 +170,8 @@ public class SmallFileWriter {
 	 * 获得源数据文件名称
 	 * @return
 	 */
-	public String getDataFileName() {
-		return dataFileName;
+	public int getDataFileNumber() {
+		return dataFileNumber;
 	}
 
 }

@@ -32,8 +32,8 @@ public class WriteFile {
 	 * 索引文件名 indexFileName
 	 * 索引文件编号 indexFileNumber
 	 */
-	private String indexFilePrefix;
-	private String indexFileName;
+	//private String indexFilePrefix;
+	//private String indexFileName;
 	private int indexFileNumber;
 	private List<LinkedBlockingQueue<IndexItem>> indexQueues = null;
 	//private SimpleCache rowCache = null;
@@ -46,17 +46,17 @@ public class WriteFile {
 	 * @param name	文件名
 	 * @param maxLines	每个小文件最大记录数
 	 */	
-	public WriteFile(List<LinkedBlockingQueue<IndexItem>> indexQueues, String path, String name, long maxLines) {
+	public WriteFile(List<LinkedBlockingQueue<IndexItem>> indexQueues, String path, long maxLines) {
 		this.offset = 0;
 		this.count = 0;
-		this.indexFileNumber = 0;
+		this.indexFileNumber = -1;	//	用于判断初始
 		this.MAX_LINES = maxLines;
 		this.indexQueues = indexQueues;
 		nextLineByteLength = "\n".getBytes().length;
 		
 		//索引文件地址前缀
-		indexFilePrefix = new String(path + name);
-		indexFileName = null;
+		//indexFilePrefix = new String(path + name);
+		//indexFileName = null;
 		//rowCache = SimpleCache.getInstance();
 
 		//如果文件夹不存在则创建文件夹
@@ -78,10 +78,10 @@ public class WriteFile {
 			/***
 			 * 索引文件为空时创建新的索引文件
 			 */
-			if (indexFileName == null) {
+			if (indexFileNumber == -1) {
 				oldDataFileSerialNumber = dataFileSerialNumber;
 				indexFileNumber = 0;
-				indexFileName = indexFilePrefix + indexFileNumber;
+				//indexFileName = indexFilePrefix + indexFileNumber;
 				offset = 0;
 				count = 0;
 			}
@@ -94,12 +94,12 @@ public class WriteFile {
 			
 			if (count == MAX_LINES) {
 				indexFileNumber++;
-				indexFileName = indexFilePrefix + indexFileNumber;
+				//indexFileName = indexFilePrefix + indexFileNumber;
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
 			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
-				queue.put(new IndexItem(indexFileName, dataFileSerialNumber,line, offset));
+				queue.put(new IndexItem(indexFileNumber, dataFileSerialNumber,line, offset));
 			}
 			
 			if(line != null ) {
@@ -117,7 +117,7 @@ public class WriteFile {
 		return offset;
 	}
 	
-	public String getIndexFileName() {
-		return indexFileName;
+	public int getIndexFileNumber() {
+		return indexFileNumber;
 	}
 }

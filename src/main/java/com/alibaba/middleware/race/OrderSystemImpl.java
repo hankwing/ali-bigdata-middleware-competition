@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -332,7 +333,7 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @param offSet
 	 * @return
 	 */
-	public DiskHashTable getHashDiskTable(String filePath, long offSet) {
+	/*public DiskHashTable getHashDiskTable(String filePath, long offSet) {
 		DiskHashTable hashTable = null;
 		FileInputStream streamIn;
 		try {
@@ -356,7 +357,7 @@ public class OrderSystemImpl implements OrderSystem {
 		}
 		return hashTable;
 
-	}
+	}*/
 
 	/**
 	 * 将buyerId和goodId的事实键转化为代理键
@@ -414,9 +415,9 @@ public class OrderSystemImpl implements OrderSystem {
 				// find the records offset
 				for( byte[] encodedOffset : results) {
 					// 解码获得long型的offset
-					FileIndexWithOffset fileInfo= RecordsUtils.decodeIndex(encodedOffset);
-					long offset = fileInfo.offset;
-					int dataFileIndex = fileInfo.fileIndex;
+					ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
+					int dataFileIndex = buffer.getInt();
+					long offset = buffer.getLong();
 					Row temp = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
 					if(temp != null) {
 						temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
@@ -462,9 +463,9 @@ public class OrderSystemImpl implements OrderSystem {
 					// find the records offset
 					for( byte[] encodedOffset : results) {
 						//解码byte数组
-						FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
-						long offset = offsetInfo.offset;
-						int dataFileIndex = offsetInfo.fileIndex;
+						ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
+						int dataFileIndex = buffer.getInt();
+						long offset = buffer.getLong();
 						Row temp = rowCache.getFromCache(encodedOffset, tableName);
 						if(temp != null) {
 							temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
@@ -501,9 +502,9 @@ public class OrderSystemImpl implements OrderSystem {
 					List<byte[]> results = hashTable.get(surrId);
 					if (results.size() != 0) {
 						for( byte[] encodedOffset : results) {
-							FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
-							long offset = offsetInfo.offset;
-							int dataFileIndex = offsetInfo.fileIndex;
+							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
+							int dataFileIndex = buffer.getInt();
+							long offset = buffer.getLong();
 							
 							String records = RecordsUtils.getStringFromFile(
 									buyerHandlersList.get(dataFileIndex), offset, tableName);
@@ -538,9 +539,9 @@ public class OrderSystemImpl implements OrderSystem {
 					List<byte[]> results = hashTable.get(goodSurrId);
 					if (results.size() != 0) {
 						for( byte[] encodedOffset : results) {
-							FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
-							long offset = offsetInfo.offset;
-							int dataFileIndex = offsetInfo.fileIndex;
+							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
+							int dataFileIndex = buffer.getInt();
+							long offset = buffer.getLong();
 							String records = RecordsUtils.getStringFromFile(
 									goodHandlersList.get(dataFileIndex), offset, tableName);
 							Row temp = RecordsUtils.createKVMapFromLine(records);

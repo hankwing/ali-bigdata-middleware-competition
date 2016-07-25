@@ -6,13 +6,13 @@ public class IndexItem {
 
 	//这里dataFileName+offset=Value
 	int dataSerialNumber;
-	String indexFileName;
+	int indexFileNumber;
 	String recordsData = null;
 	//Row rowData = null;
 	byte[] encodedOffset = null;
 
-	public IndexItem(String indexFileName,int dataSerialNumber ,String recordsData, long offset) {
-		this.indexFileName = indexFileName;
+	public IndexItem(int indexFileNumber, int dataSerialNumber ,String recordsData, long offset) {
+		this.indexFileNumber = indexFileNumber;
 		this.dataSerialNumber = dataSerialNumber;
 		this.recordsData = recordsData;
 		encodedOffset = RecordsUtils.encodeIndex(dataSerialNumber, offset);
@@ -30,8 +30,8 @@ public class IndexItem {
 		return recordsData;
 	}
 	
-	public String getIndexFileName(){
-		return indexFileName;
+	public int getIndexFileNumber(){
+		return indexFileNumber;
 	}
 
 }

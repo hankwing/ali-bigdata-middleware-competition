@@ -68,8 +68,7 @@ public class GoodHandler{
 		this.goodHandlersList = systemImpl.goodHandlersList;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		goodfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}},
-				RaceConfig.storeFolders[threadIndex], 
-				RaceConfig.goodFileNamePrex, (int) RaceConfig.smallIndexFileCapacity);
+				RaceConfig.storeFolders[threadIndex], (int) RaceConfig.smallIndexFileCapacity);
 
 		this.goodFileMapping = systemImpl.goodFileMapping;
 		this.goodIndexMapping = systemImpl.goodIndexMapping;
@@ -157,14 +156,15 @@ public class GoodHandler{
 	public class GoodIndexConstructor implements Runnable {
 		
 		int fileIndex = 0;
-		String indexFileName = null;
+		int indexFileNumber = -1;
+		String indexFilePrex = null;
 		DiskHashTable<Integer, List<byte[]>> goodIdHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
 		//long surrKey = 1;
 
 		public GoodIndexConstructor( ) {
-
+			indexFilePrex = RaceConfig.storeFolders[threadIndex] + RaceConfig.goodFileNamePrex;
 		}
 
 		public void run() {
@@ -178,10 +178,11 @@ public class GoodHandler{
 						continue;
 					}
 
-					if( !record.getIndexFileName().equals(indexFileName)) {
-						if( indexFileName == null) {
+					if( record.getIndexFileNumber() != indexFileNumber) {
+						if( indexFileNumber == -1) {
 							// 第一次建立索引文件
-							indexFileName = record.getIndexFileName();
+							indexFileNumber = record.getIndexFileNumber();
+							String indexFileName = indexFilePrex + String.valueOf(indexFileNumber);
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);
@@ -192,7 +193,8 @@ public class GoodHandler{
 							goodIdHashTable.writeAllBuckets();
 							//smallFile.setGoodIdIndex(0);
 							goodIdIndexList.put(fileIndex, goodIdHashTable);	
-							indexFileName = record.getIndexFileName();
+							indexFileNumber = record.getIndexFileNumber();
+							String indexFileName = indexFilePrex + String.valueOf(indexFileNumber);
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);

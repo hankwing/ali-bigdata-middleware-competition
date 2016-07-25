@@ -63,8 +63,7 @@ public class BuyerHandler{
 		this.buyerHandlersList = systemImpl.buyerHandlersList;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		buyerfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
-				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.buyerFileNamePrex, (int) RaceConfig.smallIndexFileCapacity);
+				RaceConfig.storeFolders[threadIndex], (int) RaceConfig.smallIndexFileCapacity);
 		
 		//文件映射
 		this.buyerFileMapping =  systemImpl.buyerFileMapping;
@@ -160,15 +159,16 @@ public class BuyerHandler{
 	// buyer表的建索引线程  需要建的索引包括：代理键索引和buyerId的索引
 	public class BuyerIndexConstructor implements Runnable {
 
-		String indexFileName = null;
+		int indexFileNumber = -1;
 		DiskHashTable<Integer, List<byte[]>> buyerIdHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
 		int fileIndex = 0;
+		String indexFilePrex = null;
 		//long surrKey = 1;
 
 		public BuyerIndexConstructor( ) {
-
+			indexFilePrex = RaceConfig.storeFolders[threadIndex] + RaceConfig.buyerFileNamePrex;
 		}
 
 		public void run() {
@@ -182,10 +182,11 @@ public class BuyerHandler{
 						continue;
 					}
 
-					if( !record.getIndexFileName().equals(indexFileName)) {
-						if( indexFileName == null) {
+					if( record.getIndexFileNumber() != indexFileNumber) {
+						if( indexFileNumber == -1) {
 							// 第一次建立索引文件
-							indexFileName = record.getIndexFileName();
+							indexFileNumber = record.getIndexFileNumber();
+							String indexFileName = indexFilePrex+String.valueOf(indexFileNumber);
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
@@ -197,11 +198,13 @@ public class BuyerHandler{
 							buyerIdHashTable.writeAllBuckets();
 							//smallFile.setBuyerIdIndex(0);
 							buyerIdIndexList.put(fileIndex, buyerIdHashTable);
-							indexFileName = record.getIndexFileName();
+							indexFileNumber = record.getIndexFileNumber();
+							String indexFileName = indexFilePrex+String.valueOf(indexFileNumber);
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									indexFileName + RaceConfig.buyerIndexFileSuffix, List.class);
+									indexFileName + 
+									RaceConfig.buyerIndexFileSuffix , List.class);
 
 						}
 					}

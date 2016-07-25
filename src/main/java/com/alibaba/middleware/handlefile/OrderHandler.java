@@ -79,7 +79,6 @@ public class OrderHandler {
 		orderfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
 		add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}},
 				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.orderFileNamePrex,
 				(int) RaceConfig.bigIndexFileCapacity);
 
 		//文件映射
@@ -175,7 +174,8 @@ public class OrderHandler {
 	// order表的建索引线程 需要建的索引包括：orderid, buyerid, goodid, countable 字段的索引
 	public class OrderIndexConstructor implements Runnable {
 
-		String indexFileName = null;
+		int indexFileNumber = -1;
+		String indexFilePrex = null;
 		int fileIndex = 0;
 		DiskHashTable idHashTable = null;
 		boolean isEnd = false;
@@ -186,6 +186,7 @@ public class OrderHandler {
 		public OrderIndexConstructor( IndexType indexType, LinkedBlockingQueue<IndexItem> indexQueue) {
 			this.indexType = indexType;
 			this.indexQueue = indexQueue;
+			indexFilePrex = RaceConfig.storeFolders[threadIndex] + RaceConfig.orderFileNamePrex;
 
 		}
 
@@ -200,10 +201,11 @@ public class OrderHandler {
 							continue;
 						}
 
-						if (!record.getIndexFileName().equals(indexFileName)) {
-							if (indexFileName == null) {
+						if (record.getIndexFileNumber() != indexFileNumber) {
+							if (indexFileNumber == -1) {
 								// 第一次建立索引文件
-								indexFileName = record.getIndexFileName();
+								indexFileNumber = record.getIndexFileNumber();
+								String indexFileName = indexFilePrex + String.valueOf(indexFileNumber);
 								fileIndex = orderIndexMapping.addDataFileName(indexFileName);
 								switch(indexType) {
 								case OrderId:
@@ -225,12 +227,15 @@ public class OrderHandler {
 								}
 
 							} else {
+								// 文件名前缀
+								indexFileNumber = record.getIndexFileNumber();
+								String indexFileName = indexFilePrex + String.valueOf(indexFileNumber);
+								
 								switch(indexType) {
 								case OrderId:
 									// 保存当前goodId的索引 并写入索引List
 									idHashTable.writeAllBuckets();
 									orderIdIndexList.put(fileIndex, idHashTable);
-									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											indexFileName
 											+ RaceConfig.orderIndexFileSuffix,byte[].class);
@@ -238,7 +243,6 @@ public class OrderHandler {
 								case OrderBuyerId:
 									orderBuyerIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
-									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
 											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class);
@@ -246,7 +250,6 @@ public class OrderHandler {
 								case OrderGoodId:
 									orderGoodIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
-									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
 											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class);
