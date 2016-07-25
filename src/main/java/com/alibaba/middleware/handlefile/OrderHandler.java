@@ -257,25 +257,25 @@ public class OrderHandler {
 							}
 						}
 
-						Row rowData = Row.createKVMapFromLine(record.getRecordsData());
 						switch(indexType) {
 						case OrderId:
 							//tempAttrList.addAll(rowData.keySet());
-							long orderId = rowData.get(RaceConfig.orderId).valueAsLong();
+							long orderId = Long.parseLong(RecordsUtils.getValueFromLine(
+									record.getRecordsData(),RaceConfig.orderId));
 							// 将order表的数据放入缓冲区
 							//rowCache.putInCache(new BytesKey(record.getOffset()), record.getRecordsData(), TableName.OrderTable);
 							idHashTable.put(orderId, record.getOffset());
 
 							break;
 						case OrderBuyerId:
-							Integer buyerIdHashCode = rowData.get(
-									RaceConfig.buyerId).valueAsString().hashCode();
+							int buyerIdHashCode = RecordsUtils.getValueFromLine(
+									record.getRecordsData(),RaceConfig.buyerId).hashCode();
 							idHashTable.put(buyerIdHashCode, record.getOffset());
 
 							break;
 						case OrderGoodId:
-							Integer goodIdHashCode = rowData.get(
-									RaceConfig.goodId).valueAsString().hashCode();
+							int goodIdHashCode = RecordsUtils.getValueFromLine(
+									record.getRecordsData(),RaceConfig.goodId).hashCode();
 							idHashTable.put(goodIdHashCode, record.getOffset());
 							break;
 						}
@@ -284,9 +284,6 @@ public class OrderHandler {
 						// 保存当前goodId的索引 并写入索引List
 						switch(indexType) {
 						case OrderId:
-							synchronized (orderAttrList) {
-								orderAttrList.addAll(tempAttrList);
-							}
 							idHashTable.writeAllBuckets();
 							orderIdIndexList.put(fileIndex, idHashTable);
 							break;

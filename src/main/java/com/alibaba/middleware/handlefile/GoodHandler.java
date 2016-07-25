@@ -199,13 +199,14 @@ public class GoodHandler{
 
 						}
 					}
-					Row rowData = Row.createKVMapFromLine(record.getRecordsData());	
-					tempAttrList.addAll(rowData.keySet());
-					String goodid = rowData.getKV(RaceConfig.goodId).valueAsString();
-					Integer goodIdHashCode = goodid.hashCode();
+					//Row rowData = Row.createKVMapFromLine(record.getRecordsData());	
+					//tempAttrList.addAll(rowData.keySet());
+					//String goodid = rowData.getKV(RaceConfig.goodId).valueAsString();
+					//Integer goodIdHashCode = goodid.hashCode();
 					// 放入缓冲区
 					//rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
-					goodIdHashTable.put(goodIdHashCode, record.getOffset());
+					goodIdHashTable.put(RecordsUtils.getValueFromLineWithKeyList(
+							record.getRecordsData(),RaceConfig.goodId, tempAttrList), record.getOffset());
 					//surrKey ++;
 				}
 				else if(isEnd ) {

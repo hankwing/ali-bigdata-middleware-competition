@@ -114,14 +114,14 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 				
 				if(row != null) {
 					row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
-							row : Row.createKVMapFromLine(
+							row : RecordsUtils.createKVMapFromLine(
 									RecordsUtils.getStringFromFile(system.orderHandlersList.get(fileIndex),
 											offset, TableName.OrderTable));
 				}
 				else {
 					String diskData = RecordsUtils.getStringFromFile(system.orderHandlersList.get(fileIndex),
 							offset, TableName.OrderTable);
-					row = Row.createKVMapFromLine(diskData);
+					row = RecordsUtils.createKVMapFromLine(diskData);
 					rowCache.putInCache(new BytesKey(encodedOffset), diskData, TableName.OrderTable);
 					//放入缓冲区
 				}	
