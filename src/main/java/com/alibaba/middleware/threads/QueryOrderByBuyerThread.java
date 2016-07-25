@@ -59,14 +59,14 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 				Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
 				if(row != null) {
 					row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
-							row : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+							row : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
 									system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable));
 				}
 				else {
 					// 在硬盘里找数据
 					String diskData = RecordsUtils.getStringFromFile(
 							system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable);
-					row = Row.createKVMapFromLine(diskData);
+					row = RecordsUtils.createKVMapFromLine(diskData);
 					rowCache.putInCache(new BytesKey(encodedOffset), diskData, TableName.OrderTable);
 					// 放入缓冲区
 				}

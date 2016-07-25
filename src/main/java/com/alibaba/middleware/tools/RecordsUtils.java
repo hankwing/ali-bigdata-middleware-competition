@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -60,7 +61,7 @@ public class RecordsUtils {
 	 * @param key
 	 * @return
 	 */
-	public static String getValueFromRecord(String record, String key){
+	/*public static String getValueFromRecord(String record, String key){
 		String[] kvs = record.split("\t");
 		String value = null;
 		for(int i = 0; i< kvs.length ; i++){
@@ -77,7 +78,7 @@ public class RecordsUtils {
 			}
 		}
 		return value;
-	}
+	}*/
 	
 	public static Row getRecordsByKeysFromFile(String fileName,Collection<String> keys,Long offset){
 		Row row = new Row();
@@ -183,26 +184,31 @@ public class RecordsUtils {
 	}
 	
 	/**
-	 * 得到一行数据里某个key的value
+	 * 得到一行数据里某个key的value 用于good和buyer表
 	 * @param line
 	 * @return
 	 */
-	public static Object getValueFromLine(String line, String key) {
+	public static Integer getValueFromLineWithKeyList(
+			String line, String targetKey, HashSet<String> keyList) {
 		if( line != null) {
-			
-			Row kvMap = new Row();
+			int keyHashCode = 0;
+			//Row kvMap = new Row();
 			String[] kvs = line.split("\t");
-			
 			for (String rawkv : kvs) {
 				int p = rawkv.indexOf(':');
 				String key = rawkv.substring(0, p);
 				String value = rawkv.substring(p + 1);
-				if (key.length() == 0 || value.length() == 0) {
-					throw new RuntimeException("Bad data:" + line);
+				keyList.add(key);
+				if( key.equals(targetKey)) {
+					// 找到了所需的key
+					keyHashCode = value.hashCode();
 				}
-				kvMap.put(key, new KeyValueImpl(key, value));
+				/*if (key.length() == 0 || value.length() == 0) {
+					throw new RuntimeException("Bad data:" + line);
+				}*/
+				
 			}
-			return kvMap;
+			return keyHashCode;
 		}
 		else {
 			return null;
@@ -214,22 +220,12 @@ public class RecordsUtils {
 	 * @param line
 	 * @return
 	 */
-	public static Object getValueFromLine(String line, String key) {
+	public static String getValueFromLine(String line, String key) {
 		if( line != null) {
-			
-			Row kvMap = new Row();
-			String[] kvs = line.split("\t");
-			
-			for (String rawkv : kvs) {
-				int p = rawkv.indexOf(':');
-				String key = rawkv.substring(0, p);
-				String value = rawkv.substring(p + 1);
-				if (key.length() == 0 || value.length() == 0) {
-					throw new RuntimeException("Bad data:" + line);
-				}
-				kvMap.put(key, new KeyValueImpl(key, value));
-			}
-			return kvMap;
+			int location = line.indexOf(key);
+			int endLocation = line.indexOf("\t", location);
+			return line.substring(location + key.length() + 1,
+					endLocation != -1? endLocation:line.length() );
 		}
 		else {
 			return null;

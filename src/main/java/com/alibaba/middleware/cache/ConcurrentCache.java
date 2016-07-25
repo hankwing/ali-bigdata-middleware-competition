@@ -4,6 +4,7 @@ import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.BytesKey;
+import com.alibaba.middleware.tools.RecordsUtils;
 
 import java.util.List;
 
@@ -94,13 +95,13 @@ public class ConcurrentCache {
         Row row = null;
         switch (tableType) {
             case OrderTable:
-                row = Row.createKVMapFromLine(orderCacheMap.get(key));
+                row = RecordsUtils.createKVMapFromLine(orderCacheMap.get(key));
                 break;
             case BuyerTable:
-                row = Row.createKVMapFromLine(buyerCacheMap.get(key));
+                row = RecordsUtils.createKVMapFromLine(buyerCacheMap.get(key));
                 break;
             case GoodTable:
-                row = Row.createKVMapFromLine(goodCacheMap.get(key));
+                row = RecordsUtils.createKVMapFromLine(goodCacheMap.get(key));
                 break;
         }
         return row;

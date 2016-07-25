@@ -108,16 +108,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					List<String> buyerfiles = new ArrayList<String>();
-					/*buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");*/
-					buyerfiles.add("benchmark/buyer_records_1.txt");
+					buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");
+					//buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					List<String> goodfiles = new ArrayList<String>();
-					/*goodfiles.add("prerun_data/good.0.0");
+					goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");*/
-					goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.2.2");
+					//goodfiles.add("benchmark/good_records_1.txt");
 					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
@@ -125,12 +125,12 @@ public class OrderSystemImpl implements OrderSystem {
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
 					List<String> orderfiles = new ArrayList<String>();
-					/*orderfiles.add("prerun_data/order.0.0");
+					orderfiles.add("prerun_data/order.0.0");
 					orderfiles.add("prerun_data/order.0.3");
 					orderfiles.add("prerun_data/order.1.1");
-					orderfiles.add("prerun_data/order.2.2");*/
+					orderfiles.add("prerun_data/order.2.2");
 					
-					orderfiles.add("benchmark/order_records_1.txt");
+					/*orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
 					orderfiles.add("benchmark/order_records_+5.txt");
@@ -145,7 +145,7 @@ public class OrderSystemImpl implements OrderSystem {
 					orderfiles.add("benchmark/order_records_+14.txt");
 					orderfiles.add("benchmark/order_records_+15.txt");
 					orderfiles.add("benchmark/order_records_+16.txt");
-					orderfiles.add("benchmark/order_records_+17.txt");
+					orderfiles.add("benchmark/order_records_+17.txt");*/
 	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
@@ -178,7 +178,7 @@ public class OrderSystemImpl implements OrderSystem {
 					
 				}  else if (command.startsWith("lookup2")) {
 					// lookup:xxx 查找某个key值的value
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String buyerId = rawCommand[0];
 					long startTime = Long.valueOf(rawCommand[1]);
 					long endTime = Long.valueOf(rawCommand[2]);
@@ -186,8 +186,8 @@ public class OrderSystemImpl implements OrderSystem {
 					Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
-					}*/
-					System.out.println("start query2" );
+					}
+					/*System.out.println("start query2" );
 					Random random = new Random();
 					for( int i = 0; i< 2000; i++) {
 						String buyerId = UUID.randomUUID().toString();
@@ -200,11 +200,11 @@ public class OrderSystemImpl implements OrderSystem {
 							System.out.println("values:" + results.next());
 						}
 					}
-					System.out.println("end query2");
+					System.out.println("end query2");*/
 					
 				} else if (command.startsWith("lookup3")) {
 					// lookup:xxx 查找某个key值的value
-					System.out.println("start query3" );
+					/*System.out.println("start query3" );
 					for( int i = 0; i< 2000; i++) {
 						String goodId = UUID.randomUUID().toString();
 						
@@ -214,32 +214,35 @@ public class OrderSystemImpl implements OrderSystem {
 						}
 						
 					}
-					System.out.println("stop query3" );
+					System.out.println("stop query3" );*/
 					
-					//String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
-					//String goodId = rawCommand[0];
-					/*List<String> keys = new ArrayList<String>();
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String goodId = rawCommand[0];
+					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
 						keys.add(rawCommand[i]);
-					}*/
-					
-					/*while(results.hasNext()) {
+					}
+					Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, keys);
+					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
-					}*/
+					}
 					
 				} else if (command.startsWith("lookup4")) {
 					// lookup:xxx 查找某个key值的value
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					// lookup:xxx 查找某个key值的value
+					
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
-					String key = rawCommand[1];*/
-					Random random = new Random();
-					System.out.println("start query4" );
-					String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
-					for( int i = 0; i< 2000; i++) {
-						String goodId = UUID.randomUUID().toString();
-						System.out.println(orderSystem
-								.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
-					}		
+					String key = rawCommand[1];
+					System.out.println(orderSystem.sumOrdersByGood(goodId, key));
+					//Random random = new Random();
+					//System.out.println("start query4" );
+					//String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
+					//for( int i = 0; i< 2000; i++) {
+					//	String goodId = UUID.randomUUID().toString();
+					//	System.out.println(orderSystem
+					//			.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
+					//}		
 					
 					System.out.println("end query4" );
 					
@@ -417,7 +420,7 @@ public class OrderSystemImpl implements OrderSystem {
 					Row temp = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
 					if(temp != null) {
 						temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-								temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+								temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
 										orderHandlersList.get(dataFileIndex), offset, 
 										TableName.OrderTable));
 					}
@@ -425,7 +428,7 @@ public class OrderSystemImpl implements OrderSystem {
 						// 从文件里读数据
 						String diskValue = RecordsUtils.getStringFromFile(
 								orderHandlersList.get(dataFileIndex), offset, TableName.OrderTable);
-						temp = Row.createKVMapFromLine( diskValue );
+						temp = RecordsUtils.createKVMapFromLine( diskValue );
 						// 放入缓冲区
 						rowCache.putInCache(new BytesKey(encodedOffset), diskValue , TableName.OrderTable);
 					}
@@ -465,13 +468,13 @@ public class OrderSystemImpl implements OrderSystem {
 						Row temp = rowCache.getFromCache(encodedOffset, tableName);
 						if(temp != null) {
 							temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-									temp : Row.createKVMapFromLine(RecordsUtils.getStringFromFile(
+									temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
 											orderHandlersList.get(dataFileIndex), offset, tableName));
 						}
 						else {
 							String diskValue = RecordsUtils.getStringFromFile(
 									orderHandlersList.get(dataFileIndex),offset, tableName);
-							temp = Row.createKVMapFromLine(diskValue);
+							temp = RecordsUtils.createKVMapFromLine(diskValue);
 							rowCache.putInCache(new BytesKey(encodedOffset), diskValue, tableName);
 						}
 						result = temp;
@@ -505,7 +508,7 @@ public class OrderSystemImpl implements OrderSystem {
 							String records = RecordsUtils.getStringFromFile(
 									buyerHandlersList.get(dataFileIndex), offset, tableName);
 							try{
-								Row temp = Row.createKVMapFromLine(records);
+								Row temp = RecordsUtils.createKVMapFromLine(records);
 								if( temp.getKV(RaceConfig.buyerId).valueAsString().equals(id)) {
 									result = temp;
 									// 放入缓冲区
@@ -540,7 +543,7 @@ public class OrderSystemImpl implements OrderSystem {
 							int dataFileIndex = offsetInfo.fileIndex;
 							String records = RecordsUtils.getStringFromFile(
 									goodHandlersList.get(dataFileIndex), offset, tableName);
-							Row temp = Row.createKVMapFromLine(records);
+							Row temp = RecordsUtils.createKVMapFromLine(records);
 							if( temp.getKV(RaceConfig.goodId).valueAsString().equals(id)) {
 								result = temp;
 								// 放入缓冲区

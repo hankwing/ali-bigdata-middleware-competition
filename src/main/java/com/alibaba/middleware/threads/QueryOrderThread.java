@@ -60,13 +60,11 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 			} else if ( !keys.isEmpty()) {
 				// 查询指定字段
 				// 先找到要查询的key在哪个表里出现了
-				List<String> orderKeys = new ArrayList<String>();
+				//List<String> orderKeys = new ArrayList<String>();
 				List<String> buyerKeys = new ArrayList<String>();
 				List<String> goodKeys = new ArrayList<String>();
 				for (String key : keys) {
-					if (system.orderAttrList.contains(key)) {
-						orderKeys.add(key);
-					} else if (system.buyerAttrList.contains(key)) {
+					if (system.buyerAttrList.contains(key)) {
 						buyerKeys.add(key);
 					} else if (system.goodAttrList.contains(key)) {
 						goodKeys.add(key);

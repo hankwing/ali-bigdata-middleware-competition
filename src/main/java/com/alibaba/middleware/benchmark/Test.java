@@ -49,6 +49,12 @@ public class Test {
 
 	public static void main(String[] args) {
 		
+		
+		String line = "orderid:xxxxx\tbuyerid:1234567";
+		int location = line.indexOf("buyerid");
+		int endLocation = line.indexOf("\t", location);
+		String subLine = line.substring(location + "buyerid".length() + 1,endLocation != -1? endLocation:line.length() );
+		System.out.println(subLine);
 		/*ByteBuffer buffer = ByteBuffer.allocate(12);
 		buffer.putInt(0);
 		buffer.putLong(201238912);
@@ -69,7 +75,7 @@ public class Test {
 		System.out.println(row);*/
 		
 		
-		List<Map<Integer, byte[]>> bucketAddressList = new ArrayList<Map<Integer, byte[]>>(); // 桶对应的物理地址
+		/*List<Map<Integer, byte[]>> bucketAddressList = new ArrayList<Map<Integer, byte[]>>(); // 桶对应的物理地址
 		for(int i = 0; i< 500; i++) {
 			ConcurrentHashMap<Integer,byte[]>  bucketList= new ConcurrentHashMap<Integer, byte[]>();
 			for( int j = 0; j < 1000000; j++) {
@@ -82,7 +88,7 @@ public class Test {
 			
 		}
 		
-		int a = 0;
+		int a = 0;*/
 		
 		/*List<RandomAccessFile> files = new ArrayList<RandomAccessFile>();
 		 String line = null;

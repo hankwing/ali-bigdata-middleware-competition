@@ -21,6 +21,7 @@ import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.RecordsUtils;
 
 /***
  * 卖家信息处理
@@ -205,14 +206,14 @@ public class BuyerHandler{
 						}
 					}
 
-					Row rowData = Row.createKVMapFromLine(record.getRecordsData(), tempAttrList);
-					tempAttrList.addAll(rowData.keySet());			// 添加属性
-					String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
-					Integer buyerIdHashCode = buyerid.hashCode();
+					//tempAttrList.addAll(rowData.keySet());			// 添加属性
+					//String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
+					//Integer buyerIdHashCode = buyerid.hashCode();
 					// 放入缓冲区中
 					//rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
 					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
-					buyerIdHashTable.put(buyerIdHashCode, record.getOffset());
+					buyerIdHashTable.put(RecordsUtils.getValueFromLineWithKeyList(
+							record.getRecordsData(),RaceConfig.buyerId, tempAttrList), record.getOffset());
 					//surrKey ++;
 				}
 				else if(isEnd ) {
