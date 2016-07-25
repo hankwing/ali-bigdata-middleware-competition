@@ -32,8 +32,12 @@ public class WriteFile {
 	 * 索引文件名 indexFileName
 	 * 索引文件编号 indexFileNumber
 	 */
-	private String indexFilePrefix;
-	private String indexFileName;
+//	private String indexFilePrefix;
+//	private String indexFileName;
+
+	private StringBuilder indexFilePrefix;
+	private StringBuilder indexFileName;
+	
 	private int indexFileNumber;
 	private List<LinkedBlockingQueue<IndexItem>> indexQueues = null;
 	//private SimpleCache rowCache = null;
@@ -55,7 +59,8 @@ public class WriteFile {
 		nextLineByteLength = "\n".getBytes().length;
 		
 		//索引文件地址前缀
-		indexFilePrefix = new String(path + name);
+//		indexFilePrefix = new String(path + name);
+		indexFilePrefix.append(path).append(name);
 		indexFileName = null;
 		//rowCache = SimpleCache.getInstance();
 
@@ -81,7 +86,9 @@ public class WriteFile {
 			if (indexFileName == null) {
 				oldDataFileSerialNumber = dataFileSerialNumber;
 				indexFileNumber = 0;
-				indexFileName = indexFilePrefix + indexFileNumber;
+//				indexFileName = indexFilePrefix + indexFileNumber;
+				indexFileName = new StringBuilder();
+				indexFileName.append(indexFilePrefix).append(indexFileNumber);
 				offset = 0;
 				count = 0;
 			}
@@ -94,12 +101,14 @@ public class WriteFile {
 			
 			if (count == MAX_LINES) {
 				indexFileNumber++;
-				indexFileName = indexFilePrefix + indexFileNumber;
+//				indexFileName = indexFilePrefix + indexFileNumber;
+				indexFileName = new StringBuilder();
+				indexFileName.append(indexFilePrefix).append(indexFileNumber);
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
 			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
-				queue.put(new IndexItem(indexFileName, dataFileSerialNumber,line, offset));
+				queue.put(new IndexItem(indexFileName.toString(), dataFileSerialNumber,line, offset));
 			}
 			
 			if(line != null ) {
@@ -118,6 +127,6 @@ public class WriteFile {
 	}
 	
 	public String getIndexFileName() {
-		return indexFileName;
+		return indexFileName.toString();
 	}
 }
