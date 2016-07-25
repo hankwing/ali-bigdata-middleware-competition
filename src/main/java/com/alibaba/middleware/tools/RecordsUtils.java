@@ -15,6 +15,7 @@ import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
+import com.alibaba.middleware.race.KeyValueImpl;
 import com.alibaba.middleware.race.Row;
 
 
@@ -179,6 +180,86 @@ public class RecordsUtils {
 	public static FileIndexWithOffset decodeIndex(byte[] indexBytes){
 		ByteBuffer buffer = ByteBuffer.wrap(indexBytes);
 		return new FileIndexWithOffset( buffer.getInt(), buffer.getLong());
+	}
+	
+	/**
+	 * 得到一行数据里某个key的value
+	 * @param line
+	 * @return
+	 */
+	public static Object getValueFromLine(String line, String key) {
+		if( line != null) {
+			
+			Row kvMap = new Row();
+			String[] kvs = line.split("\t");
+			
+			for (String rawkv : kvs) {
+				int p = rawkv.indexOf(':');
+				String key = rawkv.substring(0, p);
+				String value = rawkv.substring(p + 1);
+				if (key.length() == 0 || value.length() == 0) {
+					throw new RuntimeException("Bad data:" + line);
+				}
+				kvMap.put(key, new KeyValueImpl(key, value));
+			}
+			return kvMap;
+		}
+		else {
+			return null;
+		}
+	}
+	
+	/**
+	 * 得到一行数据里某个key的value，并且加入key到列表中
+	 * @param line
+	 * @return
+	 */
+	public static Object getValueFromLine(String line, String key) {
+		if( line != null) {
+			
+			Row kvMap = new Row();
+			String[] kvs = line.split("\t");
+			
+			for (String rawkv : kvs) {
+				int p = rawkv.indexOf(':');
+				String key = rawkv.substring(0, p);
+				String value = rawkv.substring(p + 1);
+				if (key.length() == 0 || value.length() == 0) {
+					throw new RuntimeException("Bad data:" + line);
+				}
+				kvMap.put(key, new KeyValueImpl(key, value));
+			}
+			return kvMap;
+		}
+		else {
+			return null;
+		}
+	}
+	
+	/**
+	 * 工具类  可从一行数据中解析出KeyValue对
+	 * @param line
+	 * @return
+	 */
+	public static Row createKVMapFromLine(String line) {
+		if( line != null) {
+			Row kvMap = new Row();
+			String[] kvs = line.split("\t");
+			
+			for (String rawkv : kvs) {
+				int p = rawkv.indexOf(':');
+				String key = rawkv.substring(0, p);
+				String value = rawkv.substring(p + 1);
+				if (key.length() == 0 || value.length() == 0) {
+					throw new RuntimeException("Bad data:" + line);
+				}
+				kvMap.put(key, new KeyValueImpl(key, value));
+			}
+			return kvMap;
+		}
+		else {
+			return null;
+		}
 	}
 	
 	/**

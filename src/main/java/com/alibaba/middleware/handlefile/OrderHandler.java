@@ -68,7 +68,7 @@ public class OrderHandler {
 		this.orderBuyerIdIndexList = systemImpl.orderBuyerIdIndexList;
 		this.orderGoodIdIndexList = systemImpl.orderGoodIdIndexList;
 		//this.orderCountableIndexList = systemImpl.orderCountableIndexList;
-		this.orderAttrList = systemImpl.orderAttrList;
+		//this.orderAttrList = systemImpl.orderAttrList;
 		this.orderHandlersList = systemImpl.orderHandlersList;
 		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
@@ -179,7 +179,7 @@ public class OrderHandler {
 		int fileIndex = 0;
 		DiskHashTable idHashTable = null;
 		boolean isEnd = false;
-		HashSet<String> tempAttrList = new HashSet<String>();
+		//HashSet<String> tempAttrList = new HashSet<String>();
 		IndexType indexType = null;
 		LinkedBlockingQueue<IndexItem> indexQueue;
 
@@ -260,7 +260,7 @@ public class OrderHandler {
 						Row rowData = Row.createKVMapFromLine(record.getRecordsData());
 						switch(indexType) {
 						case OrderId:
-							tempAttrList.addAll(rowData.keySet());
+							//tempAttrList.addAll(rowData.keySet());
 							long orderId = rowData.get(RaceConfig.orderId).valueAsLong();
 							// 将order表的数据放入缓冲区
 							//rowCache.putInCache(new BytesKey(record.getOffset()), record.getRecordsData(), TableName.OrderTable);

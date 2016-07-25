@@ -10,7 +10,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -67,7 +69,7 @@ public class OrderSystemImpl implements OrderSystem {
 	public DataFileMapping buyerIndexMapping = null;						// 保存buyer表所有文件的名字
 	public DataFileMapping goodIndexMapping = null;						// 保存good表所有文件的名字
 
-	public HashSet<String> orderAttrList = null; // 保存order表的所有字段名称
+	//public HashSet<String> orderAttrList = null; // 保存order表的所有字段名称
 	public HashSet<String> buyerAttrList = null; // 保存buyer表的所有字段名称
 	public HashSet<String> goodAttrList = null; // 保存good表的所有字段名称
 
@@ -90,127 +92,168 @@ public class OrderSystemImpl implements OrderSystem {
 		OrderSystemImpl orderSystem = new OrderSystemImpl();
 		Scanner scanner = new Scanner(System.in);
 		String command = null;
+		
 		while (!(command = scanner.nextLine()).equals("quit")) {
-
-			if (command.equals("write")) {
-				// write 将内存中的索引文件写出去
-
-			} else if (command.startsWith("writeBucket")) {
-				// writeBucket:xx 将某个索引块xx写到外存 索引块号xx可在索引块内找到
-				
-			} else if (command.equals("read")) {
-				// read 从文件中读取索引元数据DiskHashTable
-
-			} else if (command.equals("construct")) {
-				// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
-
-				List<String> buyerfiles = new ArrayList<String>();
-				/*buyerfiles.add("prerun_data/buyer.0.0");
-				buyerfiles.add("prerun_data/buyer.1.1");*/
-				buyerfiles.add("benchmark/buyer_records_1.txt");
-				//buyerfiles.add("benchmark/buyer_records_2.txt");
-
-				List<String> goodfiles = new ArrayList<String>();
-				/*goodfiles.add("prerun_data/good.0.0");
-				goodfiles.add("prerun_data/good.1.1");
-				goodfiles.add("prerun_data/good.2.2");*/
-				goodfiles.add("benchmark/good_records_1.txt");
-				//goodfiles.add("benchmark/good_records_2.txt");
-				//goodfiles.add("benchmark/good_records_3.txt");
-				//goodfiles.add("benchmark/good_records_4.txt");
-				//goodfiles.add("benchmark/good_records.txt");
-				//goodfiles.add("benchmark/good_records_1.txt");
-
-				List<String> orderfiles = new ArrayList<String>();
-				/*orderfiles.add("prerun_data/order.0.0");
-				orderfiles.add("prerun_data/order.0.3");
-				orderfiles.add("prerun_data/order.1.1");
-				orderfiles.add("prerun_data/order.2.2");*/
-				
-				orderfiles.add("benchmark/order_records_1.txt");
-				orderfiles.add("benchmark/order_records_2.txt");
-				orderfiles.add("benchmark/order_records_4.txt");
-				orderfiles.add("benchmark/order_records_+5.txt");
-				orderfiles.add("benchmark/order_records_+6.txt");
-				orderfiles.add("benchmark/order_records_+7.txt");
-				orderfiles.add("benchmark/order_records_+8.txt");
-				orderfiles.add("benchmark/order_records_+9.txt");
-				orderfiles.add("benchmark/order_records_+10.txt");
-				orderfiles.add("benchmark/order_records_+11.txt");
-				orderfiles.add("benchmark/order_records_+12.txt");
-				orderfiles.add("benchmark/order_records_+13.txt");
-				orderfiles.add("benchmark/order_records_+14.txt");
-				orderfiles.add("benchmark/order_records_+15.txt");
-				orderfiles.add("benchmark/order_records_+16.txt");
-				orderfiles.add("benchmark/order_records_+17.txt");
-
-				List<String> storeFolders = new ArrayList<String>();
-				// 添加三个盘符
-				storeFolders.add("disk1/");
-				storeFolders.add("disk2/");
-				storeFolders.add("disk3/");
-
-				try {
-					orderSystem.construct(orderfiles, buyerfiles, goodfiles,
-							storeFolders);
-
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+			try{
+				if (command.equals("write")) {
+					// write 将内存中的索引文件写出去
+	
+				} else if (command.startsWith("writeBucket")) {
+					// writeBucket:xx 将某个索引块xx写到外存 索引块号xx可在索引块内找到
+					
+				} else if (command.equals("read")) {
+					// read 从文件中读取索引元数据DiskHashTable
+	
+				} else if (command.equals("construct")) {
+					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
+	
+					List<String> buyerfiles = new ArrayList<String>();
+					/*buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");*/
+					buyerfiles.add("benchmark/buyer_records_1.txt");
+					//buyerfiles.add("benchmark/buyer_records_2.txt");
+	
+					List<String> goodfiles = new ArrayList<String>();
+					/*goodfiles.add("prerun_data/good.0.0");
+					goodfiles.add("prerun_data/good.1.1");
+					goodfiles.add("prerun_data/good.2.2");*/
+					goodfiles.add("benchmark/good_records_1.txt");
+					//goodfiles.add("benchmark/good_records_2.txt");
+					//goodfiles.add("benchmark/good_records_3.txt");
+					//goodfiles.add("benchmark/good_records_4.txt");
+					//goodfiles.add("benchmark/good_records.txt");
+					//goodfiles.add("benchmark/good_records_1.txt");
+	
+					List<String> orderfiles = new ArrayList<String>();
+					/*orderfiles.add("prerun_data/order.0.0");
+					orderfiles.add("prerun_data/order.0.3");
+					orderfiles.add("prerun_data/order.1.1");
+					orderfiles.add("prerun_data/order.2.2");*/
+					
+					orderfiles.add("benchmark/order_records_1.txt");
+					orderfiles.add("benchmark/order_records_2.txt");
+					orderfiles.add("benchmark/order_records_4.txt");
+					orderfiles.add("benchmark/order_records_+5.txt");
+					orderfiles.add("benchmark/order_records_+6.txt");
+					orderfiles.add("benchmark/order_records_+7.txt");
+					orderfiles.add("benchmark/order_records_+8.txt");
+					orderfiles.add("benchmark/order_records_+9.txt");
+					orderfiles.add("benchmark/order_records_+10.txt");
+					orderfiles.add("benchmark/order_records_+11.txt");
+					orderfiles.add("benchmark/order_records_+12.txt");
+					orderfiles.add("benchmark/order_records_+13.txt");
+					orderfiles.add("benchmark/order_records_+14.txt");
+					orderfiles.add("benchmark/order_records_+15.txt");
+					orderfiles.add("benchmark/order_records_+16.txt");
+					orderfiles.add("benchmark/order_records_+17.txt");
+	
+					List<String> storeFolders = new ArrayList<String>();
+					// 添加三个盘符
+					storeFolders.add("disk1/");
+					storeFolders.add("disk2/");
+					storeFolders.add("disk3/");
+	
+					try {
+						orderSystem.construct(orderfiles, buyerfiles, goodfiles,
+								storeFolders);
+	
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				} else if (command.startsWith("lookup1")) {
+	
+					// lookup:xxx 查找某个key值的value
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					List<String> keys = new ArrayList<String>();
+					for( int i = 1; i < rawCommand.length; i++ ) {
+	                    System.out.println(rawCommand[i]);
+						keys.add(rawCommand[i]);
+					}
+					System.out.println("values:" + 
+					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
+					
+				}  else if (command.startsWith("lookup2")) {
+					// lookup:xxx 查找某个key值的value
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String buyerId = rawCommand[0];
+					long startTime = Long.valueOf(rawCommand[1]);
+					long endTime = Long.valueOf(rawCommand[2]);
+					
+					Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
+					while(results.hasNext()) {
+						System.out.println("values:" + results.next());
+					}*/
+					System.out.println("start query2" );
+					Random random = new Random();
+					for( int i = 0; i< 2000; i++) {
+						String buyerId = UUID.randomUUID().toString();
+						long startTime = random.nextLong();
+						long endTime = random.nextLong();
+						
+						Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
+						
+						while(results.hasNext()) {
+							System.out.println("values:" + results.next());
+						}
+					}
+					System.out.println("end query2");
+					
+				} else if (command.startsWith("lookup3")) {
+					// lookup:xxx 查找某个key值的value
+					System.out.println("start query3" );
+					for( int i = 0; i< 2000; i++) {
+						String goodId = UUID.randomUUID().toString();
+						
+						Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, null);
+						if(results.hasNext()) {
+							System.out.println("values:" + results.next());
+						}
+						
+					}
+					System.out.println("stop query3" );
+					
+					//String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					//String goodId = rawCommand[0];
+					/*List<String> keys = new ArrayList<String>();
+					for( int i = 1; i < rawCommand.length; i++ ) {
+						keys.add(rawCommand[i]);
+					}*/
+					
+					/*while(results.hasNext()) {
+						System.out.println("values:" + results.next());
+					}*/
+					
+				} else if (command.startsWith("lookup4")) {
+					// lookup:xxx 查找某个key值的value
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String goodId = rawCommand[0];
+					String key = rawCommand[1];*/
+					Random random = new Random();
+					System.out.println("start query4" );
+					String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
+					for( int i = 0; i< 2000; i++) {
+						String goodId = UUID.randomUUID().toString();
+						System.out.println(orderSystem
+								.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
+					}		
+					
+					System.out.println("end query4" );
+					
+				} else if (command.equals("quit")) {
+					// 索引使用完毕 退出
+					
 				}
-			} else if (command.startsWith("lookup1")) {
-
-				// lookup:xxx 查找某个key值的value
-				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
-				List<String> keys = new ArrayList<String>();
-				for( int i = 1; i < rawCommand.length; i++ ) {
-                    System.out.println(rawCommand[i]);
-					keys.add(rawCommand[i]);
-				}
-				System.out.println("values:" + 
-				orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
-				
-			}  else if (command.startsWith("lookup2")) {
-				// lookup:xxx 查找某个key值的value
-				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
-				String buyerId = rawCommand[0];
-				long startTime = Long.valueOf(rawCommand[1]);
-				long endTime = Long.valueOf(rawCommand[2]);
-				
-				Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
-				while(results.hasNext()) {
-					System.out.println("values:" + results.next());
-				}
-				
-				
-			} else if (command.startsWith("lookup3")) {
-				// lookup:xxx 查找某个key值的value
-				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
-				String goodId = rawCommand[0];
-				List<String> keys = new ArrayList<String>();
-				for( int i = 1; i < rawCommand.length; i++ ) {
-					keys.add(rawCommand[i]);
-				}
-				Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, keys);
-				while(results.hasNext()) {
-					System.out.println("values:" + results.next());
-				}
-				
-			} else if (command.startsWith("lookup4")) {
-				// lookup:xxx 查找某个key值的value
-				String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
-				String goodId = rawCommand[0];
-				String key = rawCommand[1];
-				System.out.println(orderSystem.sumOrdersByGood(goodId, key));
-				
-			} else if (command.equals("quit")) {
-				// 索引使用完毕 退出
-				
+			} catch( Exception e) {
+				e.printStackTrace();
+				continue;
 			}
 		}
+		
+		
 
 		scanner.close();
 
@@ -243,7 +286,7 @@ public class OrderSystemImpl implements OrderSystem {
 		buyerIndexMapping = new DataFileMapping();
 		goodIndexMapping = new DataFileMapping();
 
-		orderAttrList = new HashSet<String>(); // 保存order表的所有字段名称
+		//orderAttrList = new HashSet<String>(); // 保存order表的所有字段名称
 		buyerAttrList = new HashSet<String>(); // 保存buyer表的所有字段名称
 		goodAttrList = new HashSet<String>(); // 保存good表的所有字段名称
 		//buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址

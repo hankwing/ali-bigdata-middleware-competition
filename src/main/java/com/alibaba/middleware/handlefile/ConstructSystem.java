@@ -164,10 +164,13 @@ public class ConstructSystem {
 	private List<String> getGroupFiles(Collection<String> files, int group,
 			int readers) {
 		// 分给多个读线程
+		
 		List<String> list = new ArrayList<String>();
-		for( String file: files) {
-			if( file.startsWith(RaceConfig.storeFolders[group])) {
-				list.add(file);
+		if( readers == 3) {
+			for( String file: files) {
+				if( file.startsWith(RaceConfig.storeFolders[group])) {
+					list.add(file);
+				}
 			}
 		}
 		if( list.isEmpty() ) {

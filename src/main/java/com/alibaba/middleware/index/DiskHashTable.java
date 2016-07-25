@@ -128,20 +128,20 @@ public class DiskHashTable<K,T> implements Serializable {
 				readWriteLock.writeLock().unlock();					// 解写锁
 
 			}
+			
+			readWriteLock.writeLock().lock();						// 加写锁
 			byteArrayOs.reset();
 			
 			offset = fos.getChannel().position();
 			bucketAddressList.put(bucketKey, offset);
-
 			offsetOos.writeObject(bucketList.remove(bucketKey));
-				
-			readWriteLock.writeLock().lock();						// 加写锁
 			
 			bufferedFout.write(byteArrayOs.toByteArray());
 			bufferedFout.flush();
+			offsetOos.reset();
 			readWriteLock.writeLock().unlock();						// 解写锁
 			
-			offsetOos.reset();
+			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -205,7 +205,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			bufferedFout.write(byteArrayOs.toByteArray());
 			oos.close();
 			bufferedFout.flush();
-			bufferedFout.close();
+			//bufferedFout.close();
 			readWriteLock.writeLock().unlock();
 
 		} catch (FileNotFoundException e) {

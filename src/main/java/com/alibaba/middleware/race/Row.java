@@ -62,30 +62,4 @@ public class Row extends HashMap<String, KeyValueImpl> {
 		this.put(kv.key(), kv);
 		return this;
 	}
-	
-	/**
-	 * 工具类  可从一行数据中解析出KeyValue对
-	 * @param line
-	 * @return
-	 */
-	public static Row createKVMapFromLine(String line) {
-		if( line != null) {
-			Row kvMap = new Row();
-			String[] kvs = line.split("\t");
-			
-			for (String rawkv : kvs) {
-				int p = rawkv.indexOf(':');
-				String key = rawkv.substring(0, p);
-				String value = rawkv.substring(p + 1);
-				if (key.length() == 0 || value.length() == 0) {
-					throw new RuntimeException("Bad data:" + line);
-				}
-				kvMap.put(key, new KeyValueImpl(key, value));
-			}
-			return kvMap;
-		}
-		else {
-			return null;
-		}
-	}
 }

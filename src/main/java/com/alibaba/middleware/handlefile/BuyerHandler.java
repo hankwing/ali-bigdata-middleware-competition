@@ -205,7 +205,7 @@ public class BuyerHandler{
 						}
 					}
 
-					Row rowData = Row.createKVMapFromLine(record.getRecordsData());
+					Row rowData = Row.createKVMapFromLine(record.getRecordsData(), tempAttrList);
 					tempAttrList.addAll(rowData.keySet());			// 添加属性
 					String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
 					Integer buyerIdHashCode = buyerid.hashCode();

@@ -22,14 +22,14 @@ public class RaceConfig implements Serializable{
 	public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
 	public static long smallIndexFileCapacity = 6000000;			// 小表索引项的最大索引条数
-	public static long bigIndexFileCapacity = 1500000;			// 大表索引项的最大索引条数
+	public static long bigIndexFileCapacity = 2000000;			// 大表索引项的最大索引条数
 	public static long singleFileMaxLines = 10000000;			// 合并后的文件最大行数
 	
 	public static int cacheInitCapacity = 100000;
 	/**
 	 * Thread pool config
 	 * */
-	public static int rowCacheNumber = 10000000;					// 在内存里最多保留几个row数据
+	public static int rowCacheNumber = 5000000;					// 在内存里最多保留几个row数据
 	public static int monitorThreadNum = 2;
     public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;
@@ -38,7 +38,7 @@ public class RaceConfig implements Serializable{
     public static int monitorFixedDelayInMills = 10 * 1000;			// 每10s检测一次内存
 	public static float memFactor = 0.9f;
 	public static float cacheMemFactor = 0.92f;
-	public static long forceEvictNum = 10000;
+	public static long forceEvictNum = 100000;
 	public static int gcCounterThreshold = 2;
 	public static int removeBucketNum = 100;
 

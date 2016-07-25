@@ -69,10 +69,17 @@ public class Test {
 		System.out.println(row);*/
 		
 		
-		Map<Integer, Long> bucketAddressList = new ConcurrentHashMap<Integer, Long>(); // 桶对应的物理地址
-		for(int i = 0; i< 400000; i++) {
-			Long longValue = new Long(i);
-			bucketAddressList.put(i, longValue);
+		List<Map<Integer, byte[]>> bucketAddressList = new ArrayList<Map<Integer, byte[]>>(); // 桶对应的物理地址
+		for(int i = 0; i< 500; i++) {
+			ConcurrentHashMap<Integer,byte[]>  bucketList= new ConcurrentHashMap<Integer, byte[]>();
+			for( int j = 0; j < 1000000; j++) {
+				ByteBuffer longValue = ByteBuffer.allocate(12);
+				longValue.putInt(j);
+				longValue.putLong(new Long(j));
+				bucketList.put(i, longValue.array());
+			}
+			bucketAddressList.add(bucketList);
+			
 		}
 		
 		int a = 0;
