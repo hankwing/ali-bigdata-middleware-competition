@@ -18,6 +18,7 @@ import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
+import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
@@ -68,7 +69,8 @@ public class GoodHandler{
 		this.goodHandlersList = systemImpl.goodHandlersList;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		goodfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}},
-				RaceConfig.storeFolders[threadIndex], (int) RaceConfig.smallIndexFileCapacity);
+				RaceConfig.storeFolders[threadIndex], (int) RaceConfig.smallIndexFileCapacity, 
+				IdName.GoodId, goodAttrList);
 
 		this.goodFileMapping = systemImpl.goodFileMapping;
 		this.goodIndexMapping = systemImpl.goodIndexMapping;
@@ -123,7 +125,7 @@ public class GoodHandler{
 				goodHandlersList, goodFileMapping,
 				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.goodFileNamePrex);
+				RaceConfig.goodFileNamePrex, IdName.GoodId,goodAttrList);
 			//开始处理小文件
 		for(String smallfile:smallFiles){
 
@@ -160,7 +162,7 @@ public class GoodHandler{
 		String indexFilePrex = null;
 		DiskHashTable<Integer, List<byte[]>> goodIdHashTable = null;
 		boolean isEnd = false;
-		HashSet<String> tempAttrList = new HashSet<String>();
+		//HashSet<String> tempAttrList = new HashSet<String>();
 		//long surrKey = 1;
 
 		public GoodIndexConstructor( ) {
@@ -173,7 +175,7 @@ public class GoodHandler{
 				IndexItem record = indexQueue.poll();
 
 				if( record != null ) {
-					if( record.getRecordsData() == null) {
+					if( record.getIndexFileNumber() == -1) {
 						isEnd = true;
 						continue;
 					}
@@ -207,8 +209,7 @@ public class GoodHandler{
 					//Integer goodIdHashCode = goodid.hashCode();
 					// 放入缓冲区
 					//rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
-					goodIdHashTable.put(RecordsUtils.getValueFromLineWithKeyList(
-							record.getRecordsData(),RaceConfig.goodId, tempAttrList), record.getOffset());
+					goodIdHashTable.put(record.goodId, record.getOffset());
 					//surrKey ++;
 				}
 				else if(isEnd ) {
@@ -216,9 +217,6 @@ public class GoodHandler{
 					// 将代理键索引写出去  并保存相应数据   将gooderid索引写出去  并保存相应数据
 					//goodIdSurrKeyFile.setFilePath(RaceConfig.goodSurrFileName);
 					//goodIdSurrKeyFile.setSurrogateIndex(goodIdSurrKeyIndex.writeAllBuckets());
-					synchronized (goodAttrList) {
-						goodAttrList.addAll(tempAttrList);
-					}
 					goodIdHashTable.writeAllBuckets();
 
 					//smallFile.setGoodIdIndex(0);

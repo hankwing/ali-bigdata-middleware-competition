@@ -21,6 +21,7 @@ import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
+import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
@@ -79,7 +80,7 @@ public class OrderHandler {
 		orderfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
 		add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}},
 				RaceConfig.storeFolders[threadIndex],
-				(int) RaceConfig.bigIndexFileCapacity);
+				(int) RaceConfig.bigIndexFileCapacity, IdName.OrderId, null);
 
 		//文件映射
 		this.orderFileMapping = systemImpl.orderFileMapping;
@@ -142,7 +143,7 @@ public class OrderHandler {
 				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
 				add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.orderFileNamePrex);
+				RaceConfig.orderFileNamePrex, IdName.OrderId, null);
 		//处理小文件
 		for(String smallfile:smallFiles){
 			try {
@@ -196,7 +197,7 @@ public class OrderHandler {
 				while (true) {
 					IndexItem record = indexQueue.poll();
 					if (record != null) {
-						if (record.getRecordsData() == null) {
+						if (record.getIndexFileNumber() == -1) {
 							isEnd = true;
 							continue;
 						}
@@ -263,23 +264,23 @@ public class OrderHandler {
 						switch(indexType) {
 						case OrderId:
 							//tempAttrList.addAll(rowData.keySet());
-							long orderId = Long.parseLong(RecordsUtils.getValueFromLine(
-									record.getRecordsData(),RaceConfig.orderId));
+							//long orderId = Long.parseLong(RecordsUtils.getValueFromLine(
+							//		,RaceConfig.orderId));
 							// 将order表的数据放入缓冲区
 							//rowCache.putInCache(new BytesKey(record.getOffset()), record.getRecordsData(), TableName.OrderTable);
-							idHashTable.put(orderId, record.getOffset());
+							idHashTable.put(record.orderId, record.getOffset());
 
 							break;
 						case OrderBuyerId:
-							int buyerIdHashCode = RecordsUtils.getValueFromLine(
-									record.getRecordsData(),RaceConfig.buyerId).hashCode();
-							idHashTable.put(buyerIdHashCode, record.getOffset());
+							//int buyerIdHashCode = RecordsUtils.getValueFromLine(
+							//		record.buyerId,RaceConfig.buyerId).hashCode();
+							idHashTable.put(record.buyerId, record.getOffset());
 
 							break;
 						case OrderGoodId:
-							int goodIdHashCode = RecordsUtils.getValueFromLine(
-									record.getRecordsData(),RaceConfig.goodId).hashCode();
-							idHashTable.put(goodIdHashCode, record.getOffset());
+							//int goodIdHashCode = RecordsUtils.getValueFromLine(
+							//		record.goodId,RaceConfig.goodId).hashCode();
+							idHashTable.put(record.goodId, record.getOffset());
 							break;
 						}
 

@@ -17,6 +17,7 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
@@ -63,7 +64,8 @@ public class BuyerHandler{
 		this.buyerHandlersList = systemImpl.buyerHandlersList;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		buyerfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
-				RaceConfig.storeFolders[threadIndex], (int) RaceConfig.smallIndexFileCapacity);
+				RaceConfig.storeFolders[threadIndex], (int) RaceConfig.smallIndexFileCapacity,
+				IdName.BuyerId, buyerAttrList);
 		
 		//文件映射
 		this.buyerFileMapping =  systemImpl.buyerFileMapping;
@@ -127,7 +129,7 @@ public class BuyerHandler{
 				buyerHandlersList, buyerFileMapping,
 				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.buyerFileNamePrex);
+				RaceConfig.buyerFileNamePrex, IdName.BuyerId, buyerAttrList);
 		//处理小文件，合并
 			for(String smallfile:smallFiles) {
 				try {
@@ -177,7 +179,7 @@ public class BuyerHandler{
 				IndexItem record = indexQueue.poll();
 				
 				if( record != null ) {
-					if( record.getRecordsData() == null) {
+					if( record.getIndexFileNumber() == -1) {
 						isEnd = true;
 						continue;
 					}
@@ -215,8 +217,7 @@ public class BuyerHandler{
 					// 放入缓冲区中
 					//rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
 					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
-					buyerIdHashTable.put(RecordsUtils.getValueFromLineWithKeyList(
-							record.getRecordsData(),RaceConfig.buyerId, tempAttrList), record.getOffset());
+					buyerIdHashTable.put(record.buyerId, record.getOffset());
 					//surrKey ++;
 				}
 				else if(isEnd ) {
@@ -224,9 +225,7 @@ public class BuyerHandler{
 					// 将代理键索引写出去  并保存相应数据   将buyerid索引写出去  并保存相应数据
 					//buyerIdSurrKeyFile.setFilePath(RaceConfig.buyerSurrFileName);
 					//buyerIdSurrKeyFile.setSurrogateIndex(buyerIdSurrKeyIndex.writeAllBuckets());
-					synchronized (buyerAttrList) {
-						buyerAttrList.addAll(tempAttrList);
-					}
+					
 					BucketCachePool.getInstance().removeAllBucket();
 
 					buyerIdHashTable.writeAllBuckets();
