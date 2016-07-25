@@ -233,6 +233,32 @@ public class RecordsUtils {
 	}
 	
 	/**
+	 * 得到一行数据里某个key的value，并且加入key到列表中
+	 * @param line
+	 * @return
+	 */
+	public static String getValuesFromLine(String line, List<String> keys) {
+		if( line != null) {
+			if( keys == null) {
+				return line;
+			}
+			StringBuilder sb = new StringBuilder();
+			for( String key : keys) {
+				int location = line.indexOf(key);
+				int endLocation = line.indexOf("\t", location);
+				sb.append(line.substring(location,
+						endLocation != -1? endLocation:line.length()));
+				sb.append("\t");
+			}
+			sb.deleteCharAt(sb.length() -1);
+			return sb.toString();
+		}
+		else {
+			return null;
+		}
+	}
+	
+	/**
 	 * 工具类  可从一行数据中解析出KeyValue对
 	 * @param line
 	 * @return
