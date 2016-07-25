@@ -166,7 +166,7 @@ public class ConstructSystem {
 		// 分给多个读线程
 		
 		List<String> list = new ArrayList<String>();
-		if( readers > 1) {
+		if( readers == 3) {
 			for( String file: files) {
 				if( file.startsWith(RaceConfig.storeFolders[group])) {
 					list.add(file);

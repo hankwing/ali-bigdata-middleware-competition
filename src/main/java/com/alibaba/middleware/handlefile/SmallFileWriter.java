@@ -6,15 +6,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
-import com.alibaba.middleware.tools.RecordsUtils;
 
 /***
  * 融合小文件，生成一定数目记录的文件，根据合并后的文件创建索引
@@ -38,15 +35,8 @@ public class SmallFileWriter {
 	 * 索引文件名 indexFileName
 	 */
 	private BufferedWriter writer;
-	
-	private StringBuilder dataFilePerfix;
-	private StringBuilder dataFileName;
-	private HashSet<String> keyList;
-	private HashSet<String> tempKeyList;
-	
-	
-//	private String dataFilePerfix;
-//	private String dataFileName;
+	private String dataFilePerfix;
+	private String dataFileName;
 	private int dataFileNumber;
 	private ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList;
 
@@ -57,13 +47,12 @@ public class SmallFileWriter {
 	//数据文件映射
 	private DataFileMapping dataFileMapping;
 	private int dataFileSerialNumber;
-	private IdName idName;
 
 	public SmallFileWriter(
 			ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList,
 			DataFileMapping dataFileMapping,
 			List<LinkedBlockingQueue<IndexItem>> indexQueues, 
-			String path,String name, IdName idName, HashSet<String> keyList) {
+			String path,String name) {
 		this.offset = 0;
 		this.count = 0;
 		this.dataFileNumber = 0;
@@ -71,9 +60,7 @@ public class SmallFileWriter {
 		this.MAX_LINES = RaceConfig.singleFileMaxLines;
 		this.fileHandlersList = fileHandlersList;
 		this.dataFileMapping = dataFileMapping;
-		this.idName = idName;
-		this.keyList = keyList;
-		tempKeyList = new HashSet<String>();
+
 		nextLineByteLength = "\n".getBytes().length;
 
 		//如果文件夹不存在则创建文件夹
@@ -82,16 +69,11 @@ public class SmallFileWriter {
 			file.mkdirs();
 		}
 
-//		dataFilePerfix = new String(path + name);
-		dataFilePerfix = new StringBuilder();
-		dataFilePerfix.append(path).append(name);
+		dataFilePerfix = new String(path + name);
 		try {
-//			dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
-			dataFileName = new StringBuilder();
-			dataFileName.append(dataFilePerfix).append(dataFileNumber);
-			
-			this.writer = new BufferedWriter(new FileWriter(dataFileName.toString()));
-			dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName.toString());
+			dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
+			this.writer = new BufferedWriter(new FileWriter(dataFileName));
+			dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName);
 			
 			LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(dataFileSerialNumber);
 			if( handlersQueue == null) {
@@ -100,7 +82,7 @@ public class SmallFileWriter {
 			}
 
 			for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-				handlersQueue.add(new RandomAccessFile(dataFileName.toString(), "r"));
+				handlersQueue.add(new RandomAccessFile(dataFileName, "r"));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -121,12 +103,10 @@ public class SmallFileWriter {
 				writer.close();
 				//创建新的文件
 				dataFileNumber++;
-//				dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
-				dataFileName = new StringBuilder();
-				dataFileName.append(dataFilePerfix).append(dataFileNumber);
-				
-				dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName.toString());
-				writer = new BufferedWriter(new FileWriter(dataFileName.toString()));
+				dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
+
+				dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName);
+				writer = new BufferedWriter(new FileWriter(dataFileName));
 				offset = 0;
 				count = 0;
 				// 加入文件句柄缓冲池
@@ -137,40 +117,16 @@ public class SmallFileWriter {
 				}
 
 				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					handlersQueue.add(new RandomAccessFile(dataFileName.toString(), "r"));
+					handlersQueue.add(new RandomAccessFile(dataFileName, "r"));
 				}
 				
 			}
 			if (line!=null) {
 				writer.write(line+"\n");
 				
-				IndexItem sendItem = null;
-				// 获得数据中的主键
-				switch( idName) {
-				case OrderId:
-					sendItem = new IndexItem(dataFileNumber, dataFileSerialNumber,
-							Long.parseLong(RecordsUtils.getValueFromLine(line, RaceConfig.orderId)),
-							RecordsUtils.getValueFromLine(line, RaceConfig.buyerId).hashCode(),
-							RecordsUtils.getValueFromLine(line, RaceConfig.goodId).hashCode(),offset);
-					break;
-				case BuyerId:
-					sendItem = new IndexItem(dataFileNumber, dataFileSerialNumber, 
-							RecordsUtils.getValueFromLineWithKeyList(
-									line, RaceConfig.buyerId, tempKeyList).hashCode(),
-							offset,IdName.BuyerId);
-					break;
-				case GoodId:
-					sendItem = new IndexItem(dataFileNumber, dataFileSerialNumber, 
-							RecordsUtils.getValueFromLineWithKeyList(
-									line, RaceConfig.goodId,tempKeyList).hashCode(),
-							offset,IdName.GoodId);
-					break;
-				}
-				
 				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
-						queue.put(sendItem);
-
+						queue.put(new IndexItem(dataFileName, dataFileSerialNumber, line, offset));
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -182,17 +138,10 @@ public class SmallFileWriter {
 			else {
 				writer.flush();
 				writer.close();
-				
-				// 读文件结束了
-				if( keyList != null) {
-					synchronized(keyList) {
-						keyList.addAll(tempKeyList);
-					}
-				}
 				// 还需要发送结束IndexItem
 				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
-						queue.put(new IndexItem(-1, dataFileSerialNumber, -1, offset, IdName.OrderId));
+						queue.put(new IndexItem(null, dataFileSerialNumber, line, offset));
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -221,9 +170,8 @@ public class SmallFileWriter {
 	 * 获得源数据文件名称
 	 * @return
 	 */
-	public int getDataFileNumber() {
-		return dataFileNumber;
+	public String getDataFileName() {
+		return dataFileName;
 	}
-
 
 }

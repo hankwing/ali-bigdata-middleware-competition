@@ -17,7 +17,6 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
@@ -64,8 +63,8 @@ public class BuyerHandler{
 		this.buyerHandlersList = systemImpl.buyerHandlersList;
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		buyerfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
-				RaceConfig.storeFolders[threadIndex], (int) RaceConfig.smallIndexFileCapacity,
-				IdName.BuyerId, buyerAttrList);
+				RaceConfig.storeFolders[threadIndex],
+				RaceConfig.buyerFileNamePrex, (int) RaceConfig.smallIndexFileCapacity);
 		
 		//文件映射
 		this.buyerFileMapping =  systemImpl.buyerFileMapping;
@@ -129,7 +128,7 @@ public class BuyerHandler{
 				buyerHandlersList, buyerFileMapping,
 				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.buyerFileNamePrex, IdName.BuyerId, buyerAttrList);
+				RaceConfig.buyerFileNamePrex);
 		//处理小文件，合并
 			for(String smallfile:smallFiles) {
 				try {
@@ -161,16 +160,15 @@ public class BuyerHandler{
 	// buyer表的建索引线程  需要建的索引包括：代理键索引和buyerId的索引
 	public class BuyerIndexConstructor implements Runnable {
 
-		int indexFileNumber = -1;
+		String indexFileName = null;
 		DiskHashTable<Integer, List<byte[]>> buyerIdHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
 		int fileIndex = 0;
-		String indexFilePrex = null;
 		//long surrKey = 1;
 
 		public BuyerIndexConstructor( ) {
-			indexFilePrex = RaceConfig.storeFolders[threadIndex] + RaceConfig.buyerFileNamePrex;
+
 		}
 
 		public void run() {
@@ -179,16 +177,15 @@ public class BuyerHandler{
 				IndexItem record = indexQueue.poll();
 				
 				if( record != null ) {
-					if( record.getIndexFileNumber() == -1) {
+					if( record.getRecordsData() == null) {
 						isEnd = true;
 						continue;
 					}
 
-					if( record.getIndexFileNumber() != indexFileNumber) {
-						if( indexFileNumber == -1) {
+					if( !record.getIndexFileName().equals(indexFileName)) {
+						if( indexFileName == null) {
 							// 第一次建立索引文件
-							indexFileNumber = record.getIndexFileNumber();
-							String indexFileName = indexFilePrex+String.valueOf(indexFileNumber);
+							indexFileName = record.getIndexFileName();
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
@@ -200,13 +197,11 @@ public class BuyerHandler{
 							buyerIdHashTable.writeAllBuckets();
 							//smallFile.setBuyerIdIndex(0);
 							buyerIdIndexList.put(fileIndex, buyerIdHashTable);
-							indexFileNumber = record.getIndexFileNumber();
-							String indexFileName = indexFilePrex+String.valueOf(indexFileNumber);
+							indexFileName = record.getIndexFileName();
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									indexFileName + 
-									RaceConfig.buyerIndexFileSuffix , List.class);
+									indexFileName + RaceConfig.buyerIndexFileSuffix, List.class);
 
 						}
 					}
@@ -217,7 +212,8 @@ public class BuyerHandler{
 					// 放入缓冲区中
 					//rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
 					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
-					buyerIdHashTable.put(record.buyerId, record.getOffset());
+					buyerIdHashTable.put(RecordsUtils.getValueFromLineWithKeyList(
+							record.getRecordsData(),RaceConfig.buyerId, tempAttrList), record.getOffset());
 					//surrKey ++;
 				}
 				else if(isEnd ) {
@@ -225,7 +221,9 @@ public class BuyerHandler{
 					// 将代理键索引写出去  并保存相应数据   将buyerid索引写出去  并保存相应数据
 					//buyerIdSurrKeyFile.setFilePath(RaceConfig.buyerSurrFileName);
 					//buyerIdSurrKeyFile.setSurrogateIndex(buyerIdSurrKeyIndex.writeAllBuckets());
-					
+					synchronized (buyerAttrList) {
+						buyerAttrList.addAll(tempAttrList);
+					}
 					BucketCachePool.getInstance().removeAllBucket();
 
 					buyerIdHashTable.writeAllBuckets();

@@ -6,7 +6,7 @@ public class BytesKey {
 	private final byte[] key;
 
     public BytesKey(byte[] key) {
-        this.key = key;
+        this.key = key; // You may want to do a defensive copy here
     }
 
     @Override

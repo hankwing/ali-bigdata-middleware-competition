@@ -17,7 +17,6 @@ import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -53,10 +52,9 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 			for( byte[] encodedOffset : offsets) {
 				// 先在缓冲区里找
 				// 这里要将offset解析成文件下标+offset的形式
-				ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
-				//FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
-				int fileIndex = buffer.getInt();
-				long offset = buffer.getLong();
+				FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
+				long offset = offsetInfo.offset;
+				int fileIndex = offsetInfo.fileIndex;
 				
 				Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
 				if(row != null) {

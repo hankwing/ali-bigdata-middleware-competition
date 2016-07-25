@@ -21,7 +21,6 @@ import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
-import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
@@ -80,7 +79,8 @@ public class OrderHandler {
 		orderfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
 		add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}},
 				RaceConfig.storeFolders[threadIndex],
-				(int) RaceConfig.bigIndexFileCapacity, IdName.OrderId, null);
+				RaceConfig.orderFileNamePrex,
+				(int) RaceConfig.bigIndexFileCapacity);
 
 		//文件映射
 		this.orderFileMapping = systemImpl.orderFileMapping;
@@ -143,7 +143,7 @@ public class OrderHandler {
 				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
 				add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.orderFileNamePrex, IdName.OrderId, null);
+				RaceConfig.orderFileNamePrex);
 		//处理小文件
 		for(String smallfile:smallFiles){
 			try {
@@ -175,8 +175,7 @@ public class OrderHandler {
 	// order表的建索引线程 需要建的索引包括：orderid, buyerid, goodid, countable 字段的索引
 	public class OrderIndexConstructor implements Runnable {
 
-		int indexFileNumber = -1;
-		String indexFilePrex = null;
+		String indexFileName = null;
 		int fileIndex = 0;
 		DiskHashTable idHashTable = null;
 		boolean isEnd = false;
@@ -187,7 +186,6 @@ public class OrderHandler {
 		public OrderIndexConstructor( IndexType indexType, LinkedBlockingQueue<IndexItem> indexQueue) {
 			this.indexType = indexType;
 			this.indexQueue = indexQueue;
-			indexFilePrex = RaceConfig.storeFolders[threadIndex] + RaceConfig.orderFileNamePrex;
 
 		}
 
@@ -197,16 +195,15 @@ public class OrderHandler {
 				while (true) {
 					IndexItem record = indexQueue.poll();
 					if (record != null) {
-						if (record.getIndexFileNumber() == -1) {
+						if (record.getRecordsData() == null) {
 							isEnd = true;
 							continue;
 						}
 
-						if (record.getIndexFileNumber() != indexFileNumber) {
-							if (indexFileNumber == -1) {
+						if (!record.getIndexFileName().equals(indexFileName)) {
+							if (indexFileName == null) {
 								// 第一次建立索引文件
-								indexFileNumber = record.getIndexFileNumber();
-								String indexFileName = indexFilePrex + String.valueOf(indexFileNumber);
+								indexFileName = record.getIndexFileName();
 								fileIndex = orderIndexMapping.addDataFileName(indexFileName);
 								switch(indexType) {
 								case OrderId:
@@ -228,15 +225,12 @@ public class OrderHandler {
 								}
 
 							} else {
-								// 文件名前缀
-								indexFileNumber = record.getIndexFileNumber();
-								String indexFileName = indexFilePrex + String.valueOf(indexFileNumber);
-								
 								switch(indexType) {
 								case OrderId:
 									// 保存当前goodId的索引 并写入索引List
 									idHashTable.writeAllBuckets();
 									orderIdIndexList.put(fileIndex, idHashTable);
+									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											indexFileName
 											+ RaceConfig.orderIndexFileSuffix,byte[].class);
@@ -244,6 +238,7 @@ public class OrderHandler {
 								case OrderBuyerId:
 									orderBuyerIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
+									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
 											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class);
@@ -251,6 +246,7 @@ public class OrderHandler {
 								case OrderGoodId:
 									orderGoodIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
+									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
 											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class);
@@ -264,23 +260,23 @@ public class OrderHandler {
 						switch(indexType) {
 						case OrderId:
 							//tempAttrList.addAll(rowData.keySet());
-							//long orderId = Long.parseLong(RecordsUtils.getValueFromLine(
-							//		,RaceConfig.orderId));
+							long orderId = Long.parseLong(RecordsUtils.getValueFromLine(
+									record.getRecordsData(),RaceConfig.orderId));
 							// 将order表的数据放入缓冲区
 							//rowCache.putInCache(new BytesKey(record.getOffset()), record.getRecordsData(), TableName.OrderTable);
-							idHashTable.put(record.orderId, record.getOffset());
+							idHashTable.put(orderId, record.getOffset());
 
 							break;
 						case OrderBuyerId:
-							//int buyerIdHashCode = RecordsUtils.getValueFromLine(
-							//		record.buyerId,RaceConfig.buyerId).hashCode();
-							idHashTable.put(record.buyerId, record.getOffset());
+							int buyerIdHashCode = RecordsUtils.getValueFromLine(
+									record.getRecordsData(),RaceConfig.buyerId).hashCode();
+							idHashTable.put(buyerIdHashCode, record.getOffset());
 
 							break;
 						case OrderGoodId:
-							//int goodIdHashCode = RecordsUtils.getValueFromLine(
-							//		record.goodId,RaceConfig.goodId).hashCode();
-							idHashTable.put(record.goodId, record.getOffset());
+							int goodIdHashCode = RecordsUtils.getValueFromLine(
+									record.getRecordsData(),RaceConfig.goodId).hashCode();
+							idHashTable.put(goodIdHashCode, record.getOffset());
 							break;
 						}
 

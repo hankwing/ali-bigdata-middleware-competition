@@ -5,7 +5,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -109,32 +108,32 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					List<String> buyerfiles = new ArrayList<String>();
-					//buyerfiles.add("prerun_data/buyer.0.0");
-					//buyerfiles.add("prerun_data/buyer.1.1");
-					buyerfiles.add("benchmark/buyer_records_1.txt");
-					buyerfiles.add("benchmark/buyer_records_2.txt");
+					buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");
+					//buyerfiles.add("benchmark/buyer_records_1.txt");
+					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					List<String> goodfiles = new ArrayList<String>();
-					/*goodfiles.add("prerun_data/good.0.0");
+					goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");*/
-					goodfiles.add("benchmark/good_records_1.txt");
-					goodfiles.add("benchmark/good_records_2.txt");
+					goodfiles.add("prerun_data/good.2.2");
+					//goodfiles.add("benchmark/good_records_1.txt");
+					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
 					//goodfiles.add("benchmark/good_records.txt");
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
 					List<String> orderfiles = new ArrayList<String>();
-					/*orderfiles.add("prerun_data/order.0.0");
+					orderfiles.add("prerun_data/order.0.0");
 					orderfiles.add("prerun_data/order.0.3");
 					orderfiles.add("prerun_data/order.1.1");
-					orderfiles.add("prerun_data/order.2.2");*/
+					orderfiles.add("prerun_data/order.2.2");
 					
-					orderfiles.add("benchmark/order_records_1.txt");
+					/*orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
-					/*orderfiles.add("benchmark/order_records_+5.txt");
+					orderfiles.add("benchmark/order_records_+5.txt");
 					orderfiles.add("benchmark/order_records_+6.txt");
 					orderfiles.add("benchmark/order_records_+7.txt");
 					orderfiles.add("benchmark/order_records_+8.txt");
@@ -333,7 +332,7 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @param offSet
 	 * @return
 	 */
-	/*public DiskHashTable getHashDiskTable(String filePath, long offSet) {
+	public DiskHashTable getHashDiskTable(String filePath, long offSet) {
 		DiskHashTable hashTable = null;
 		FileInputStream streamIn;
 		try {
@@ -357,7 +356,7 @@ public class OrderSystemImpl implements OrderSystem {
 		}
 		return hashTable;
 
-	}*/
+	}
 
 	/**
 	 * 将buyerId和goodId的事实键转化为代理键
@@ -415,9 +414,9 @@ public class OrderSystemImpl implements OrderSystem {
 				// find the records offset
 				for( byte[] encodedOffset : results) {
 					// 解码获得long型的offset
-					ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
-					int dataFileIndex = buffer.getInt();
-					long offset = buffer.getLong();
+					FileIndexWithOffset fileInfo= RecordsUtils.decodeIndex(encodedOffset);
+					long offset = fileInfo.offset;
+					int dataFileIndex = fileInfo.fileIndex;
 					Row temp = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
 					if(temp != null) {
 						temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
@@ -463,9 +462,9 @@ public class OrderSystemImpl implements OrderSystem {
 					// find the records offset
 					for( byte[] encodedOffset : results) {
 						//解码byte数组
-						ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
-						int dataFileIndex = buffer.getInt();
-						long offset = buffer.getLong();
+						FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
+						long offset = offsetInfo.offset;
+						int dataFileIndex = offsetInfo.fileIndex;
 						Row temp = rowCache.getFromCache(encodedOffset, tableName);
 						if(temp != null) {
 							temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
@@ -502,9 +501,9 @@ public class OrderSystemImpl implements OrderSystem {
 					List<byte[]> results = hashTable.get(surrId);
 					if (results.size() != 0) {
 						for( byte[] encodedOffset : results) {
-							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
-							int dataFileIndex = buffer.getInt();
-							long offset = buffer.getLong();
+							FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
+							long offset = offsetInfo.offset;
+							int dataFileIndex = offsetInfo.fileIndex;
 							
 							String records = RecordsUtils.getStringFromFile(
 									buyerHandlersList.get(dataFileIndex), offset, tableName);
@@ -539,9 +538,9 @@ public class OrderSystemImpl implements OrderSystem {
 					List<byte[]> results = hashTable.get(goodSurrId);
 					if (results.size() != 0) {
 						for( byte[] encodedOffset : results) {
-							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
-							int dataFileIndex = buffer.getInt();
-							long offset = buffer.getLong();
+							FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
+							long offset = offsetInfo.offset;
+							int dataFileIndex = offsetInfo.fileIndex;
 							String records = RecordsUtils.getStringFromFile(
 									goodHandlersList.get(dataFileIndex), offset, tableName);
 							Row temp = RecordsUtils.createKVMapFromLine(records);

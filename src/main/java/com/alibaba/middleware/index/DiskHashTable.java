@@ -83,7 +83,6 @@ public class DiskHashTable<K,T> implements Serializable {
 		bucketReaderPool = new LinkedBlockingQueue<BucketReader>();
 		for (int i = 0; i < 10; i++) {
 			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
-			//BucketCachePool.getInstance().addBucket(newBucket);
 			bucketList.put(i, newBucket );
 		}
 		
@@ -107,10 +106,9 @@ public class DiskHashTable<K,T> implements Serializable {
 	public void writeBucket(int bucketKey) {
 
 		try {
-			//System.out.println("write bucket:" + bucketKey);
+			
 			long offset = 0;
-			readWriteLock.writeLock().lock();						// 加写锁
-			//System.out.println("write bucket lock :" + bucketKey);
+			
 			if (byteArrayOs == null || bufferedFout == null) {
 				byteArrayOs = new ByteArrayOutputStream();
 				fos = new FileOutputStream(bucketFilePath, true);
@@ -122,16 +120,16 @@ public class DiskHashTable<K,T> implements Serializable {
 					// 第一次打开桶文件 需要写入头数据
 					offsetOos = new ObjectOutputStream(byteArrayOs);
 				}
-				//readWriteLock.writeLock().lock();					// 加写锁
+				readWriteLock.writeLock().lock();					// 加写锁
 				bufferedFout = new BufferedOutputStream(fos);
 				offset = fos.getChannel().position();
 				bufferedFout.write(byteArrayOs.toByteArray());
 				bufferedFout.flush();
-				//readWriteLock.writeLock().unlock();					// 解写锁
+				readWriteLock.writeLock().unlock();					// 解写锁
 
 			}
 			
-			
+			readWriteLock.writeLock().lock();						// 加写锁
 			byteArrayOs.reset();
 			
 			offset = fos.getChannel().position();
@@ -142,16 +140,8 @@ public class DiskHashTable<K,T> implements Serializable {
 			bufferedFout.flush();
 			offsetOos.reset();
 			readWriteLock.writeLock().unlock();						// 解写锁
-			//System.out.println("write bucket success:" + bucketKey);
 			
-			if(bucketReaderPool.isEmpty()) {
-				// 建立索引文件句柄缓冲池
-				for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
-					FileInputStream streamIn = new FileInputStream(bucketFilePath);
-					ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
-					bucketReaderPool.add(new BucketReader(streamIn, bucketReader));
-				}
-			}
+			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -199,15 +189,12 @@ public class DiskHashTable<K,T> implements Serializable {
 			
 			// write this HashTable to dataFile and return offset
 			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map
-			if(bucketReaderPool.isEmpty()) {
-				// 建立索引文件句柄缓冲池
-				for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
-					FileInputStream streamIn = new FileInputStream(bucketFilePath);
-					ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
-					bucketReaderPool.add(new BucketReader(streamIn, bucketReader));
-				}
+			// 建立索引文件句柄缓冲池
+			for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
+				FileInputStream streamIn = new FileInputStream(bucketFilePath);
+				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
+				bucketReaderPool.add(new BucketReader(streamIn, bucketReader));
 			}
-			
 			// 把桶对应物理地址的map写出去  减少内存开销
 			byteArrayOs.reset();
 			ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
@@ -274,9 +261,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		try {
 			if( fileBucket == null) {
 				// 需要从文件里读桶 该桶需要缓冲区管理
-				//System.out.println("read bucket:" + bucketKey);
 				readWriteLock.readLock().lock();
-				//System.out.println("read bucket lock:" + bucketKey);
 				/*if( streamIn == null) {
 					streamIn = new FileInputStream(bucketFilePath);
 					bucketReader = new ObjectInputStream(streamIn);
@@ -306,7 +291,6 @@ public class DiskHashTable<K,T> implements Serializable {
 				//bucketReader.close();
 				bucketReaderPool.put(reader);
 				readWriteLock.readLock().unlock();
-				//System.out.println("read bucket success:" + bucketKey);
 				//bucketQueue.put(fileBucket);
 				//bucketReader.close();
 			}

@@ -1,6 +1,5 @@
 package com.alibaba.middleware.threads;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -103,14 +102,15 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			
 			for (byte[] encodedOffset : offsetList) {
 				
+				boolean isGoodKey = false;
 				boolean isLong = true;
 				long longValue = 0;
 				double doubleValue = 0;
 				
 				Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
-				ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);	
-				int fileIndex = buffer.getInt();
-				long offset = buffer.getLong();
+				FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
+				long offset = offsetInfo.offset;
+				int fileIndex = offsetInfo.fileIndex;
 				
 				if(row != null) {
 					row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
@@ -145,6 +145,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 					try {
 						KeyValueImpl keyValue = row.getKV(key);
 						if (keyValue != null) {
+							isGoodKey = true;
 							isFound = true;
 							longSum = row.getKV(key)
 									.valueAsLong() * offsetList.size();
