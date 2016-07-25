@@ -35,8 +35,12 @@ public class SmallFileWriter {
 	 * 索引文件名 indexFileName
 	 */
 	private BufferedWriter writer;
-	private String dataFilePerfix;
-	private String dataFileName;
+	
+	private StringBuilder dataFilePerfix;
+	private StringBuilder dataFileName;
+	
+//	private String dataFilePerfix;
+//	private String dataFileName;
 	private int dataFileNumber;
 	private ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList;
 
@@ -69,11 +73,16 @@ public class SmallFileWriter {
 			file.mkdirs();
 		}
 
-		dataFilePerfix = new String(path + name);
+//		dataFilePerfix = new String(path + name);
+		dataFilePerfix = new StringBuilder();
+		dataFilePerfix.append(path).append(name);
 		try {
-			dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
-			this.writer = new BufferedWriter(new FileWriter(dataFileName));
-			dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName);
+//			dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
+			dataFileName = new StringBuilder();
+			dataFileName.append(dataFilePerfix).append(dataFileNumber);
+			
+			this.writer = new BufferedWriter(new FileWriter(dataFileName.toString()));
+			dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName.toString());
 			
 			LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(dataFileSerialNumber);
 			if( handlersQueue == null) {
@@ -82,7 +91,7 @@ public class SmallFileWriter {
 			}
 
 			for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-				handlersQueue.add(new RandomAccessFile(dataFileName, "r"));
+				handlersQueue.add(new RandomAccessFile(dataFileName.toString(), "r"));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -103,10 +112,12 @@ public class SmallFileWriter {
 				writer.close();
 				//创建新的文件
 				dataFileNumber++;
-				dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
-
-				dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName);
-				writer = new BufferedWriter(new FileWriter(dataFileName));
+//				dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
+				dataFileName = new StringBuilder();
+				dataFileName.append(dataFilePerfix).append(dataFileNumber);
+				
+				dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName.toString());
+				writer = new BufferedWriter(new FileWriter(dataFileName.toString()));
 				offset = 0;
 				count = 0;
 				// 加入文件句柄缓冲池
@@ -117,7 +128,7 @@ public class SmallFileWriter {
 				}
 
 				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					handlersQueue.add(new RandomAccessFile(dataFileName, "r"));
+					handlersQueue.add(new RandomAccessFile(dataFileName.toString(), "r"));
 				}
 				
 			}
@@ -127,6 +138,7 @@ public class SmallFileWriter {
 				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
 						queue.put(new IndexItem(dataFileNumber, dataFileSerialNumber, line, offset));
+
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -173,5 +185,6 @@ public class SmallFileWriter {
 	public int getDataFileNumber() {
 		return dataFileNumber;
 	}
+
 
 }

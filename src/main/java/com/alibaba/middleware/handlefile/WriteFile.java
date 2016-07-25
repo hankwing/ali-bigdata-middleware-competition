@@ -34,6 +34,9 @@ public class WriteFile {
 	 */
 	//private String indexFilePrefix;
 	//private String indexFileName;
+//	private String indexFilePrefix;
+//	private String indexFileName;
+
 	private int indexFileNumber;
 	private List<LinkedBlockingQueue<IndexItem>> indexQueues = null;
 	//private SimpleCache rowCache = null;
@@ -81,7 +84,6 @@ public class WriteFile {
 			if (indexFileNumber == -1) {
 				oldDataFileSerialNumber = dataFileSerialNumber;
 				indexFileNumber = 0;
-				//indexFileName = indexFilePrefix + indexFileNumber;
 				offset = 0;
 				count = 0;
 			}
@@ -95,11 +97,15 @@ public class WriteFile {
 			if (count == MAX_LINES) {
 				indexFileNumber++;
 				//indexFileName = indexFilePrefix + indexFileNumber;
+				//	indexFileName = indexFilePrefix + indexFileNumber;
+				//indexFileName = new StringBuilder();
+				//indexFileName.append(indexFilePrefix).append(indexFileNumber);
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
 			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 				queue.put(new IndexItem(indexFileNumber, dataFileSerialNumber,line, offset));
+
 			}
 			
 			if(line != null ) {
@@ -119,5 +125,6 @@ public class WriteFile {
 	
 	public int getIndexFileNumber() {
 		return indexFileNumber;
+
 	}
 }
