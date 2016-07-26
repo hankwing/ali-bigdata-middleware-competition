@@ -113,16 +113,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-					buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");
-					//buyerfiles.add("benchmark/buyer_records_1.txt");
+					/*buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");*/
+					buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-					goodfiles.add("prerun_data/good.0.0");
+					/*goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");
-					//goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.2.2");*/
+					goodfiles.add("benchmark/good_records_1.txt");
 					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
@@ -130,12 +130,12 @@ public class OrderSystemImpl implements OrderSystem {
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
 					orderfiles = new ArrayList<String>();
-					orderfiles.add("prerun_data/order.0.0");
+					/*orderfiles.add("prerun_data/order.0.0");
 					orderfiles.add("prerun_data/order.0.3");
 					orderfiles.add("prerun_data/order.1.1");
-					orderfiles.add("prerun_data/order.2.2");
+					orderfiles.add("prerun_data/order.2.2");*/
 					
-					/*orderfiles.add("benchmark/order_records_1.txt");
+					orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
 					orderfiles.add("benchmark/order_records_+5.txt");
@@ -150,7 +150,7 @@ public class OrderSystemImpl implements OrderSystem {
 					orderfiles.add("benchmark/order_records_+14.txt");
 					orderfiles.add("benchmark/order_records_+15.txt");
 					orderfiles.add("benchmark/order_records_+16.txt");
-					orderfiles.add("benchmark/order_records_+17.txt");*/
+					orderfiles.add("benchmark/order_records_+17.txt");
 	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
@@ -196,7 +196,7 @@ public class OrderSystemImpl implements OrderSystem {
 					
 					Random random = new Random();
 					FileInputStream fis = new FileInputStream(buyerfiles.get(
-							random.nextInt(buyerfiles.size() - 1)));
+							random.nextInt(buyerfiles.size())));
 				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					for( int i = 0; i< 2000; i++) {
 						String buyerId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.buyerId);
@@ -217,7 +217,7 @@ public class OrderSystemImpl implements OrderSystem {
 					System.out.println("start query3" );
 					Random random = new Random();
 					FileInputStream fis = new FileInputStream(goodfiles.get(random.nextInt(
-							goodfiles.size() - 1)));
+							goodfiles.size())));
 				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					for( int i = 0; i< 2000; i++) {
 						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
@@ -252,7 +252,7 @@ public class OrderSystemImpl implements OrderSystem {
 					Random random = new Random();
 					System.out.println("start query4" );
 					FileInputStream fis = new FileInputStream(goodfiles.get(
-							random.nextInt(goodfiles.size() - 1)));
+							random.nextInt(goodfiles.size())));
 				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
 					for( int i = 0; i< 2000; i++) {
@@ -313,11 +313,11 @@ public class OrderSystemImpl implements OrderSystem {
 		//buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
 		//goodIdSurrKeyFile = new FilePathWithIndex();
 
-		JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
-		CacheMonitorThread cacheMonitorThread = new CacheMonitorThread(ConcurrentCache.getInstance());
-		threadPool.addMonitor(jvmMonitorThread);
-		threadPool.addMonitor(cacheMonitorThread);
-		threadPool.startMonitors();
+		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
+		//CacheMonitorThread cacheMonitorThread = new CacheMonitorThread(ConcurrentCache.getInstance());
+		//threadPool.addMonitor(jvmMonitorThread);
+		//threadPool.addMonitor(cacheMonitorThread);
+		//threadPool.startMonitors();
 		
 	}
 
@@ -435,22 +435,25 @@ public class OrderSystemImpl implements OrderSystem {
 					FileIndexWithOffset fileInfo= RecordsUtils.decodeIndex(encodedOffset);
 					long offset = fileInfo.offset;
 					int dataFileIndex = fileInfo.fileIndex;
-					Row temp = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
-					if(temp != null) {
-						temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-								temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
-										orderHandlersList.get(dataFileIndex), offset, 
-										TableName.OrderTable));
-					}
-					else {
+					//Row temp = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
+					//if(temp != null) {
+					//	temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
+					//			temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
+					//					orderHandlersList.get(dataFileIndex), offset, 
+					//					TableName.OrderTable));
+					//}
+					//else {
 						// 从文件里读数据
 						String diskValue = RecordsUtils.getStringFromFile(
 								orderHandlersList.get(dataFileIndex), offset, TableName.OrderTable);
-						temp = RecordsUtils.createKVMapFromLine( diskValue );
+						if( Long.parseLong(
+								RecordsUtils.getValueFromLine(diskValue, RaceConfig.orderId))  == orderid) {
+							return true;
+						}
+						//temp = RecordsUtils.createKVMapFromLine( diskValue );
 						// 放入缓冲区
-						rowCache.putInCache(new BytesKey(encodedOffset), diskValue , TableName.OrderTable);
-					}
-					return true;
+						//rowCache.putInCache(new BytesKey(encodedOffset), diskValue , TableName.OrderTable);
+					//}
 				}
 				break;
 			}
@@ -483,18 +486,19 @@ public class OrderSystemImpl implements OrderSystem {
 						FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
 						long offset = offsetInfo.offset;
 						int dataFileIndex = offsetInfo.fileIndex;
-						Row temp = rowCache.getFromCache(encodedOffset, tableName);
-						if(temp != null) {
-							temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-									temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
-											orderHandlersList.get(dataFileIndex), offset, tableName));
-						}
-						else {
-							String diskValue = RecordsUtils.getStringFromFile(
-									orderHandlersList.get(dataFileIndex),offset, tableName);
-							temp = RecordsUtils.createKVMapFromLine(diskValue);
-							rowCache.putInCache(new BytesKey(encodedOffset), diskValue, tableName);
-						}
+						//Row temp = rowCache.getFromCache(encodedOffset, tableName);
+						Row temp = null;
+						//if(temp != null) {
+						//	temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
+						//			temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
+						//					orderHandlersList.get(dataFileIndex), offset, tableName));
+						//}
+						//else {
+						String diskValue = RecordsUtils.getStringFromFile(
+								orderHandlersList.get(dataFileIndex),offset, tableName);
+						temp = RecordsUtils.createKVMapFromLine(diskValue);
+						//rowCache.putInCache(new BytesKey(encodedOffset), diskValue, tableName);
+						//}
 						result = temp;
 						break;
 					}

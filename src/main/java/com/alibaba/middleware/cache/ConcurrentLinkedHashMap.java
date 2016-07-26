@@ -294,6 +294,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
     // that if an eviction is still required then a new victim will be chosen
     // for removal.
     while (hasOverflowed()) {
+      System.out.println("Concurrent cache is full. Eviction.");
       final Node<K, V> node = evictionDeque.poll();
 
       // If weighted values are used, then the pending operations will adjust

@@ -123,10 +123,10 @@ public class SmallFileWriter {
 			}
 			if (line!=null) {
 				writer.write(line+"\n");
-				
+				IndexItem sendItem = new IndexItem(dataFileName, dataFileSerialNumber, line, offset);
 				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
-						queue.put(new IndexItem(dataFileName, dataFileSerialNumber, line, offset));
+						queue.put(sendItem);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

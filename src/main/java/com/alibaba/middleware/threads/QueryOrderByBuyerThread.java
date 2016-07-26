@@ -56,20 +56,21 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 				long offset = offsetInfo.offset;
 				int fileIndex = offsetInfo.fileIndex;
 				
-				Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
-				if(row != null) {
-					row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
-							row : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
-									system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable));
-				}
-				else {
-					// 在硬盘里找数据
-					String diskData = RecordsUtils.getStringFromFile(
-							system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable);
-					row = RecordsUtils.createKVMapFromLine(diskData);
-					rowCache.putInCache(new BytesKey(encodedOffset), diskData, TableName.OrderTable);
+				//Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
+				Row row = null;
+				//if(row != null) {
+				//	row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
+				//			row : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
+				//					system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable));
+				//}
+				//else {
+				// 在硬盘里找数据
+				String diskData = RecordsUtils.getStringFromFile(
+						system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable);
+				row = RecordsUtils.createKVMapFromLine(diskData);
+					//rowCache.putInCache(new BytesKey(encodedOffset), diskData, TableName.OrderTable);
 					// 放入缓冲区
-				}
+				//}
 				
 				long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
 				long orderid = row.getKV(RaceConfig.orderId).valueAsLong();

@@ -98,8 +98,9 @@ public class WriteFile {
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
+			IndexItem sendItem = new IndexItem(indexFileName, dataFileSerialNumber,line, offset);
 			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
-				queue.put(new IndexItem(indexFileName, dataFileSerialNumber,line, offset));
+				queue.put(sendItem);
 			}
 			
 			if(line != null ) {

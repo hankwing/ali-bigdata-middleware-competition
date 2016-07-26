@@ -99,7 +99,7 @@ public class OrderHandler {
 		for (String file : files) {
 			System.out.println("order file:" + file);
 			File bf = new File(file);
-			if (bf.length() < RaceConfig.smallFileSizeThreathod) {
+			if (bf.length() < RaceConfig.smallFileSizeThreshold) {
 				System.out.println("small order file:" + file);
 				smallFiles.add(file);
 			}else {
