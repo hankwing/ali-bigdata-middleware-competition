@@ -53,6 +53,7 @@ public class Test {
 		ConcurrentCache cache = ConcurrentCache.getInstance();
 		String uuid = UUID.randomUUID().toString();
 		for( int i = 0; i < 1000000 ; i++) {
+			System.out.println(uuid.hashCode());
 			cache.putInCache(uuid.hashCode(), uuid, TableName.BuyerTable);
 		}
 		
