@@ -49,8 +49,8 @@ public class DiskHashTable<K,T> implements Serializable {
 	private transient long lastOffset = 0;
 	private transient ReadWriteLock readWriteLock = null;
 	private transient BucketCachePool bucketCachePool = null;
-	private transient LinkedBlockingQueue<BucketReader>
-		bucketReaderPool = null;
+	//private transient LinkedBlockingQueue<BucketReader>
+	//	bucketReaderPool = null;
 	private long bucketAddressOffset = 0;					// 存桶对应物理地址的map的offset
 	private Map<Integer, Long> bucketAddressList = null; // 桶对应的物理地址
 	private Class<?> classType = null;
@@ -80,7 +80,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
 		bucketCachePool = BucketCachePool.getInstance();
-		bucketReaderPool = new LinkedBlockingQueue<BucketReader>();
+		//bucketReaderPool = new LinkedBlockingQueue<BucketReader>();
 		for (int i = 0; i < 10; i++) {
 			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
 			bucketList.put(i, newBucket );
@@ -180,22 +180,22 @@ public class DiskHashTable<K,T> implements Serializable {
 					.entrySet()) {
 				bucketAddressList.put(writeBucket.getKey(), lastOffset);
 				byteArrayOs.reset();
-				offsetOos.writeObject(writeBucket.getValue());
+				offsetOos.writeUnshared(writeBucket.getValue());
+				offsetOos.reset();
 				lastOffset += byteArrayOs.size();
 				// bucketWriter.writeObject(writeBucket.getValue());
 				bufferedFout.write(byteArrayOs.toByteArray());
-				offsetOos.reset();
+				
 			}
-			
 			
 			// write this HashTable to dataFile and return offset
 			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map
 			// 建立索引文件句柄缓冲池
-			for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
+			/*for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
 				FileInputStream streamIn = new FileInputStream(bucketFilePath);
 				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
 				bucketReaderPool.add(new BucketReader(streamIn, bucketReader));
-			}
+			}*/
 			// 把桶对应物理地址的map写出去  减少内存开销
 			byteArrayOs.reset();
 			ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
@@ -263,19 +263,21 @@ public class DiskHashTable<K,T> implements Serializable {
 			if( fileBucket == null) {
 				// 需要从文件里读桶 该桶需要缓冲区管理
 				readWriteLock.readLock().lock();
-				/*if( streamIn == null) {
-					streamIn = new FileInputStream(bucketFilePath);
-					bucketReader = new ObjectInputStream(streamIn);
-				}*/
-				BucketReader reader = bucketReaderPool.take();
+				//if( streamIn == null) {
+					FileInputStream streamIn = new FileInputStream(bucketFilePath);
+					ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
+				//}
+				//BucketReader reader = bucketReaderPool.take();
 				//}
 				if(bucketAddressList == null) {
 					// 需要从文件中读出该map
 					bucketAddressList = getHashDiskTable(bucketAddressOffset);
 				}
-				reader.streamIn.getChannel().position(bucketAddressList.get(bucketKey));
+				streamIn.getChannel().position(bucketAddressList.get(bucketKey));
+				fileBucket = (HashBucket<K,T>) bucketReader.readUnshared();
 				
-				fileBucket = (HashBucket<K,T>) reader.bucketReader.readObject();
+				//reader.bucketReader.readObject();
+				//reader.bucketReader.readObject();
 				// 缓冲一定数量的桶到内存
 				/*for( int i= bucketKey + 1; i < RaceConfig.bucketNumberOneRead && i < bucketNum ; i++) {
 					HashBucket<K,T> cacheBucket = (HashBucket<K,T>) bucketReader.readObject();
@@ -290,10 +292,11 @@ public class DiskHashTable<K,T> implements Serializable {
 				bucketList.put(bucketKey, fileBucket);
 				bucketCachePool.addBucket(fileBucket);			// 放入缓冲区
 				//bucketReader.close();
-				bucketReaderPool.put(reader);
+				//bucketReaderPool.put(reader);
 				readWriteLock.readLock().unlock();
 				//bucketQueue.put(fileBucket);
 				//bucketReader.close();
+				
 			}
 
 		} catch (FileNotFoundException e) {
@@ -305,10 +308,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
+		}
 		return fileBucket;
 
 	}
