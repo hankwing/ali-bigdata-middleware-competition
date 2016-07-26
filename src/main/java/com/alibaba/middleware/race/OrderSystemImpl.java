@@ -142,15 +142,15 @@ public class OrderSystemImpl implements OrderSystem {
 					orderfiles.add("benchmark/order_records_+6.txt");
 					orderfiles.add("benchmark/order_records_+7.txt");
 					orderfiles.add("benchmark/order_records_+8.txt");
-					orderfiles.add("benchmark/order_records_+9.txt");
-					orderfiles.add("benchmark/order_records_+10.txt");
+					//orderfiles.add("benchmark/order_records_+9.txt");
+					/*orderfiles.add("benchmark/order_records_+10.txt");
 					orderfiles.add("benchmark/order_records_+11.txt");
 					orderfiles.add("benchmark/order_records_+12.txt");
 					orderfiles.add("benchmark/order_records_+13.txt");
 					orderfiles.add("benchmark/order_records_+14.txt");
 					orderfiles.add("benchmark/order_records_+15.txt");
 					orderfiles.add("benchmark/order_records_+16.txt");
-					orderfiles.add("benchmark/order_records_+17.txt");
+					orderfiles.add("benchmark/order_records_+17.txt");*/
 	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
@@ -205,10 +205,10 @@ public class OrderSystemImpl implements OrderSystem {
 						long endTime = random.nextLong();
 						
 						Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
-						
-						//while(results.hasNext()) {
-						//	System.out.println("values:" + results.next());
-						//}
+						System.out.println("query2");
+						while(results.hasNext()) {
+							System.out.println("values:" + results.next());
+						}
 					}
 					System.out.println("end query2");
 					br.close();
@@ -223,9 +223,10 @@ public class OrderSystemImpl implements OrderSystem {
 						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
 						goodId = goodId == null? UUID.randomUUID().toString(): goodId;
 						Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, null);
-						//if(results.hasNext()) {
-						//	System.out.println("values:" + results.next());
-						//}
+						System.out.println("query3");
+						if(results.hasNext()) {
+							System.out.println("values:" + results.next());
+						}
 						
 					}
 					System.out.println("stop query3" );
@@ -256,10 +257,11 @@ public class OrderSystemImpl implements OrderSystem {
 				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
 					for( int i = 0; i< 2000; i++) {
+						
 						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
 						goodId = goodId == null? UUID.randomUUID().toString(): goodId;
-						//System.out.println(orderSystem
-						orderSystem.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]);
+						System.out.println("query4");
+						System.out.println(orderSystem.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
 					}		
 					br.close();
 					System.out.println("end query4" );
@@ -510,12 +512,12 @@ public class OrderSystemImpl implements OrderSystem {
 			// 将事实键转为代理键
 			Integer surrId = String.valueOf(id).hashCode();
 			// 先在缓冲区里找
-			result = rowCache.getFromCache(surrId, TableName.BuyerTable);
+			/*result = rowCache.getFromCache(surrId, TableName.BuyerTable);
 			if( result != null) {
 				// 在缓冲区找到了
 				return result;
 			}
-			else {
+			else {*/
 				// 在索引里找
 				for (int filePathIndex : buyerIndexMapping.getAllFileIndexs()) {
 					DiskHashTable<Integer, List<byte[]>> hashTable = buyerIdIndexList
@@ -534,7 +536,7 @@ public class OrderSystemImpl implements OrderSystem {
 								if( temp.getKV(RaceConfig.buyerId).valueAsString().equals(id)) {
 									result = temp;
 									// 放入缓冲区
-									rowCache.putInCache(surrId, records, tableName);
+									//rowCache.putInCache(surrId, records, tableName);
 									break;
 								}
 							} catch(StringIndexOutOfBoundsException e){
@@ -544,17 +546,17 @@ public class OrderSystemImpl implements OrderSystem {
 						break;
 					}
 
-				}
+				//}
 			}
 			break;
 		case GoodTable:
 			Integer goodSurrId = String.valueOf(id).hashCode();
 			// 先在缓冲区里找
-			result = rowCache.getFromCache(goodSurrId, tableName);
+			/*result = rowCache.getFromCache(goodSurrId, tableName);
 			if( result != null) {
 				return result;
 			}
-			else {
+			else {*/
 				for (int filePathIndex : goodIndexMapping.getAllFileIndexs()) {
 					DiskHashTable<Integer, List<byte[]>> hashTable = goodIdIndexList.get(filePathIndex);
 					List<byte[]> results = hashTable.get(goodSurrId);
@@ -569,14 +571,14 @@ public class OrderSystemImpl implements OrderSystem {
 							if( temp.getKV(RaceConfig.goodId).valueAsString().equals(id)) {
 								result = temp;
 								// 放入缓冲区
-								rowCache.putInCache(goodSurrId, records, tableName);
+								//rowCache.putInCache(goodSurrId, records, tableName);
 								break;
 							}
 						}
 						break;
 					}
 
-				}
+				//}
 			}
 			break;
 		}

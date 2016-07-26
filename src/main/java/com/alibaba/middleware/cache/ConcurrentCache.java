@@ -97,7 +97,7 @@ public class ConcurrentCache {
         }
     }
 
-    public Row getFromCache(Object key, TableName tableType) {
+    /*public Row getFromCache(Object key, TableName tableType) {
         Row row = null;
         switch (tableType) {
             case OrderTable:
@@ -111,7 +111,7 @@ public class ConcurrentCache {
                 break;
         }
         return row;
-    }
+    }*/
 
     public List<byte[]> getFromIdCache(Integer key, RaceConfig.IdIndexType indexType) {
         List<byte[]> cache = null;
@@ -164,7 +164,8 @@ public class ConcurrentCache {
      * No use
      * just for test
      * */
+
     public int getSize() {
-        return goodCacheMap.size() + buyerCacheMap.size();
+        return buyerCacheMap.size() + goodCacheMap.size();
     }
 }

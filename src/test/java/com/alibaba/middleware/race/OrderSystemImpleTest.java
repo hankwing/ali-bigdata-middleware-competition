@@ -12,6 +12,10 @@ import java.util.List;
  * @author Jelly
  */
 public class OrderSystemImpleTest {
+
+    /**
+     * -XX:InitialHeapSize=5368709120 -XX:MaxHeapSize=5368709120 -XX:MaxNewSize=1789571072 -XX:MaxTenuringThreshold=6 -XX:NewSize=1789571072 -XX:OldPLABSize=16 -XX:OldSize=3579138048 -XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+UseCompressedOops -XX:+UseConcMarkSweepGC -XX:+UseParNewGC
+     */
     static OrderSystemImpl orderSystem = new OrderSystemImpl();
 
     public static void main(String[] args) {

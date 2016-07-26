@@ -28,6 +28,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.middleware.cache.ConcurrentCache;
@@ -49,12 +50,19 @@ public class Test {
 
 	public static void main(String[] args) {
 		
+		ConcurrentCache cache = ConcurrentCache.getInstance();
+		String uuid = UUID.randomUUID().toString();
+		for( int i = 0; i < 1000000 ; i++) {
+			System.out.println(uuid.hashCode());
+			cache.putInCache(uuid.hashCode(), uuid, TableName.BuyerTable);
+		}
 		
-		String line = "orderid:xxxxx\tbuyerid:1234567";
+		int i = 0;
+		/*String line = "orderid:xxxxx\tbuyerid:1234567";
 		int location = line.indexOf("buyerid");
 		int endLocation = line.indexOf("\t", location);
 		String subLine = line.substring(location + "buyerid".length() + 1,endLocation != -1? endLocation:line.length() );
-		System.out.println(subLine);
+		System.out.println(subLine);*/
 		/*ByteBuffer buffer = ByteBuffer.allocate(12);
 		buffer.putInt(0);
 		buffer.putLong(201238912);
