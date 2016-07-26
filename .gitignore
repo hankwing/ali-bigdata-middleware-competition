@@ -7,3 +7,4 @@ good/
 *.iml
 /benchmark
 /folder*
+*database
