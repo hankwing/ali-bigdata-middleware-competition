@@ -20,6 +20,6 @@ public class ConcurrentCacheTest {
 
         cache.forceEvict(1000);
 
-        System.out.println(cache.getSize());
+       // System.out.println(cache.getSize());
     }
 }
