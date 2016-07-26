@@ -16,11 +16,11 @@ public class ConcurrentCacheTest {
                 .maximumWeightedCapacity(10)
                 .build();
 
-        for (int i = 0; i < 10; i++) {
-//            cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.BuyerTable);
-//            cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.GoodTable);
-//            cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.OrderTable);
-            cacheMap.put(i, String.valueOf(i));
+        for (int i = 0; i < 10001; i++) {
+            cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.BuyerTable);
+            cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.GoodTable);
+            cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.OrderTable);
+//            cacheMap.put(i, String.valueOf(i));
         }
 //        cache.putInCache(9, String.valueOf(9), RaceConfig.TableName.BuyerTable);
 //        System.out.println(cache.getFromCache(9, RaceConfig.TableName.BuyerTable));
@@ -41,6 +41,6 @@ public class ConcurrentCacheTest {
 //            cache.putInCache(i, String.valueOf(i), RaceConfig.TableName.OrderTable);
 //        }
 
-        System.out.println(cacheMap.size());
+        System.out.println(cache.getSize());
     }
 }

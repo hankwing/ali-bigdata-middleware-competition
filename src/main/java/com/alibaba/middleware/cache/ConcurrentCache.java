@@ -165,6 +165,6 @@ public class ConcurrentCache {
      * just for test
      * */
     public int getSize() {
-        return buyerCacheMap.size();
+        return buyerCacheMap.size() + goodCacheMap.size();
     }
 }
