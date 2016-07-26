@@ -49,6 +49,7 @@ public class RaceConfig implements Serializable{
     public static int bucketCapcity = 1000;                        // 桶CACHE的最大上限
     public static int bucketRemoveNum = 10;                        // 每次桶的CACHE达到上限后删除一定量的桶
 
+
 	public static int hash_index_block_capacity = 20000;			// 一个索引桶里的数据量
 
 	public static String booleanTrueValue = "true";

@@ -180,8 +180,8 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
   final EntryWeigher<? super K, ? super V> weigher;
 
   // These fields provide support for notifying a listener.
-  final Queue<Node<K, V>> pendingNotifications;
-  final EvictionListener<K, V> listener;
+//  final Queue<Node<K, V>> pendingNotifications;
+//  final EvictionListener<K, V> listener;
 
   transient Set<K> keySet;
   transient Collection<V> values;
@@ -219,10 +219,10 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
     }
 
     // The notification queue and listener
-    listener = builder.listener;
-    pendingNotifications = (listener == DiscardingListener.INSTANCE)
-        ? (Queue<Node<K, V>>) DISCARDING_QUEUE
-        : new ConcurrentLinkedQueue<Node<K, V>>();
+//    listener = builder.listener;
+//    pendingNotifications = (listener == DiscardingListener.INSTANCE)
+//        ? (Queue<Node<K, V>>) DISCARDING_QUEUE
+//        : new ConcurrentLinkedQueue<Node<K, V>>();
   }
 
   /** Ensures that the object is not null. */
@@ -304,7 +304,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
 
       // Notify the listener only if the entry was evicted
       if (data.remove(node.key, node)) {
-          System.out.println("Eviction");
+//          System.out.println("Eviction");
 //        pendingNotifications.add(node);
       }
 
@@ -529,9 +529,9 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
   /** Notifies the listener of entries that were evicted. */
   void notifyListener() {
     Node<K, V> node;
-    while ((node = pendingNotifications.poll()) != null) {
-      listener.onEviction(node.key, node.getValue());
-    }
+//    while ((node = pendingNotifications.poll()) != null) {
+//      listener.onEviction(node.key, node.getValue());
+//    }
   }
 
   /** Adds the node to the page replacement policy. */
@@ -747,6 +747,8 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
 
     makeRetired(node);
     afterWrite(new RemovalTask(node));
+      evictionDeque.remove(node);
+      makeDead(node);
     return node.getValue();
   }
 
@@ -763,6 +765,8 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
         if (tryToRetire(node, weightedValue)) {
           if (data.remove(key, node)) {
             afterWrite(new RemovalTask(node));
+              evictionDeque.remove(node);
+              makeDead(node);
             return true;
           }
         } else {
@@ -1421,7 +1425,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
    */
   static final class SerializationProxy<K, V> implements Serializable {
     final EntryWeigher<? super K, ? super V> weigher;
-    final EvictionListener<K, V> listener;
+//    final EvictionListener<K, V> listener;
     final int concurrencyLevel;
     final Map<K, V> data;
     final long capacity;
@@ -1430,7 +1434,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
       concurrencyLevel = map.concurrencyLevel;
       data = new HashMap<K, V>(map);
       capacity = map.capacity.get();
-      listener = map.listener;
+//      listener = map.listener;
       weigher = map.weigher;
     }
 
@@ -1438,7 +1442,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
       ConcurrentLinkedHashMap<K, V> map = new Builder<K, V>()
           .concurrencyLevel(concurrencyLevel)
           .maximumWeightedCapacity(capacity)
-          .listener(listener)
+//          .listener(listener)
           .weigher(weigher)
           .build();
       map.putAll(data);

@@ -1,10 +1,10 @@
 package com.alibaba.middleware.race;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.tools.RecordsUtils;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * order-system-impl-master-cabe626d3eb46a36ae1f74a33ef3e8c7182536c7order-system-impl.git
@@ -17,30 +17,43 @@ public class OrderSystemImpleTest {
      * -XX:InitialHeapSize=5368709120 -XX:MaxHeapSize=5368709120 -XX:MaxNewSize=1789571072 -XX:MaxTenuringThreshold=6 -XX:NewSize=1789571072 -XX:OldPLABSize=16 -XX:OldSize=3579138048 -XX:+PrintGC -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+UseCompressedOops -XX:+UseConcMarkSweepGC -XX:+UseParNewGC
      */
     static OrderSystemImpl orderSystem = new OrderSystemImpl();
+    static List<String> buyerfiles = new ArrayList<String>();
+    static List<String> goodfiles = new ArrayList<String>();
+    static List<String> orderfiles = new ArrayList<String>();
 
     public static void main(String[] args) {
         construct();
-        query();
+        try {
+            query2();
+            System.out.println("Done query2");
+            query3();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void construct() {
-        List<String> buyerfiles = new ArrayList<String>();
 //        buyerfiles.add("benchmark/prerun_data/buyer.0.0");
 //        buyerfiles.add("benchmark/prerun_data/buyer.1.1");
-        buyerfiles.add("benchmark/buyer_records0.txt");
+        buyerfiles.add("benchmark/buyer_records0");
+        buyerfiles.add("benchmark/buyer_records1");
 
-        List<String> goodfiles = new ArrayList<String>();
 //        goodfiles.add("benchmark/prerun_data/good.0.0");
 //        goodfiles.add("benchmark/prerun_data/good.1.1");
 //        goodfiles.add("benchmark/prerun_data/good.2.2");
-        goodfiles.add("benchmark/good_records0.txt");
+        goodfiles.add("benchmark/good_records0");
+        goodfiles.add("benchmark/good_records1");
 
-        List<String> orderfiles = new ArrayList<String>();
 //        orderfiles.add("benchmark/prerun_data/order.0.0");
 //        orderfiles.add("benchmark/prerun_data/order.1.1");
 //        orderfiles.add("benchmark/prerun_data/order.2.2");
 //        orderfiles.add("benchmark/prerun_data/order.0.3");
-        orderfiles.add("benchmark/order_records0.txt");
+        orderfiles.add("benchmark/order_records00");
+        orderfiles.add("benchmark/order_records01");
+        orderfiles.add("benchmark/order_records02");
+        orderfiles.add("benchmark/order_records10");
+        orderfiles.add("benchmark/order_records11");
+        orderfiles.add("benchmark/order_records12");
 
         List<String> storeFolders = new ArrayList<String>();
         // 添加三个盘符
@@ -84,5 +97,48 @@ public class OrderSystemImpleTest {
         while (iterator.hasNext()) {
             System.out.println((ResultImpl)iterator.next());
         }
+    }
+
+    public static void query2() throws IOException {
+        System.out.println("start query2" );
+
+        Random random = new Random();
+        FileInputStream fis = new FileInputStream(buyerfiles.get(
+                random.nextInt(buyerfiles.size())));
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        for( int i = 0; i< 2000; i++) {
+            String buyerId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.buyerId);
+            buyerId = buyerId == null? UUID.randomUUID().toString():buyerId;
+            long startTime = random.nextLong();
+            long endTime = random.nextLong();
+
+            Iterator<OrderSystem.Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
+            System.out.println("query2");
+            while(results.hasNext()) {
+                System.out.println("values:" + results.next());
+            }
+        }
+        System.out.println("end query2");
+        br.close();
+    }
+
+    public static void query3() throws IOException {
+        System.out.println("start query3" );
+        Random random = new Random();
+        FileInputStream fis = new FileInputStream(goodfiles.get(random.nextInt(
+                goodfiles.size())));
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        for( int i = 0; i< 2000; i++) {
+            String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
+            goodId = goodId == null? UUID.randomUUID().toString(): goodId;
+            Iterator<OrderSystem.Result> results = orderSystem.queryOrdersBySaler("", goodId, null);
+            System.out.println("query3");
+            if(results.hasNext()) {
+                System.out.println("values:" + results.next());
+            }
+
+        }
+        System.out.println("stop query3" );
+        br.close();
     }
 }
