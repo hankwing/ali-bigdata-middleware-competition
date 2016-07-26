@@ -104,8 +104,9 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param bucketKey
 	 */
 	public void writeBucket(int bucketKey) {
-
-		try {
+		// 直接从队列里remove桶
+		bucketList.remove(bucketKey);
+		/*try {
 			
 			long offset = 0;
 			
@@ -148,7 +149,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 
 	}
 

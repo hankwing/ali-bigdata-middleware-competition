@@ -1,8 +1,10 @@
 package com.alibaba.middleware.race;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -92,6 +94,9 @@ public class OrderSystemImpl implements OrderSystem {
 		OrderSystemImpl orderSystem = new OrderSystemImpl();
 		Scanner scanner = new Scanner(System.in);
 		String command = null;
+		List<String> buyerfiles = null;
+		List<String> goodfiles = null;
+		List<String> orderfiles = null;
 		
 		while (!(command = scanner.nextLine()).equals("quit")) {
 			try{
@@ -107,13 +112,13 @@ public class OrderSystemImpl implements OrderSystem {
 				} else if (command.equals("construct")) {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
-					List<String> buyerfiles = new ArrayList<String>();
+					buyerfiles = new ArrayList<String>();
 					buyerfiles.add("prerun_data/buyer.0.0");
 					buyerfiles.add("prerun_data/buyer.1.1");
 					//buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
-					List<String> goodfiles = new ArrayList<String>();
+					goodfiles = new ArrayList<String>();
 					goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
 					goodfiles.add("prerun_data/good.2.2");
@@ -124,7 +129,7 @@ public class OrderSystemImpl implements OrderSystem {
 					//goodfiles.add("benchmark/good_records.txt");
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
-					List<String> orderfiles = new ArrayList<String>();
+					orderfiles = new ArrayList<String>();
 					orderfiles.add("prerun_data/order.0.0");
 					orderfiles.add("prerun_data/order.0.3");
 					orderfiles.add("prerun_data/order.1.1");
@@ -178,7 +183,7 @@ public class OrderSystemImpl implements OrderSystem {
 					
 				}  else if (command.startsWith("lookup2")) {
 					// lookup:xxx 查找某个key值的value
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String buyerId = rawCommand[0];
 					long startTime = Long.valueOf(rawCommand[1]);
 					long endTime = Long.valueOf(rawCommand[2]);
@@ -186,37 +191,46 @@ public class OrderSystemImpl implements OrderSystem {
 					Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
-					}
-					/*System.out.println("start query2" );
+					}*/
+					System.out.println("start query2" );
+					
 					Random random = new Random();
+					FileInputStream fis = new FileInputStream(buyerfiles.get(
+							random.nextInt(buyerfiles.size() - 1)));
+				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					for( int i = 0; i< 2000; i++) {
-						String buyerId = UUID.randomUUID().toString();
+						String buyerId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.buyerId);
+						buyerId = buyerId == null? UUID.randomUUID().toString():buyerId;
 						long startTime = random.nextLong();
 						long endTime = random.nextLong();
 						
 						Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
 						
-						while(results.hasNext()) {
-							System.out.println("values:" + results.next());
-						}
+						//while(results.hasNext()) {
+						//	System.out.println("values:" + results.next());
+						//}
 					}
-					System.out.println("end query2");*/
-					
+					System.out.println("end query2");
+					br.close();
 				} else if (command.startsWith("lookup3")) {
 					// lookup:xxx 查找某个key值的value
-					/*System.out.println("start query3" );
+					System.out.println("start query3" );
+					Random random = new Random();
+					FileInputStream fis = new FileInputStream(goodfiles.get(random.nextInt(
+							goodfiles.size() - 1)));
+				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					for( int i = 0; i< 2000; i++) {
-						String goodId = UUID.randomUUID().toString();
-						
+						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
+						goodId = goodId == null? UUID.randomUUID().toString(): goodId;
 						Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, null);
-						if(results.hasNext()) {
-							System.out.println("values:" + results.next());
-						}
+						//if(results.hasNext()) {
+						//	System.out.println("values:" + results.next());
+						//}
 						
 					}
-					System.out.println("stop query3" );*/
-					
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					System.out.println("stop query3" );
+					br.close();
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
@@ -225,25 +239,29 @@ public class OrderSystemImpl implements OrderSystem {
 					Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, keys);
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
-					}
+					}*/
 					
 				} else if (command.startsWith("lookup4")) {
 					// lookup:xxx 查找某个key值的value
 					// lookup:xxx 查找某个key值的value
 					
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					String key = rawCommand[1];
-					System.out.println(orderSystem.sumOrdersByGood(goodId, key));
-					//Random random = new Random();
-					//System.out.println("start query4" );
-					//String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
-					//for( int i = 0; i< 2000; i++) {
-					//	String goodId = UUID.randomUUID().toString();
-					//	System.out.println(orderSystem
-					//			.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
-					//}		
-					
+					System.out.println(orderSystem.sumOrdersByGood(goodId, key));*/
+					Random random = new Random();
+					System.out.println("start query4" );
+					FileInputStream fis = new FileInputStream(goodfiles.get(
+							random.nextInt(goodfiles.size() - 1)));
+				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+					String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
+					for( int i = 0; i< 2000; i++) {
+						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
+						goodId = goodId == null? UUID.randomUUID().toString(): goodId;
+						//System.out.println(orderSystem
+						orderSystem.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]);
+					}		
+					br.close();
 					System.out.println("end query4" );
 					
 				} else if (command.equals("quit")) {
