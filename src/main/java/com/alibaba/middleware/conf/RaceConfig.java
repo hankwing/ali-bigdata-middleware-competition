@@ -15,9 +15,9 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreshold = (long) (300* Math.pow(1024, 2));
 	
-	public static int handleThreadNumber = 1;				// 读写线程数
+	public static int handleThreadNumber = 3;				// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
-	public static int fileHandleNumber = 3;				// 每个文件预先打开的句柄数
+	public static int fileHandleNumber = 8;				// 每个文件预先打开的句柄数
 	
 	//public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	//public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
@@ -45,7 +45,7 @@ public class RaceConfig implements Serializable{
 	 * Cache pool config
 	 * */
     public static int cacheInitCapacity = 5000;                    // ConcurrentCache中每个队列的初始大小
-    public static int cacheMaxCapacity = 10000;                    // ConcurrentCache中每个队列的最大大小
+    public static int cacheMaxCapacity = 20000;                    // ConcurrentCache中每个队列的最大大小
     public static int bucketCapcity = 1000;                        // 桶CACHE的最大上限
     public static int bucketRemoveNum = 1000;                        // 每次桶的CACHE达到上限后删除一定量的桶
 

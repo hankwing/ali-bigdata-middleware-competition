@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.ComparableKeys;
 import com.alibaba.middleware.index.DiskHashTable;
@@ -51,8 +52,12 @@ public class Test {
 	public static void main(String[] args) {
 		
 		ConcurrentCache cache = ConcurrentCache.getInstance();
-		String uuid = UUID.randomUUID().toString();
+		
 		for( int i = 0; i < 1000000 ; i++) {
+			String uuid = UUID.randomUUID().toString();
+			List<byte[]> addList = new ArrayList<byte[]>();
+			addList.add(new byte[12]);
+			cache.putInIdCache(uuid.hashCode(), addList, IdIndexType.BuyerIdToOrderOffsets);
 			System.out.println(uuid.hashCode());
 			cache.putInCache(uuid.hashCode(), uuid, TableName.BuyerTable);
 		}
