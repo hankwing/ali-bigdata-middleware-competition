@@ -58,6 +58,8 @@ public class Test {
 			List<byte[]> addList = new ArrayList<byte[]>();
 			addList.add(new byte[12]);
 			cache.putInIdCache(uuid.hashCode(), addList, IdIndexType.BuyerIdToOrderOffsets);
+			System.out.println(uuid.hashCode());
+			cache.putInCache(uuid.hashCode(), uuid, TableName.BuyerTable);
 		}
 		
 		int i = 0;
