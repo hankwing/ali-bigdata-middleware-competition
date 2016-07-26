@@ -81,7 +81,7 @@ public class GoodHandler{
 		for (String file : files) {
 			System.out.println("good file:" + file);
 			File bf = new File(file);
-			if (bf.length() < RaceConfig.smallFileSizeThreathod) {
+			if (bf.length() < RaceConfig.smallFileSizeThreshold) {
 				System.out.println("small good file:" + file);
 				smallFiles.add(file);
 

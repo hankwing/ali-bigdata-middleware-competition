@@ -83,7 +83,7 @@ public class BuyerHandler{
 			try {
 				System.out.println("buyer file:" + file);
 				File bf = new File(file);
-				if (bf.length() < RaceConfig.smallFileSizeThreathod) {
+				if (bf.length() < RaceConfig.smallFileSizeThreshold) {
 					// 属于小文件
 					System.out.println("small buyer file:" + file);
 					smallFiles.add(file);

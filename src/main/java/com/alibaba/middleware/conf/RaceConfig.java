@@ -13,7 +13,7 @@ public class RaceConfig implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
-	public static long smallFileSizeThreathod = (long) (300* Math.pow(1024, 2));
+	public static long smallFileSizeThreshold = (long) (300* Math.pow(1024, 2));
 	
 	public static int handleThreadNumber = 3;				// 读写线程数
 	public static int QueueNumber = 10000;					// 建索引时的一个缓冲队列的大小
@@ -25,7 +25,6 @@ public class RaceConfig implements Serializable{
 	public static long bigIndexFileCapacity = 1600000;			// 大表索引项的最大索引条数
 	public static long singleFileMaxLines = 10000000;			// 合并后的文件最大行数
 	
-	public static int cacheInitCapacity = 100000;
 	/**
 	 * Thread pool config
 	 * */
@@ -45,6 +44,11 @@ public class RaceConfig implements Serializable{
 	/**
 	 * Cache pool config
 	 * */
+    public static int cacheInitCapacity = 500000;                    // ConcurrentCache中每个队列的初始大小
+    public static int cacheMaxCapacity = 1000000;                    // ConcurrentCache中每个队列的最大大小
+    public static int bucketCapcity = 100000;                        // 桶CACHE的最大上限
+    public static int bucketRemoveNum = 1000;                        // 每次桶的CACHE达到上限后删除一定量的桶
+
 	public static int hash_index_block_capacity = 20000;			// 一个索引桶里的数据量
 
 	public static String booleanTrueValue = "true";

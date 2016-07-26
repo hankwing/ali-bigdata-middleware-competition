@@ -20,7 +20,8 @@ public class ConcurrentCache {
     private ConcurrentLinkedHashMap<Integer, List<byte[]>> buyerToOrderIdCacheMap;
     private ConcurrentLinkedHashMap<Integer, List<byte[]>> goodToOrderIdCacheMap;
 
-    private int initCapacity = 0;
+    private int initCapacity = RaceConfig.cacheInitCapacity;
+    private int maxCapacity = RaceConfig.cacheMaxCapacity;
 
     private static ConcurrentCache instance = null;
 
@@ -32,32 +33,36 @@ public class ConcurrentCache {
     	
         /*orderCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, String>()
                 .maximumWeightedCapacity(Long.MAX_VALUE)
+>>>>>>> 43bbbe142a4f78555c41b992fedfbd6f0894ba92
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
                 .build();*/
         buyerCacheMap = new ConcurrentLinkedHashMap.Builder<Integer, String>()
-                .maximumWeightedCapacity(Long.MAX_VALUE)
+                .maximumWeightedCapacity(maxCapacity)
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
                 .build();
         goodCacheMap = new ConcurrentLinkedHashMap.Builder<Integer, String>()
-                .maximumWeightedCapacity(Long.MAX_VALUE)
+                .maximumWeightedCapacity(maxCapacity)
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
                 .build();
 
         buyerToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<Integer, List<byte[]>>()
-                .maximumWeightedCapacity(Long.MAX_VALUE)
+                .maximumWeightedCapacity(maxCapacity)
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
                 .build();
         goodToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<Integer, List<byte[]>>()
-                .maximumWeightedCapacity(Long.MAX_VALUE)
+                .maximumWeightedCapacity(maxCapacity)
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
                 .build();
     }
 
+    /**
+     * Get the ConcurrentCache instance
+     * */
     public static ConcurrentCache getInstance() {
         if (instance == null) {
             instance = new ConcurrentCache();

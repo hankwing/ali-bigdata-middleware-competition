@@ -113,16 +113,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-					buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");
-					//buyerfiles.add("benchmark/buyer_records_1.txt");
+					/*buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");*/
+					buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-					goodfiles.add("prerun_data/good.0.0");
+					/*goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");
-					//goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.2.2");*/
+					goodfiles.add("benchmark/good_records_1.txt");
 					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
@@ -130,12 +130,12 @@ public class OrderSystemImpl implements OrderSystem {
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
 					orderfiles = new ArrayList<String>();
-					orderfiles.add("prerun_data/order.0.0");
+					/*orderfiles.add("prerun_data/order.0.0");
 					orderfiles.add("prerun_data/order.0.3");
 					orderfiles.add("prerun_data/order.1.1");
-					orderfiles.add("prerun_data/order.2.2");
+					orderfiles.add("prerun_data/order.2.2");*/
 					
-					/*orderfiles.add("benchmark/order_records_1.txt");
+					orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
 					orderfiles.add("benchmark/order_records_+5.txt");
@@ -150,7 +150,7 @@ public class OrderSystemImpl implements OrderSystem {
 					orderfiles.add("benchmark/order_records_+14.txt");
 					orderfiles.add("benchmark/order_records_+15.txt");
 					orderfiles.add("benchmark/order_records_+16.txt");
-					orderfiles.add("benchmark/order_records_+17.txt");*/
+					orderfiles.add("benchmark/order_records_+17.txt");
 	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
@@ -313,11 +313,11 @@ public class OrderSystemImpl implements OrderSystem {
 		//buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
 		//goodIdSurrKeyFile = new FilePathWithIndex();
 
-		JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
-		CacheMonitorThread cacheMonitorThread = new CacheMonitorThread(ConcurrentCache.getInstance());
-		threadPool.addMonitor(jvmMonitorThread);
-		threadPool.addMonitor(cacheMonitorThread);
-		threadPool.startMonitors();
+		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
+		//CacheMonitorThread cacheMonitorThread = new CacheMonitorThread(ConcurrentCache.getInstance());
+		//threadPool.addMonitor(jvmMonitorThread);
+		//threadPool.addMonitor(cacheMonitorThread);
+		//threadPool.startMonitors();
 		
 	}
 

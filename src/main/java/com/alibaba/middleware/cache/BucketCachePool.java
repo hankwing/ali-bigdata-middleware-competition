@@ -3,6 +3,7 @@ package com.alibaba.middleware.cache;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.index.HashBucket;
 
 /**
@@ -12,7 +13,7 @@ import com.alibaba.middleware.index.HashBucket;
  * 固定数目的HashBucket,每当bucket达到上限,写入磁盘
  */
 public class BucketCachePool {
-
+    private int bucketCapacity = RaceConfig.bucketCapcity;
     // Number of hash buckets
     private AtomicInteger bucketCounter = new AtomicInteger(0);
     //private Lock lock = new ReentrantLock();
@@ -20,7 +21,6 @@ public class BucketCachePool {
     private static BucketCachePool instance;
 
     private BucketCachePool() {
-        //this.capacity = RaceConfig.bucketCachePoolCapacity;
         bucketCache = new LinkedBlockingQueue<HashBucket>();
     }
 
@@ -31,16 +31,19 @@ public class BucketCachePool {
     }
 
     /**
-     * 先不设桶的上限了 反正是根据内存使用来释放桶
+     * 设桶的上限
      * @param bucket
      * @return
      */
     public boolean addBucket(HashBucket bucket) {
-        //if (bucketCounter.get() <= capacity) {
+        if (bucketCounter.get() <= bucketCapacity) {
             bucketCache.offer(bucket);
             bucketCounter.getAndIncrement();
             return true;
-       // }
+        } else {
+            removeBuckets(RaceConfig.bucketRemoveNum);
+            return false;
+        }
     }
     
     /**
@@ -53,7 +56,7 @@ public class BucketCachePool {
     private void removeBucket(HashBucket bucket) {
         if( bucket != null ) {
         	bucket.writeSelf();
-            bucket = null;
+//            bucket = null;
             bucketCounter.getAndDecrement();
         }
         
