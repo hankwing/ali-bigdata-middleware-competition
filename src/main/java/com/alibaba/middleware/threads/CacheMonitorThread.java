@@ -26,6 +26,7 @@ public class CacheMonitorThread extends SchedulerThread {
                 if ((getTotalMem() - getFreeMem()) > getMaxMem() * cacheMemFactor) {
                     System.out.println("Total mem: " + getTotalMem() + "MB");
                     System.out.println("Free mem: " + getFreeMem() + "MB");
+                    System.out.println("evict data cache");
                     cache.forceEvict(forceEvictNum);
                 }
             }

@@ -196,7 +196,7 @@ public class OrderSystemImpl implements OrderSystem {
 					
 					Random random = new Random();
 					FileInputStream fis = new FileInputStream(buyerfiles.get(
-							random.nextInt(buyerfiles.size() - 1)));
+							random.nextInt(buyerfiles.size())));
 				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					for( int i = 0; i< 2000; i++) {
 						String buyerId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.buyerId);
@@ -217,7 +217,7 @@ public class OrderSystemImpl implements OrderSystem {
 					System.out.println("start query3" );
 					Random random = new Random();
 					FileInputStream fis = new FileInputStream(goodfiles.get(random.nextInt(
-							goodfiles.size() - 1)));
+							goodfiles.size())));
 				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					for( int i = 0; i< 2000; i++) {
 						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
@@ -252,7 +252,7 @@ public class OrderSystemImpl implements OrderSystem {
 					Random random = new Random();
 					System.out.println("start query4" );
 					FileInputStream fis = new FileInputStream(goodfiles.get(
-							random.nextInt(goodfiles.size() - 1)));
+							random.nextInt(goodfiles.size())));
 				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
 					for( int i = 0; i< 2000; i++) {
@@ -435,22 +435,25 @@ public class OrderSystemImpl implements OrderSystem {
 					FileIndexWithOffset fileInfo= RecordsUtils.decodeIndex(encodedOffset);
 					long offset = fileInfo.offset;
 					int dataFileIndex = fileInfo.fileIndex;
-					Row temp = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
-					if(temp != null) {
-						temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-								temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
-										orderHandlersList.get(dataFileIndex), offset, 
-										TableName.OrderTable));
-					}
-					else {
+					//Row temp = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
+					//if(temp != null) {
+					//	temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
+					//			temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
+					//					orderHandlersList.get(dataFileIndex), offset, 
+					//					TableName.OrderTable));
+					//}
+					//else {
 						// 从文件里读数据
 						String diskValue = RecordsUtils.getStringFromFile(
 								orderHandlersList.get(dataFileIndex), offset, TableName.OrderTable);
-						temp = RecordsUtils.createKVMapFromLine( diskValue );
+						if( Long.parseLong(
+								RecordsUtils.getValueFromLine(diskValue, RaceConfig.orderId))  == orderid) {
+							return true;
+						}
+						//temp = RecordsUtils.createKVMapFromLine( diskValue );
 						// 放入缓冲区
-						rowCache.putInCache(new BytesKey(encodedOffset), diskValue , TableName.OrderTable);
-					}
-					return true;
+						//rowCache.putInCache(new BytesKey(encodedOffset), diskValue , TableName.OrderTable);
+					//}
 				}
 				break;
 			}
@@ -483,18 +486,19 @@ public class OrderSystemImpl implements OrderSystem {
 						FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
 						long offset = offsetInfo.offset;
 						int dataFileIndex = offsetInfo.fileIndex;
-						Row temp = rowCache.getFromCache(encodedOffset, tableName);
-						if(temp != null) {
-							temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-									temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
-											orderHandlersList.get(dataFileIndex), offset, tableName));
-						}
-						else {
-							String diskValue = RecordsUtils.getStringFromFile(
-									orderHandlersList.get(dataFileIndex),offset, tableName);
-							temp = RecordsUtils.createKVMapFromLine(diskValue);
-							rowCache.putInCache(new BytesKey(encodedOffset), diskValue, tableName);
-						}
+						//Row temp = rowCache.getFromCache(encodedOffset, tableName);
+						Row temp = null;
+						//if(temp != null) {
+						//	temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
+						//			temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
+						//					orderHandlersList.get(dataFileIndex), offset, tableName));
+						//}
+						//else {
+						String diskValue = RecordsUtils.getStringFromFile(
+								orderHandlersList.get(dataFileIndex),offset, tableName);
+						temp = RecordsUtils.createKVMapFromLine(diskValue);
+						//rowCache.putInCache(new BytesKey(encodedOffset), diskValue, tableName);
+						//}
 						result = temp;
 						break;
 					}
