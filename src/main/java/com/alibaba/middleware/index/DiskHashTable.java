@@ -308,8 +308,8 @@ public class DiskHashTable<K,T> implements Serializable {
 					bucketByteArray = new byte[lastObjectSize];
 				}
 				else {
-					bucketByteArray = new byte[bucketAddressList.get(bucketKey + 1).intValue() - 
-					                           bucketAddressList.get(bucketKey).intValue()];
+					bucketByteArray = new byte[(int) (bucketAddressList.get(bucketKey + 1) - 
+                           bucketAddressList.get(bucketKey))];
 				}
 				
 				reader.read(bucketByteArray);
