@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
@@ -85,6 +86,7 @@ public class OrderSystemImpl implements OrderSystem {
 	private ThreadPool threadPool = ThreadPool.getInstance();
     private ExecutorService queryExe = threadPool.getQueryExe();
     public ConcurrentCache rowCache = null;
+	private AtomicLong queryCounter = new AtomicLong(0L);
 
 	/**
 	 * 测试类 construct测试construct方法
@@ -603,6 +605,8 @@ public class OrderSystemImpl implements OrderSystem {
             Future<ResultImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
+				queryCounter.getAndIncrement();
+                System.out.println("Done order: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -632,6 +636,8 @@ public class OrderSystemImpl implements OrderSystem {
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
+				queryCounter.getAndIncrement();
+                System.out.println("Done ordersByBuyer: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -662,6 +668,8 @@ public class OrderSystemImpl implements OrderSystem {
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
+				queryCounter.getAndIncrement();
+                System.out.println("Done ordersBySaler: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -692,6 +700,8 @@ public class OrderSystemImpl implements OrderSystem {
             Future<KeyValueImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
+				queryCounter.getAndIncrement();
+                System.out.println("Done sumOrdersByGood: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
