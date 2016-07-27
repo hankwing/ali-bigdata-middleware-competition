@@ -13,11 +13,11 @@ public class RaceConfig implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
-	public static long smallFileSizeThreshold = (long) (300* Math.pow(1024, 2));
+	public static long smallFileSizeThreshold = (long) (1* Math.pow(1024, 2));
 	
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
-	public static int fileHandleNumber = 8;				// 每个文件预先打开的句柄数
+	public static int fileHandleNumber = 1;				// 每个文件预先打开的句柄数
 	
 	//public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	//public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量

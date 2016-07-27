@@ -113,16 +113,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-					/*buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");*/
-					buyerfiles.add("benchmark/buyer_records_1.txt");
+					buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");
+					//buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-					/*goodfiles.add("prerun_data/good.0.0");
+					goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");*/
-					goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.2.2");
+					//goodfiles.add("benchmark/good_records_1.txt");
 					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
@@ -130,19 +130,19 @@ public class OrderSystemImpl implements OrderSystem {
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
 					orderfiles = new ArrayList<String>();
-					/*orderfiles.add("prerun_data/order.0.0");
+					orderfiles.add("prerun_data/order.0.0");
 					orderfiles.add("prerun_data/order.0.3");
 					orderfiles.add("prerun_data/order.1.1");
-					orderfiles.add("prerun_data/order.2.2");*/
+					orderfiles.add("prerun_data/order.2.2");
 					
-					orderfiles.add("benchmark/order_records_1.txt");
+					/*orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
 					orderfiles.add("benchmark/order_records_+5.txt");
 					orderfiles.add("benchmark/order_records_+6.txt");
 					orderfiles.add("benchmark/order_records_+7.txt");
 					orderfiles.add("benchmark/order_records_+8.txt");
-					orderfiles.add("benchmark/order_records_+9.txt");
+					orderfiles.add("benchmark/order_records_+9.txt");*/
 					/*orderfiles.add("benchmark/order_records_+10.txt");
 					orderfiles.add("benchmark/order_records_+11.txt");
 					orderfiles.add("benchmark/order_records_+12.txt");
