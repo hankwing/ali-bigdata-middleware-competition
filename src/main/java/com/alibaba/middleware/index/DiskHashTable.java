@@ -256,9 +256,10 @@ public class DiskHashTable<K,T> implements Serializable {
 						endp = (long) ByteDirectMemory.getPosition();
 					}
 					byte[] bucketbytes = ByteDirectMemory.get(startp.intValue(), endp.intValue() - startp.intValue());
+					
 					ByteArrayInputStream streamIn = new ByteArrayInputStream(bucketbytes);
 					ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
-
+					
 					fileBucket = (HashBucket<K,T>) bucketReader.readObject();
 					fileBucket.setContext(this);
 					
