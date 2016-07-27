@@ -280,6 +280,7 @@ public class DiskHashTable<K,T> implements Serializable {
 				}
 				streamIn.getChannel().position(bucketAddressList.get(bucketKey));
 				fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+				bucketReader.close();
 				//reader.bucketReader.readObject();
 				//if( reader.bucketReader.available() > 0) {
 				//	//reader.bucketReader.readByte();
@@ -300,11 +301,8 @@ public class DiskHashTable<K,T> implements Serializable {
 				//System.out.println("load bucket:" + bucketKey);
 				bucketList.put(bucketKey, fileBucket);
 				bucketCachePool.addBucket(fileBucket);			// 放入缓冲区
-				//bucketReader.close();
-				//bucketReaderPool.put(reader);
 				readWriteLock.readLock().unlock();
-				//bucketQueue.put(fileBucket);
-				//bucketReader.close();
+
 				
 			}
 
