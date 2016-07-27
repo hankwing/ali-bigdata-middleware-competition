@@ -30,10 +30,12 @@ import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.ConstructSystem;
 import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
+import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.threads.*;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
+import com.sun.org.apache.bcel.internal.generic.NEW;
 
 /**
  * 订单系统实现
@@ -87,7 +89,10 @@ public class OrderSystemImpl implements OrderSystem {
     private ExecutorService queryExe = threadPool.getQueryExe();
     public ConcurrentCache rowCache = null;
 	private AtomicLong queryCounter = new AtomicLong(0L);
+	
 
+	//直接内存
+	ByteDirectMemory directMemory = new ByteDirectMemory(1024*1024*128);
 	/**
 	 * 测试类 construct测试construct方法
 	 * @param args
