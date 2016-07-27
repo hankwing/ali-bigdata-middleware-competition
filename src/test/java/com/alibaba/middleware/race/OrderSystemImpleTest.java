@@ -37,12 +37,17 @@ public class OrderSystemImpleTest {
 //        buyerfiles.add("benchmark/prerun_data/buyer.1.1");
         buyerfiles.add("benchmark/buyer_records0");
         buyerfiles.add("benchmark/buyer_records1");
+        buyerfiles.add("benchmark/buyer_records2");
+        buyerfiles.add("benchmark/buyer_records3");
+//        buyerfiles.add("benchmark/buyer_records1");
 
 //        goodfiles.add("benchmark/prerun_data/good.0.0");
 //        goodfiles.add("benchmark/prerun_data/good.1.1");
 //        goodfiles.add("benchmark/prerun_data/good.2.2");
         goodfiles.add("benchmark/good_records0");
         goodfiles.add("benchmark/good_records1");
+        goodfiles.add("benchmark/good_records2");
+        goodfiles.add("benchmark/good_records3");
 
 //        orderfiles.add("benchmark/prerun_data/order.0.0");
 //        orderfiles.add("benchmark/prerun_data/order.1.1");
@@ -54,6 +59,12 @@ public class OrderSystemImpleTest {
         orderfiles.add("benchmark/order_records10");
         orderfiles.add("benchmark/order_records11");
         orderfiles.add("benchmark/order_records12");
+        orderfiles.add("benchmark/order_records20");
+        orderfiles.add("benchmark/order_records21");
+        orderfiles.add("benchmark/order_records22");
+        orderfiles.add("benchmark/order_records30");
+        orderfiles.add("benchmark/order_records31");
+        orderfiles.add("benchmark/order_records32");
 
         List<String> storeFolders = new ArrayList<String>();
         // 添加三个盘符
@@ -112,10 +123,11 @@ public class OrderSystemImpleTest {
             long startTime = random.nextLong();
             long endTime = random.nextLong();
 
+            System.out.println("query2 " + startTime + " - " + endTime + " - " + buyerId);
             Iterator<OrderSystem.Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
-            System.out.println("query2");
             while(results.hasNext()) {
-                System.out.println("values:" + results.next());
+//                System.out.println("values:" + results.next());
+                results.next();
             }
         }
         System.out.println("end query2");
@@ -132,11 +144,11 @@ public class OrderSystemImpleTest {
             String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
             goodId = goodId == null? UUID.randomUUID().toString(): goodId;
             Iterator<OrderSystem.Result> results = orderSystem.queryOrdersBySaler("", goodId, null);
-            System.out.println("query3");
+            System.out.println("query3 " + goodId);
             if(results.hasNext()) {
-                System.out.println("values:" + results.next());
+//                System.out.println("values:" + results.next());
+                results.next();
             }
-
         }
         System.out.println("stop query3" );
         br.close();
