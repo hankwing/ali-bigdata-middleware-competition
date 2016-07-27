@@ -168,7 +168,6 @@ public class DiskHashTable<K,T> implements Serializable {
 				
 				fos = new FileOutputStream(bucketFilePath);
 				offsetOos = new ObjectOutputStream(byteArrayOs);
-				
 				bufferedFout = new BufferedOutputStream(fos);
 				bufferedFout.write(byteArrayOs.toByteArray());
 				lastOffset = byteArrayOs.size() + fos.getChannel().position();
@@ -181,6 +180,7 @@ public class DiskHashTable<K,T> implements Serializable {
 					.entrySet()) {
 				bucketAddressList.put(writeBucket.getKey(), lastOffset);
 				byteArrayOs.reset();
+				//offsetOos = new ObjectOutputStream(byteArrayOs);
 				offsetOos.writeUnshared(writeBucket.getValue());
 				offsetOos.reset();
 				lastOffset += byteArrayOs.size();
@@ -265,22 +265,25 @@ public class DiskHashTable<K,T> implements Serializable {
 				// 需要从文件里读桶 该桶需要缓冲区管理
 				readWriteLock.readLock().lock();
 				//if( streamIn == null) {
-				//byte[] hehe = new byte[2000];
-				FileInputStream streamIn = new FileInputStream(bucketFilePath);
-				/*streamIn.read(hehe, bucketAddressList.get(bucketKey).intValue(), 
-						bucketAddressList.get(bucketKey +1).intValue() - bucketAddressList.get(bucketKey).intValue());*/
-				//ByteArrayInputStream bais = new ByteArrayInputStream(hehe);
-				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
-				//}
-				//BucketReader reader = bucketReaderPool.take();
-				//}
 				if(bucketAddressList == null) {
 					// 需要从文件中读出该map
 					bucketAddressList = getHashDiskTable(bucketAddressOffset);
 				}
+				
+				//byte[] bucketByteArray = new byte[20000];
+				FileInputStream streamIn = new FileInputStream(bucketFilePath);
+				//streamIn.getChannel().position(bucketAddressList.get(bucketKey));
+				//streamIn.read(bucketByteArray);
+				//ByteArrayInputStream bais = new ByteArrayInputStream(bucketByteArray);
+				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
 				streamIn.getChannel().position(bucketAddressList.get(bucketKey));
+				//}
+				//BucketReader reader = bucketReaderPool.take();
+				//}
+				
+				//streamIn.getChannel().position(bucketAddressList.get(bucketKey));
 				fileBucket = (HashBucket<K,T>) bucketReader.readObject();
-				bucketReader.close();
+				//bucketReader.close();
 				//reader.bucketReader.readObject();
 				//if( reader.bucketReader.available() > 0) {
 				//	//reader.bucketReader.readByte();
@@ -296,7 +299,7 @@ public class DiskHashTable<K,T> implements Serializable {
 					bucketCachePool.addBucket(fileBucket);			// 放入缓冲区
 				}
 				readWriteLock.readLock().unlock();*/
-				
+				bucketReader.close();
 				fileBucket.setContext(this);
 				//System.out.println("load bucket:" + bucketKey);
 				bucketList.put(bucketKey, fileBucket);

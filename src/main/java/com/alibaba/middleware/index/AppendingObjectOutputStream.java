@@ -15,6 +15,13 @@ public class AppendingObjectOutputStream extends ObjectOutputStream {
 	    super(out);
 	  }
 
+	/*@Override
+	public void writeUnshared(Object obj) throws IOException {
+		// TODO Auto-generated method stub
+		writeStreamHeader();
+		super.writeUnshared(obj);
+	}*/
+
 	  @Override
 	  protected void writeStreamHeader() throws IOException {
 	    // do not write a header, but reset:

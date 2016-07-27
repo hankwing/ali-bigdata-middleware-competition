@@ -145,7 +145,8 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 				// 在索引里找offsetlist
 				List<byte[]> offsetList = new ArrayList<byte[]>();
 				for (int filePathIndex : system.orderIndexMapping.getAllFileIndexs()) {
-					
+					System.out.println("lookup: " + goodid + " indexfileNum:" + 
+				system.orderIndexMapping.getAllFileIndexs().length);
 					DiskHashTable<Integer, List<byte[]>> hashTable = system.orderGoodIdIndexList
 							.get(filePathIndex);
 					List<byte[]> offSetresults = hashTable.get(surrId);
