@@ -47,6 +47,8 @@ public class SmallFileWriter {
 	//数据文件映射
 	private DataFileMapping dataFileMapping;
 	private int dataFileSerialNumber;
+	
+	private int interval;
 
 	public SmallFileWriter(
 			ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList,
@@ -55,12 +57,24 @@ public class SmallFileWriter {
 			String path,String name) {
 		this.offset = 0;
 		this.count = 0;
-		this.dataFileNumber = 0;
+
 		this.indexQueues = indexQueues;
 		this.MAX_LINES = RaceConfig.singleFileMaxLines;
 		this.fileHandlersList = fileHandlersList;
 		this.dataFileMapping = dataFileMapping;
-
+		
+		this.interval = 3;
+		
+		if (name.equals(RaceConfig.buyerFileNamePrex)) {
+			this.dataFileNumber = 0;
+		}
+		if (name.equals(RaceConfig.goodFileNamePrex)) {
+			this.dataFileNumber = 1;
+		}
+		if (name.equals(RaceConfig.goodFileNamePrex)) {
+			this.dataFileNumber = 2;
+		}
+		
 		nextLineByteLength = "\n".getBytes().length;
 
 		//如果文件夹不存在则创建文件夹
@@ -102,7 +116,7 @@ public class SmallFileWriter {
 			if (count == MAX_LINES) {
 				writer.close();
 				//创建新的文件
-				dataFileNumber++;
+				dataFileNumber = dataFileNumber + interval;
 				dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
 
 				dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName);
