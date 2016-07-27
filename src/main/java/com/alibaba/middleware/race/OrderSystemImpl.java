@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
@@ -85,6 +86,7 @@ public class OrderSystemImpl implements OrderSystem {
 	private ThreadPool threadPool = ThreadPool.getInstance();
     private ExecutorService queryExe = threadPool.getQueryExe();
     public ConcurrentCache rowCache = null;
+	private AtomicLong queryCounter = new AtomicLong(0L);
 
 	/**
 	 * 测试类 construct测试construct方法
@@ -138,11 +140,11 @@ public class OrderSystemImpl implements OrderSystem {
 					orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
-					//orderfiles.add("benchmark/order_records_+5.txt");
-					//orderfiles.add("benchmark/order_records_+6.txt");
-					//orderfiles.add("benchmark/order_records_+7.txt");
-					//orderfiles.add("benchmark/order_records_+8.txt");
-					//orderfiles.add("benchmark/order_records_+9.txt");
+					orderfiles.add("benchmark/order_records_+5.txt");
+					orderfiles.add("benchmark/order_records_+6.txt");
+					orderfiles.add("benchmark/order_records_+7.txt");
+					orderfiles.add("benchmark/order_records_+8.txt");
+					orderfiles.add("benchmark/order_records_+9.txt");
 					/*orderfiles.add("benchmark/order_records_+10.txt");
 					orderfiles.add("benchmark/order_records_+11.txt");
 					orderfiles.add("benchmark/order_records_+12.txt");
@@ -315,11 +317,11 @@ public class OrderSystemImpl implements OrderSystem {
 		//buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
 		//goodIdSurrKeyFile = new FilePathWithIndex();
 
-		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor", BucketCachePool.getInstance());
+		JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor");
 		//CacheMonitorThread cacheMonitorThread = new CacheMonitorThread(ConcurrentCache.getInstance());
-		//threadPool.addMonitor(jvmMonitorThread);
+		threadPool.addMonitor(jvmMonitorThread);
 		//threadPool.addMonitor(cacheMonitorThread);
-		//threadPool.startMonitors();
+		threadPool.startMonitors();
 		
 	}
 
@@ -603,6 +605,8 @@ public class OrderSystemImpl implements OrderSystem {
             Future<ResultImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
+				queryCounter.getAndIncrement();
+                System.out.println("Done order: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -632,6 +636,8 @@ public class OrderSystemImpl implements OrderSystem {
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
+				queryCounter.getAndIncrement();
+                System.out.println("Done ordersByBuyer: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -662,6 +668,8 @@ public class OrderSystemImpl implements OrderSystem {
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
+				queryCounter.getAndIncrement();
+                System.out.println("Done ordersBySaler: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -692,6 +700,8 @@ public class OrderSystemImpl implements OrderSystem {
             Future<KeyValueImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
+				queryCounter.getAndIncrement();
+                System.out.println("Done sumOrdersByGood: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {

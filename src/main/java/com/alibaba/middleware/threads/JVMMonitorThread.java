@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class JVMMonitorThread extends SchedulerThread {
     private boolean isReadyToStop = false;
     private String workerName = "JVMMonitor";
-    private BucketCachePool bucketCachePool;
     private float memFactor = RaceConfig.memFactor;
     private int gcCounter = 0;
     private int gcCounterThreshold = RaceConfig.gcCounterThreshold;
@@ -25,13 +24,8 @@ public class JVMMonitorThread extends SchedulerThread {
     private long mb = 1024L * 1024L;
     private int removeBucketNum = RaceConfig.removeBucketNum;
 
-    public JVMMonitorThread(BucketCachePool bucketCachePool) {
-        this.bucketCachePool = bucketCachePool;
-    }
-
-    public JVMMonitorThread(String workerName, BucketCachePool bucketCachePool) {
+    public JVMMonitorThread(String workerName) {
         this.workerName = workerName;
-        this.bucketCachePool = bucketCachePool;
     }
 
     @Override
@@ -58,20 +52,21 @@ public class JVMMonitorThread extends SchedulerThread {
                 if ((getTotalMem() - getFreeMem()) > getMaxMem() * memFactor) {
                     System.out.println("Total mem: " + getTotalMem() + "MB");
                     System.out.println("Free mem: " + getFreeMem() + "MB");
-                    if (gcCounter < gcCounterThreshold) {
-                        gcCounter++;
-                    } else {
-                        System.out.println("Remove bucket...");
-                        bucketCachePool.removeBuckets(removeBucketNum);
-                        gcCounter = 0;
-                    }
+//                    if (gcCounter < gcCounterThreshold) {
+//                        gcCounter++;
+//                    } else {
+//                        System.out.println("Remove bucket...");
+////                        bucketCachePool.removeBuckets(removeBucketNum);
+//                        gcCounter = 0;
+//                    }
+                    System.gc();
                 }
             }
 //            System.out.println("Stop");
         } catch (OutOfMemoryError e) {
-            System.out.println("Out of memory, remove bucket...");
-            bucketCachePool.removeBuckets(removeBucketNum);
-            gcCounter = 0;
+            System.out.println("Out of memory, gc...");
+            System.gc();
+//            bucketCachePool.removeBuckets(removeBucketNum);
         }
     }
 
