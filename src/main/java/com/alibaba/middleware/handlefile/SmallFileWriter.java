@@ -83,7 +83,7 @@ public class SmallFileWriter {
 			file.mkdirs();
 		}
 
-		dataFilePerfix = new String(path + name);
+		dataFilePerfix = new String(path + name + "_smallfile_");
 		try {
 			dataFileName = dataFilePerfix + String.valueOf(dataFileNumber);
 			this.writer = new BufferedWriter(new FileWriter(dataFileName));

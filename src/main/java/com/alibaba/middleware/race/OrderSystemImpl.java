@@ -120,16 +120,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-					/*buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");*/
-					buyerfiles.add("benchmark/buyer_records_1.txt");
+					buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");
+					//buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-					/*goodfiles.add("prerun_data/good.0.0");
+					goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");*/
-					goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.2.2");
+					//goodfiles.add("benchmark/good_records_1.txt");
 					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
@@ -137,19 +137,19 @@ public class OrderSystemImpl implements OrderSystem {
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
 					orderfiles = new ArrayList<String>();
-					/*orderfiles.add("prerun_data/order.0.0");
+					orderfiles.add("prerun_data/order.0.0");
 					orderfiles.add("prerun_data/order.0.3");
 					orderfiles.add("prerun_data/order.1.1");
-					orderfiles.add("prerun_data/order.2.2");*/
+					orderfiles.add("prerun_data/order.2.2");
 					
-					orderfiles.add("benchmark/order_records_1.txt");
+					/*orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
 					orderfiles.add("benchmark/order_records_+5.txt");
 					orderfiles.add("benchmark/order_records_+6.txt");
 					orderfiles.add("benchmark/order_records_+7.txt");
 					orderfiles.add("benchmark/order_records_+8.txt");
-					orderfiles.add("benchmark/order_records_+9.txt");
+					orderfiles.add("benchmark/order_records_+9.txt");*/
 					/*orderfiles.add("benchmark/order_records_+10.txt");
 					orderfiles.add("benchmark/order_records_+11.txt");
 					orderfiles.add("benchmark/order_records_+12.txt");
@@ -176,6 +176,9 @@ public class OrderSystemImpl implements OrderSystem {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+					
+					DiskHashTable.isbuilding = false;
+					
 				} else if (command.startsWith("lookup1")) {
 	
 					// lookup:xxx 查找某个key值的value
@@ -187,10 +190,33 @@ public class OrderSystemImpl implements OrderSystem {
 					}
 					System.out.println("values:" + 
 					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
+					/*List<String> keys = new ArrayList<String>();
+					keys.add("orderid");
+					int count = 0;
+					for( int i = 0; i < orderfiles.size() ; i++) {
+						FileInputStream fis = new FileInputStream(orderfiles.get(i));
+					    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+					    String line = br.readLine();
+					    
+					    while( line != null) {
+					    	long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
+					    			line, RaceConfig.orderId));
+					    	if(orderSystem.queryOrder( orderid, keys) == null) {
+					    		// error
+					    		count ++;
+					    		System.out.println("cannot find orderid:" + orderid);
+					    	}
+					    	line = br.readLine();
+					    }
+					    br.close();
+					   
+					}
+					System.out.println("error count:" + count);*/
+			
 					
 				}  else if (command.startsWith("lookup2")) {
 					// lookup:xxx 查找某个key值的value
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String buyerId = rawCommand[0];
 					long startTime = Long.valueOf(rawCommand[1]);
 					long endTime = Long.valueOf(rawCommand[2]);
@@ -198,8 +224,8 @@ public class OrderSystemImpl implements OrderSystem {
 					Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
-					}*/
-					System.out.println("start query2" );
+					}
+					/*System.out.println("start query2" );
 					
 					Random random = new Random();
 					FileInputStream fis = new FileInputStream(buyerfiles.get(
@@ -218,13 +244,41 @@ public class OrderSystemImpl implements OrderSystem {
 						}
 					}
 					System.out.println("end query2");
-					br.close();
+					br.close();*/
 				} else if (command.startsWith("lookup3")) {
 					// lookup:xxx 查找某个key值的value
-					System.out.println("start query3" );
-					Random random = new Random();
-					FileInputStream fis = new FileInputStream(goodfiles.get(random.nextInt(
-							goodfiles.size())));
+					/*System.out.println("start query3" );
+					List<String> keys = new ArrayList<String>();
+					keys.add("orderid");
+					int count = 0;
+					for( int i = 0; i < orderfiles.size() ; i++) {
+						FileInputStream fis = new FileInputStream(orderfiles.get(i));
+					    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+					    String line = br.readLine();
+					    
+					    while( line != null) {
+					    	String goodid = RecordsUtils.getValueFromLine(
+					    			line, RaceConfig.goodId);
+					    	Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodid, keys);
+							//System.out.println("query3");
+							if(results.hasNext()) {
+								
+							}
+							else {
+								count ++;
+								System.out.println("error");
+							}
+					    	line = br.readLine();
+					    }
+					    br.close();
+					   
+					}
+					
+					System.out.println("error count:" + count);*/
+					
+					/*Random random = new Random();
+					FileInputStream fis = new FileInputStream(orderfiles.get(random.nextInt(
+							orderfiles.size())));
 				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 					for( int i = 0; i< 2000; i++) {
 						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
@@ -232,22 +286,29 @@ public class OrderSystemImpl implements OrderSystem {
 						Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, null);
 						System.out.println("query3");
 						if(results.hasNext()) {
-							System.out.println("values:" + results.next());
+							
+						}
+						else {
+							System.out.println("error");
 						}
 						
 					}
-					System.out.println("stop query3" );
-					br.close();
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					System.out.println("stop query3" );*/
+					//br.close();
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
 						keys.add(rawCommand[i]);
 					}
+					int count = 0;
 					Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodId, keys);
 					while(results.hasNext()) {
+						count ++;
+						//results.next();
 						System.out.println("values:" + results.next());
-					}*/
+					}
+					System.out.println("count:" + count);
 					
 				} else if (command.startsWith("lookup4")) {
 					// lookup:xxx 查找某个key值的value
@@ -674,6 +735,12 @@ public class OrderSystemImpl implements OrderSystem {
             try {
                 iterator = future.get();
 				queryCounter.getAndIncrement();
+				/*if( goodid.equals("al-af03-8175d3722b44") || goodid.equals("al-9afe-b69ff48c2d3a")
+						|| goodid.equals("al-af03-8175d3722b44")) {
+					if(iterator.hasNext()) {
+						System.out.println("values:" + iterator.next());
+					}
+				}*/
                 System.out.println("Done ordersBySaler: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();

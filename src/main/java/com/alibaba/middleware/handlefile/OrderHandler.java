@@ -145,7 +145,7 @@ public class OrderHandler {
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.orderFileNamePrex);
 		//处理小文件
-		for(String smallfile:smallFiles){
+		for(String smallfile:smallFiles) {
 			try {
 				
 				reader = new BufferedReader(new FileReader(smallfile));

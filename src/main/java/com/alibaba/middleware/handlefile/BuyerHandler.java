@@ -215,6 +215,7 @@ public class BuyerHandler{
 					buyerIdHashTable.put(RecordsUtils.getValueFromLineWithKeyList(
 							record.getRecordsData(),RaceConfig.buyerId, tempAttrList), record.getOffset());
 					//surrKey ++;
+					BucketCachePool.getInstance().removeBuckets(10);
 				}
 				else if(isEnd ) {
 					// 说明队列为空
