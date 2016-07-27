@@ -258,6 +258,7 @@ public class DiskHashTable<K,T> implements Serializable {
 
 	/**
 	 * 内部调用函数，从直接内存读取某个桶到内存中
+	 * 查询阶段通过mappedfile进行加载数据
 	 * 
 	 * @param bucketKey
 	 * @return
@@ -276,8 +277,10 @@ public class DiskHashTable<K,T> implements Serializable {
 					}else {
 						endp = (long) ByteDirectMemory.getPosition();
 					}
-					byte[] bucketbytes = ByteDirectMemory.get(startp.intValue(), endp.intValue() - startp.intValue());
-
+					byte[] bucketbytes;
+					synchronized (ByteDirectMemory.buffer) {
+						bucketbytes = ByteDirectMemory.get(startp.intValue(), endp.intValue() - startp.intValue());
+					}
 					ByteArrayInputStream streamIn = new ByteArrayInputStream(bucketbytes);
 					ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
 
@@ -288,11 +291,9 @@ public class DiskHashTable<K,T> implements Serializable {
 
 				} else {
 					//从文件中读取数据
-					readWriteLock.readLock().lock();
-
+					
 					FileInputStream streamIn = new FileInputStream(bucketFilePath);
 					ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
-
 					if(bucketAddressList == null) {
 						// 需要从文件中读出该map
 						bucketAddressList = getHashDiskTable(bucketAddressOffset);
@@ -300,14 +301,13 @@ public class DiskHashTable<K,T> implements Serializable {
 					streamIn.getChannel().position(bucketAddressList.get(bucketKey));
 					fileBucket = (HashBucket<K,T>) bucketReader.readObject();
 					bucketReader.close();
-
 					fileBucket.setContext(this);
-					readWriteLock.readLock().unlock();
 
 				}
 
 				bucketList.put(bucketKey, fileBucket);
 				bucketCachePool.addBucket(fileBucket);
+				
 			}
 
 		} catch (FileNotFoundException e) {
@@ -469,7 +469,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	}
 
 	public static void main(String args[]){
-		ByteDirectMemory directMemory = new ByteDirectMemory(1024*1024);
+		ByteDirectMemory directMemory = new ByteDirectMemory(Integer.MAX_VALUE);
 		DiskHashTable<Integer, List<byte[]>> table = new DiskHashTable<Integer,List<byte[]>>("1.txt",List.class);
 		table.put(1, "wxl".getBytes());
 		table.writeBucket(1);

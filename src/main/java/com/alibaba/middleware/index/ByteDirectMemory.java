@@ -4,11 +4,9 @@ import java.nio.ByteBuffer;
 
 public class ByteDirectMemory {
 	public static ByteBuffer buffer;
-	public static int size;
 	
 	public ByteDirectMemory(int size) {
 		// TODO Auto-generated constructor stub
-		this.size = size;
 		buffer = ByteBuffer.allocateDirect(size);
 	}
 
