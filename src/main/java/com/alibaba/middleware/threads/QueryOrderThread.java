@@ -7,6 +7,7 @@ import com.alibaba.middleware.race.OrderSystem.TypeException;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.ResultImpl;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.RecordsUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,19 +40,21 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
     @Override
     public ResultImpl call() {
     	ResultImpl result = null;
-		Row resultKV = new Row();
+		//Row resultKV = new Row();
+		StringBuilder resultBuilder = new StringBuilder();
 		
 		try {
-			resultKV.putKV(RaceConfig.orderId, orderId);
+			//resultKV.putKV(RaceConfig.orderId, orderId);
 			if (keys == null) {
 				// 需要返回所有记录
-				Row orderIdRow = system.getRowById(TableName.OrderTable,orderId);
-				if( orderIdRow !=null ) {
-					resultKV.putAll(orderIdRow);
-					resultKV.putAll(system.getRowById(TableName.BuyerTable,
-							resultKV.get(RaceConfig.buyerId).valueAsString()));
-					resultKV.putAll(system.getRowById(TableName.GoodTable,
-							resultKV.get(RaceConfig.goodId).valueAsString()));
+				String orderString = system.getRowStringById(TableName.OrderTable, orderId);
+				
+				if( orderString != null ) {
+					resultBuilder.append(orderString).append("\t");
+					resultBuilder.append(system.getRowStringById(TableName.BuyerTable, 
+							RecordsUtils.getValueFromLine(orderString, RaceConfig.buyerId))).append("\t");
+					resultBuilder.append(system.getRowStringById(TableName.GoodTable, 
+							RecordsUtils.getValueFromLine(orderString, RaceConfig.goodId)));
 				}
 				else {
 					// 没有找到对应orderid的记录
@@ -64,24 +67,26 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 				List<String> buyerKeys = new ArrayList<String>();
 				List<String> goodKeys = new ArrayList<String>();
 				for (String key : keys) {
-					if (system.buyerAttrList.contains(key)) {
+					if (!key.equals(RaceConfig.buyerId) && system.buyerAttrList.contains(key)) {
 						buyerKeys.add(key);
-					} else if (system.goodAttrList.contains(key)) {
+					} else if (!key.equals(RaceConfig.goodId) && system.goodAttrList.contains(key)) {
 						goodKeys.add(key);
 					}
 				}
-				Row orderIdRow = system.getRowById(TableName.OrderTable,orderId);
-				if( orderIdRow !=null ) {
-					resultKV.putAll(orderIdRow);
+				String orderString = system.getRowStringById(TableName.OrderTable, orderId);
+				if( orderString !=null ) {
+					resultBuilder.append(orderString);
 					if(!buyerKeys.isEmpty()) {
 						// 需要查询buyer表
-						resultKV.putAll(system.getRowById(TableName.BuyerTable,
-								resultKV.get(RaceConfig.buyerId).valueAsString()));
+						resultBuilder.append("\t");
+						resultBuilder.append(system.getRowStringById(TableName.BuyerTable, 
+								RecordsUtils.getValueFromLine(orderString, RaceConfig.buyerId)));
 					}
 					if( !goodKeys.isEmpty()) {
 						// 需要查询good表
-						resultKV.putAll(system.getRowById(TableName.GoodTable,
-								resultKV.get(RaceConfig.goodId).valueAsString()));
+						resultBuilder.append("\t");
+						resultBuilder.append(system.getRowStringById(TableName.GoodTable, 
+								RecordsUtils.getValueFromLine(orderString, RaceConfig.goodId)));
 					}
 				}
 				else {
@@ -94,7 +99,7 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 				// 这里说明key为空 只需要判断是否存在该条记录即可
 				// 这里需改进
 				
-				if(system.getRowById(TableName.OrderTable, orderId) == null) {
+				if(!system.isRecordExist(orderId)) {
 					// 没找到相应订单
 					return null;
 				}
@@ -104,7 +109,8 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		result = new ResultImpl(orderId, resultKV.getKVs(keys));
+		result = new ResultImpl(orderId, 
+				RecordsUtils.createSubKVMapFromLine(resultBuilder.toString(), keys));
 		
         return result;
     }

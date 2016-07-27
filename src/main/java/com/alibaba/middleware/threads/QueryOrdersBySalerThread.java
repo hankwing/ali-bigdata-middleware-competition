@@ -18,6 +18,7 @@ import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,80 +30,87 @@ import java.util.TreeMap;
  * @author Jelly
  */
 public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
-    private String salerid;
-    private String goodid;
-    private Collection<String> keys;
-    private OrderSystemImpl system = null;
-    private ConcurrentCache rowCache = null;
+	private String salerid;
+	private String goodid;
+	private Collection<String> keys;
+	private OrderSystemImpl system = null;
+	private ConcurrentCache rowCache = null;
 
-    public QueryOrdersBySalerThread(OrderSystemImpl system,
-    		String salerid, String goodid, Collection<String> keys) {
-    	rowCache = ConcurrentCache.getInstance();
-    	this.system = system;
-        this.salerid = salerid;
-        this.goodid = goodid;
-        this.keys = keys;
-    }
-    
-    /**
-     * 判断row是否符合要求 符合则加入结果集
-     * @param row
-     * @param results
-     */
-    public void handleOffsets( List<byte[]> offsets, TreeMap<Long, Result> results, List<String> buyerKeys,
-    		List<String> goodKeys) {
-    	
-    	for( byte[] encodedOffset: offsets) {
-			// 放入缓冲区
-    		// 这里要将offset解析成文件下标+offset的形式才能用
-    		FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
-    		long offset = offsetInfo.offset;
-    		int fileIndex = offsetInfo.fileIndex;
-			//Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
-    		Row row = null;
-			//if(row != null) {
-			//	row = row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
-			//			row : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
-			//					system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable));
-			//}
-			//else {
-			// 在硬盘里找数据
-			String diskData = RecordsUtils.getStringFromFile(
-					system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable);
-			row = RecordsUtils.createKVMapFromLine(diskData);
-				//rowCache.putInCache(new BytesKey(encodedOffset), diskData, TableName.OrderTable);
-				// 放入缓冲区
-			//}
+	public QueryOrdersBySalerThread(OrderSystemImpl system, String salerid,
+			String goodid, Collection<String> keys) {
+		rowCache = ConcurrentCache.getInstance();
+		this.system = system;
+		this.salerid = salerid;
+		this.goodid = goodid;
+		this.keys = keys;
+	}
 
-			try {
-				long orderId = row.getKV(RaceConfig.orderId).valueAsLong();
-				if( keys == null) {
-					row.putAll(system.getRowById(TableName.BuyerTable, 
-							row.get(RaceConfig.buyerId).valueAsString()));
-					row.putAll(system.getRowById(TableName.GoodTable, 
-							row.get(RaceConfig.goodId).valueAsString()));
-				}
-				else if( !buyerKeys.isEmpty()) {
-					// need query buyerTable
-					row.putAll(system.getRowById(TableName.BuyerTable,
-							row.get(RaceConfig.buyerId).valueAsString()));
-				}
-				if(!goodKeys.isEmpty()) {
-					//System.out.println("weired query!");
-					row.putAll(system.getRowById(TableName.GoodTable,
-							row.get(RaceConfig.goodId).valueAsString()));
-				}
-				results.put(orderId, new ResultImpl(orderId, row.getKVs(keys)));
-			} catch (TypeException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+	/**
+	 * 判断row是否符合要求 符合则加入结果集
+	 * 
+	 * @param row
+	 * @param results
+	 */
+	public void handleOffsets(List<byte[]> offsets,
+			TreeMap<Long, Result> results, List<String> buyerKeys,
+			List<String> goodKeys) {
+		try {
+			String goodString = null;
+			if( !goodKeys.isEmpty()) {
+				// 如果要找的key包括了good的key，则不用每次都join 直接将相关字符串加到结果的后面就行
+				goodString = system.getRowStringById(TableName.GoodTable, goodid);
 			}
-		}
-    }
+			
+			for (byte[] encodedOffset : offsets) {
+				// 放入缓冲区
+				// 这里要将offset解析成文件下标+offset的形式才能用
+				ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
+				int fileIndex = buffer.getInt();
+				long offset = buffer.getLong();
 
-    /**
-     * 第三个查询
-	 * 查询某位卖家某件商品所有订单的某些字段
+				String diskData = RecordsUtils.getStringFromFile(
+						system.orderHandlersList.get(fileIndex), offset,
+						TableName.OrderTable);
+				if (RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId).equals(goodid)) {
+					// 确认一下goodid符合要求
+					// rowCache.putInCache(new BytesKey(encodedOffset),
+					// diskData, TableName.OrderTable);
+					// 放入缓冲区
+					StringBuilder resultBuilder = new StringBuilder();
+					resultBuilder.append(diskData);
+					
+					long orderId = Long.valueOf(RecordsUtils.getValueFromLine(diskData, RaceConfig.orderId));
+					if (keys == null) {
+						resultBuilder.append("\t");
+						resultBuilder.append(system.getRowStringById(TableName.BuyerTable, 
+								RecordsUtils.getValueFromLine(diskData, RaceConfig.buyerId)));
+						resultBuilder.append("\t");
+						resultBuilder.append(system.getRowStringById(TableName.GoodTable, goodid));
+					} else if (!buyerKeys.isEmpty()) {
+						// need query buyerTable
+						resultBuilder.append("\t");
+						resultBuilder.append(system.getRowStringById(TableName.BuyerTable, 
+								RecordsUtils.getValueFromLine(diskData, RaceConfig.buyerId)));
+					}
+					if (goodString != null) {
+						// 需要放入good表里的相关字段即可
+						resultBuilder.append("\t").append(goodString);
+
+					}
+					results.put(orderId,
+							new ResultImpl(orderId, 
+									RecordsUtils.createSubKVMapFromLine(resultBuilder.toString(), keys)));
+				}
+
+			}
+		} catch (TypeException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 第三个查询 查询某位卖家某件商品所有订单的某些字段
 	 * 
 	 * @param salerid
 	 *            卖家Id
@@ -112,41 +120,42 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 	 *            待查询的字段，如果为null，则查询所有字段，如果为空，则排除所有字段
 	 * @return 符合条件的订单集合，按照订单id从小至大排序
 	 */
-    @Override
-    public Iterator<Result> call() throws Exception {
-        // TODO
+	@Override
+	public Iterator<Result> call() throws Exception {
+		// TODO
 		// 根据商品ID找到多条订单信息 再筛选出keys 结果集按照订单id插入排序
-    	ArrayList<String> buyerKeys = new ArrayList<String>();
-    	ArrayList<String> goodKeys = new ArrayList<String>();
-		if( keys != null) {
+		ArrayList<String> buyerKeys = new ArrayList<String>();
+		ArrayList<String> goodKeys = new ArrayList<String>();
+		if (keys != null) {
 			for (String key : keys) {
-				if (system.buyerAttrList.contains(key)) {
+				if (!key.equals(RaceConfig.buyerId)
+						&& system.buyerAttrList.contains(key)) {
+					// 如果要找的key不是buyerid并且在buyer表属性里的话 加入buyerKeys
 					buyerKeys.add(key);
-				} else if (system.goodAttrList.contains(key)) {
+				} else if (!key.equals(RaceConfig.goodId)
+						&& system.goodAttrList.contains(key)) {
 					goodKeys.add(key);
 				}
 			}
 		}
-		
+
 		TreeMap<Long, Result> results = new TreeMap<Long, Result>();
 		Integer surrId = goodid.hashCode();
-		if( surrId == 0) {
+		if (surrId == 0) {
 			return null;
-		}
-		else {
+		} else {
 			// 在缓冲区里找对应的order数据
-			List<byte[]> orderIds = rowCache.getFromIdCache(surrId, IdIndexType.GoodIdToOrderOffsets);
-			if( orderIds != null) {
+			List<byte[]> orderIds = rowCache.getFromIdCache(surrId,
+					IdIndexType.GoodIdToOrderOffsets);
+			if (orderIds != null) {
 				// 找到了对应的orderid列表
-				handleOffsets(orderIds, results,buyerKeys, goodKeys );
-				
-			}
-			else {
+				handleOffsets(orderIds, results, buyerKeys, goodKeys);
+
+			} else {
 				// 在索引里找offsetlist
 				List<byte[]> offsetList = new ArrayList<byte[]>();
-				for (int filePathIndex : system.orderIndexMapping.getAllFileIndexs()) {
-					System.out.println("lookup: " + goodid + " indexfileNum:" + 
-				system.orderIndexMapping.getAllFileIndexs().length);
+				for (int filePathIndex : system.orderIndexMapping
+						.getAllFileIndexs()) {
 					DiskHashTable<Integer, List<byte[]>> hashTable = system.orderGoodIdIndexList
 							.get(filePathIndex);
 					List<byte[]> offSetresults = hashTable.get(surrId);
@@ -156,14 +165,15 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 					}
 
 				}
-				
-				handleOffsets( offsetList, results, buyerKeys, goodKeys);
+
+				handleOffsets(offsetList, results, buyerKeys, goodKeys);
 				// 放入缓冲区
-				rowCache.putInIdCache(surrId, offsetList, IdIndexType.GoodIdToOrderOffsets);
+				rowCache.putInIdCache(surrId, offsetList,
+						IdIndexType.GoodIdToOrderOffsets);
 			}
-			
+
 		}
-		
+
 		return results.values().iterator();
-    }
+	}
 }
