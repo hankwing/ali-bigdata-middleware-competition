@@ -727,12 +727,12 @@ public class OrderSystemImpl implements OrderSystem {
             try {
                 iterator = future.get();
 				queryCounter.getAndIncrement();
-				if( goodid.equals("al-af03-8175d3722b44") || goodid.equals("al-9afe-b69ff48c2d3a")
+				/*if( goodid.equals("al-af03-8175d3722b44") || goodid.equals("al-9afe-b69ff48c2d3a")
 						|| goodid.equals("al-af03-8175d3722b44")) {
 					if(iterator.hasNext()) {
 						System.out.println("values:" + iterator.next());
 					}
-				}
+				}*/
                 System.out.println("Done ordersBySaler: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();

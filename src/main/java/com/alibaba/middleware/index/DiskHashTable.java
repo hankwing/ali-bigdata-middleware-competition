@@ -94,7 +94,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * 从文件里读取此类时 调用restore恢复初始化一些数据
 	 */
 	public void restore() {
-		bucketList = new HashMap<Integer, HashBucket<K,T>>();
+		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
 		readWriteLock = new ReentrantReadWriteLock();
 		bucketCachePool = BucketCachePool.getInstance();
 	}
@@ -192,11 +192,11 @@ public class DiskHashTable<K,T> implements Serializable {
 			// write this HashTable to dataFile and return offset
 			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map
 			// 建立索引文件句柄缓冲池
-			for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
+			/*for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
 				FileInputStream streamIn = new FileInputStream(bucketFilePath);
 				ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
 				bucketReaderPool.add(new BucketReader(streamIn, bucketReader));
-			}
+			}*/
 			// 把桶对应物理地址的map写出去  减少内存开销
 			byteArrayOs.reset();
 			ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
