@@ -122,6 +122,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 		TreeMap<Long, List<Result>> results = new TreeMap<Long, List<Result>>(
 				Collections.reverseOrder());
 		Integer surrId = buyerid.hashCode();
+		boolean isCached = false;
 		if( surrId == 0) {
 			//不存在该买家
 			return null;
@@ -129,11 +130,21 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 		else {
 			// 先在缓存里找有没有对应的orderId列表
 			List<byte[]> offsetList = rowCache.getFromIdCache(surrId, IdIndexType.BuyerIdToOrderOffsets);
-			if( offsetList != null) {
-				// 在缓冲区里找到了buyerid对应的orderid列表
-				handleOffsetList(offsetList, results);
+			if( offsetList != null && !offsetList.isEmpty()) {
+				ByteBuffer buffer = ByteBuffer.wrap(offsetList.get(0));
+				int fileIndex = buffer.getInt();
+				long offset = buffer.getLong();
+				String diskData = RecordsUtils.getStringFromFile(
+						system.orderHandlersList.get(fileIndex), offset,
+						TableName.OrderTable);
+				if (RecordsUtils.getValueFromLine(diskData, RaceConfig.buyerId)
+						.equals(buyerid)) {
+					// 说明缓冲区里找到了
+					isCached = true;
+					handleOffsetList(offsetList, results);
+				}
 			}
-			else {
+			if( !isCached) {
 				// 没找到则在索引里找offsetlist
 				List<byte[]> offsets = new ArrayList<byte[]>();
 				for (int filePathIndex : system.orderIndexMapping.getAllFileIndexs()) {

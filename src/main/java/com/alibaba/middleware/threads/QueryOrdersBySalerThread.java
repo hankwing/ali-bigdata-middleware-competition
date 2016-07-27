@@ -141,17 +141,28 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 
 		TreeMap<Long, Result> results = new TreeMap<Long, Result>();
 		Integer surrId = goodid.hashCode();
+		boolean isCached = false;
 		if (surrId == 0) {
 			return null;
 		} else {
 			// 在缓冲区里找对应的order数据
 			List<byte[]> orderIds = rowCache.getFromIdCache(surrId,
 					IdIndexType.GoodIdToOrderOffsets);
-			if (orderIds != null) {
-				// 找到了对应的orderid列表
-				handleOffsets(orderIds, results, buyerKeys, goodKeys);
-
-			} else {
+			if( orderIds != null && !orderIds.isEmpty()) {
+				ByteBuffer buffer = ByteBuffer.wrap(orderIds.get(0));
+				int fileIndex = buffer.getInt();
+				long offset = buffer.getLong();
+				String diskData = RecordsUtils.getStringFromFile(
+						system.orderHandlersList.get(fileIndex), offset,
+						TableName.OrderTable);
+				if (RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)
+						.equals(goodid)) {
+					// 说明缓冲区里找到了
+					isCached = true;
+					handleOffsets(orderIds, results, buyerKeys, goodKeys);
+				}
+			}
+			if(!isCached){
 				// 在索引里找offsetlist
 				List<byte[]> offsetList = new ArrayList<byte[]>();
 				for (int filePathIndex : system.orderIndexMapping
