@@ -17,6 +17,7 @@ import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -52,12 +53,10 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 			for( byte[] encodedOffset : offsets) {
 				// 先在缓冲区里找
 				// 这里要将offset解析成文件下标+offset的形式
-				FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
-				long offset = offsetInfo.offset;
-				int fileIndex = offsetInfo.fileIndex;
-				
+				ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
+				int fileIndex = buffer.getInt();
+				long offset = buffer.getLong();
 				//Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
-				Row row = null;
 				//if(row != null) {
 				//	row = row.getKV(RaceConfig.buyerId).valueAsString().equals(buyerid) ?
 				//			row : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
@@ -67,27 +66,34 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 				// 在硬盘里找数据
 				String diskData = RecordsUtils.getStringFromFile(
 						system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable);
-				row = RecordsUtils.createKVMapFromLine(diskData);
+				
+				
+				if( RecordsUtils.getValueFromLine(diskData, RaceConfig.buyerId).equals(buyerid)) {
+					// 确认一下 避免某些key的hashcode相同
 					//rowCache.putInCache(new BytesKey(encodedOffset), diskData, TableName.OrderTable);
 					// 放入缓冲区
-				//}
-				
-				long createTime = row.getKV(RaceConfig.createTime).valueAsLong();
-				long orderid = row.getKV(RaceConfig.orderId).valueAsLong();
-				if(createTime >= startTime && createTime < endTime) {
-					// 判断时间范围符合要求
-					
-					row.putAll(system.getRowById(TableName.BuyerTable,
-							row.get(RaceConfig.buyerId).valueAsString()));			
-					// need query goodTable
-					row.putAll(system.getRowById(TableName.GoodTable,
-							row.get(RaceConfig.goodId).valueAsString()));
-					List<Result> smallResults = results.get(createTime);
-					if(smallResults == null) {
-						smallResults = new ArrayList<Result>();
-						results.put(createTime, smallResults);
+					StringBuilder resultBuilder = new StringBuilder();
+					resultBuilder.append(diskData).append("\t");
+					String goodid = RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId);
+					long createTime = Long.parseLong(RecordsUtils.getValueFromLine(
+							diskData, RaceConfig.createTime));
+					long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
+							diskData, RaceConfig.orderId));
+					if(createTime >= startTime && createTime < endTime) {
+						// 判断时间范围符合要求
+						// 加上其他表的所有数据
+						resultBuilder.append(system.getRowStringById(
+								TableName.BuyerTable, buyerid)).append("\t");
+						
+						resultBuilder.append(system.getRowStringById(TableName.GoodTable, goodid));
+						List<Result> smallResults = results.get(createTime);
+						if(smallResults == null) {
+							smallResults = new ArrayList<Result>();
+							results.put(createTime, smallResults);
+						}
+						smallResults.add(new ResultImpl(orderid, 
+								RecordsUtils.createKVMapFromLine(resultBuilder.toString())));
 					}
-					smallResults.add(new ResultImpl(orderid, row));
 				}
 			}
 			

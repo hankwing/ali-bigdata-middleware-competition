@@ -127,22 +127,8 @@ public class RecordsUtils {
 		try {
 			RandomAccessFile fileReader = file.take();
 			fileReader.seek(offset);
-			//result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
-			//		StandardCharsets.UTF_8);
 			result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
 					StandardCharsets.UTF_8);
-			
-			/*for( int i = 0; i< RaceConfig.cacheNumberOneRead ; i++ ) {
-				// 每从文件读一次数据即放入缓冲区一定数量大小的String
-				String line = fileReader.readLine();
-				Row row = Row.createKVMapFromLine(fileReader.readLine());
-				if( row != null) {
-					tempCache = new String(line.getBytes(StandardCharsets.ISO_8859_1), 
-							StandardCharsets.UTF_8);
-					cache.putInCache(row.ge, tempCache, tableType);
-				}
-				
-			}*/
 			// 放回文件句柄队列中
 			file.add(fileReader);
 			} catch (IOException e) {
@@ -238,7 +224,7 @@ public class RecordsUtils {
 	 * @return
 	 */
 	public static Row createKVMapFromLine(String line) {
-		if( line != null) {
+		if( line != null && !line.equals("")) {
 			Row kvMap = new Row();
 			String[] kvs = line.split("\t");
 			
@@ -250,6 +236,34 @@ public class RecordsUtils {
 					throw new RuntimeException("Bad data:" + line);
 				}
 				kvMap.put(key, new KeyValueImpl(key, value));
+			}
+			return kvMap;
+		}
+		else {
+			return null;
+		}
+	}
+	
+	/**
+	 * 工具类  可从一行数据中解析出KeyValue对
+	 * @param line
+	 * @return
+	 */
+	public static Row createSubKVMapFromLine(String line, Collection<String> keys) {
+		if( line != null && !line.equals("")) {
+			Row kvMap = new Row();
+			String[] kvs = line.split("\t");
+			
+			for (String rawkv : kvs) {
+				int p = rawkv.indexOf(':');
+				String key = rawkv.substring(0, p);
+				String value = rawkv.substring(p + 1);
+				if (key.length() == 0 || value.length() == 0) {
+					throw new RuntimeException("Bad data:" + line);
+				}
+				if( keys == null || keys.contains(key)) {
+					kvMap.put(key, new KeyValueImpl(key, value));
+				}
 			}
 			return kvMap;
 		}

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -189,7 +190,7 @@ public class OrderSystemImpl implements OrderSystem {
 						keys.add(rawCommand[i]);
 					}
 					System.out.println("values:" + 
-					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
+					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), keys));
 					/*List<String> keys = new ArrayList<String>();
 					keys.add("orderid");
 					int count = 0;
@@ -314,11 +315,11 @@ public class OrderSystemImpl implements OrderSystem {
 					// lookup:xxx 查找某个key值的value
 					// lookup:xxx 查找某个key值的value
 					
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					String key = rawCommand[1];
-					System.out.println(orderSystem.sumOrdersByGood(goodId, key));*/
-					Random random = new Random();
+					System.out.println(orderSystem.sumOrdersByGood(goodId, key));
+					/*Random random = new Random();
 					System.out.println("start query4" );
 					FileInputStream fis = new FileInputStream(goodfiles.get(
 							random.nextInt(goodfiles.size())));
@@ -332,7 +333,7 @@ public class OrderSystemImpl implements OrderSystem {
 						System.out.println(orderSystem.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
 					}		
 					br.close();
-					System.out.println("end query4" );
+					System.out.println("end query4" );*/
 					
 				} else if (command.equals("quit")) {
 					// 索引使用完毕 退出
@@ -505,14 +506,6 @@ public class OrderSystemImpl implements OrderSystem {
 					FileIndexWithOffset fileInfo= RecordsUtils.decodeIndex(encodedOffset);
 					long offset = fileInfo.offset;
 					int dataFileIndex = fileInfo.fileIndex;
-					//Row temp = rowCache.getFromCache(encodedOffset, TableName.OrderTable);
-					//if(temp != null) {
-					//	temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-					//			temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
-					//					orderHandlersList.get(dataFileIndex), offset, 
-					//					TableName.OrderTable));
-					//}
-					//else {
 						// 从文件里读数据
 						String diskValue = RecordsUtils.getStringFromFile(
 								orderHandlersList.get(dataFileIndex), offset, TableName.OrderTable);
@@ -520,10 +513,6 @@ public class OrderSystemImpl implements OrderSystem {
 								RecordsUtils.getValueFromLine(diskValue, RaceConfig.orderId))  == orderid) {
 							return true;
 						}
-						//temp = RecordsUtils.createKVMapFromLine( diskValue );
-						// 放入缓冲区
-						//rowCache.putInCache(new BytesKey(encodedOffset), diskValue , TableName.OrderTable);
-					//}
 				}
 				break;
 			}
@@ -539,8 +528,7 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @return
 	 * @throws TypeException 
 	 */
-	public Row getRowById(TableName tableName, Object id) throws TypeException {
-		Row result = null;
+	public String getRowStringById(TableName tableName, Object id) throws TypeException {
 		String idString = String.valueOf(id);
 		switch (tableName) {
 		case OrderTable:
@@ -553,26 +541,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// find the records offset
 					for( byte[] encodedOffset : results) {
 						//解码byte数组
-						FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
-						long offset = offsetInfo.offset;
-						int dataFileIndex = offsetInfo.fileIndex;
-						//Row temp = rowCache.getFromCache(encodedOffset, tableName);
-						Row temp = null;
-						//if(temp != null) {
-						//	temp = temp.getKV(RaceConfig.orderId).valueAsLong() == orderid ?
-						//			temp : RecordsUtils.createKVMapFromLine(RecordsUtils.getStringFromFile(
-						//					orderHandlersList.get(dataFileIndex), offset, tableName));
-						//}
-						//else {
+						ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
+						int dataFileIndex = buffer.getInt();
+						long offset = buffer.getLong();
 						String diskValue = RecordsUtils.getStringFromFile(
 								orderHandlersList.get(dataFileIndex),offset, tableName);
-						temp = RecordsUtils.createKVMapFromLine(diskValue);
-						//rowCache.putInCache(new BytesKey(encodedOffset), diskValue, tableName);
-						//}
-						result = temp;
-						break;
+						if( RecordsUtils.getValueFromLine(diskValue, RaceConfig.orderId).equals(idString)) {
+							// 确认主键相同
+							return diskValue;
+						}
 					}
-					break;
 				}
 			}	
 			break;
@@ -593,25 +571,22 @@ public class OrderSystemImpl implements OrderSystem {
 					List<byte[]> results = hashTable.get(surrId);
 					if (results.size() != 0) {
 						for( byte[] encodedOffset : results) {
-							FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
-							long offset = offsetInfo.offset;
-							int dataFileIndex = offsetInfo.fileIndex;
+							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
 							
+							int dataFileIndex = buffer.getInt();
+							long offset = buffer.getLong();
 							String records = RecordsUtils.getStringFromFile(
 									buyerHandlersList.get(dataFileIndex), offset, tableName);
 							try{
-								Row temp = RecordsUtils.createKVMapFromLine(records);
-								if( temp.getKV(RaceConfig.buyerId).valueAsString().equals(id)) {
-									result = temp;
-									// 放入缓冲区
-									//rowCache.putInCache(surrId, records, tableName);
-									break;
+								if( RecordsUtils.getValueFromLine(
+										records, RaceConfig.buyerId).equals(idString)) {
+									// 确认主键相同
+									return records;
 								}
 							} catch(StringIndexOutOfBoundsException e){
 								continue;
 							}
 						}
-						break;
 					}
 
 				//}
@@ -629,21 +604,25 @@ public class OrderSystemImpl implements OrderSystem {
 					DiskHashTable<Integer, List<byte[]>> hashTable = goodIdIndexList.get(filePathIndex);
 					List<byte[]> results = hashTable.get(goodSurrId);
 					if (results.size() != 0) {
+						
 						for( byte[] encodedOffset : results) {
-							FileIndexWithOffset offsetInfo = RecordsUtils.decodeIndex(encodedOffset);
-							long offset = offsetInfo.offset;
-							int dataFileIndex = offsetInfo.fileIndex;
+							
+							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
+							
+							int dataFileIndex = buffer.getInt();
+							long offset = buffer.getLong();
 							String records = RecordsUtils.getStringFromFile(
 									goodHandlersList.get(dataFileIndex), offset, tableName);
-							Row temp = RecordsUtils.createKVMapFromLine(records);
-							if( temp.getKV(RaceConfig.goodId).valueAsString().equals(id)) {
-								result = temp;
-								// 放入缓冲区
-								//rowCache.putInCache(goodSurrId, records, tableName);
-								break;
+							try{
+								if( RecordsUtils.getValueFromLine(
+										records, RaceConfig.goodId).equals(idString)) {
+									// 确认主键相同
+									return records;
+								}
+							} catch(StringIndexOutOfBoundsException e){
+								continue;
 							}
 						}
-						break;
 					}
 
 				//}
@@ -651,7 +630,7 @@ public class OrderSystemImpl implements OrderSystem {
 			break;
 		}
 		
-		return result;
+		return null;
 	}
 
 	/**
