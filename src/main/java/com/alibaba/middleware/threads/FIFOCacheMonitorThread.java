@@ -23,10 +23,6 @@ public class FIFOCacheMonitorThread extends WorkerThread {
         return instance;
     }
 
-    public FIFOCacheMonitorThread(List<FIFOCache> cacheList) {
-        this.cacheList = cacheList;
-    }
-
     public void registerFIFIOCache(FIFOCache cache) {
         cacheList.add(cache);
     }
