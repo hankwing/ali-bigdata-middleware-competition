@@ -205,23 +205,30 @@ public class OrderHandler {
 							if (indexFileName == null) {
 								// 第一次建立索引文件
 								indexFileName = record.getIndexFileName();
+
 								fileIndex = orderIndexMapping.addDataFileName(indexFileName);
 								switch(indexType) {
 								case OrderId:
+									String diskFileName = RaceConfig.storeFolders[threadIndex]
+											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Long, byte[]>(
-											indexFileName
+											diskFileName
 											+ RaceConfig.orderIndexFileSuffix
 											, byte[].class, DirectMemoryType.MainSegment);
 									break;
 								case OrderBuyerId:
+									String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
+											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
-											indexFileName
+											orderBuyerDiskFileName
 											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class
 											,DirectMemoryType.BuyerIdSegment);
 									break;
 								case OrderGoodId:
+									String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
+											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
-											indexFileName
+											orderGoodDiskFileName
 											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
 											DirectMemoryType.GoodIdSegment);
 									break;
@@ -234,8 +241,10 @@ public class OrderHandler {
 									idHashTable.writeAllBuckets();
 									orderIdIndexList.put(fileIndex, idHashTable);
 									indexFileName = record.getIndexFileName();
+									String diskFileName = RaceConfig.storeFolders[threadIndex]
+											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Long, byte[]>(
-											indexFileName
+											diskFileName
 											+ RaceConfig.orderIndexFileSuffix,byte[].class,
 											DirectMemoryType.MainSegment);
 									break;
@@ -243,8 +252,10 @@ public class OrderHandler {
 									orderBuyerIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
 									indexFileName = record.getIndexFileName();
+									String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
+											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
-											indexFileName
+											orderBuyerDiskFileName
 											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class,
 											DirectMemoryType.BuyerIdSegment);
 									break;
@@ -252,8 +263,10 @@ public class OrderHandler {
 									orderGoodIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
 									indexFileName = record.getIndexFileName();
+									String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
+											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
-											indexFileName
+											orderGoodDiskFileName
 											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
 											DirectMemoryType.GoodIdSegment);
 									break;

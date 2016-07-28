@@ -123,16 +123,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-					buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");
-					//buyerfiles.add("benchmark/buyer_records_1.txt");
+					/*buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");*/
+					buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-					goodfiles.add("prerun_data/good.0.0");
+					/*goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");
-					//goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.2.2");*/
+					goodfiles.add("benchmark/good_records_1.txt");
 					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
@@ -140,15 +140,16 @@ public class OrderSystemImpl implements OrderSystem {
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
 					orderfiles = new ArrayList<String>();
-					orderfiles.add("prerun_data/order.0.0");
-					orderfiles.add("prerun_data/order.0.3");
-					orderfiles.add("prerun_data/order.1.1");
-					orderfiles.add("prerun_data/order.2.2");
+
+					/*orderfiles.add("disk1/orders/order.0.0");
+					orderfiles.add("disk2/orders/order.0.3");
+					orderfiles.add("disk3/orders/order.1.1");
+					orderfiles.add("disk1/orders/order.2.2");*/
 					
-					/*orderfiles.add("benchmark/order_records_1.txt");
+					orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
-					orderfiles.add("benchmark/order_records_+5.txt");
+					/*orderfiles.add("benchmark/order_records_+5.txt");
 					orderfiles.add("benchmark/order_records_+6.txt");
 					orderfiles.add("benchmark/order_records_+7.txt");
 					orderfiles.add("benchmark/order_records_+8.txt");
@@ -233,7 +234,7 @@ public class OrderSystemImpl implements OrderSystem {
 					
 				}  else if (command.startsWith("lookup2")) {
 					// lookup:xxx 查找某个key值的value
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String buyerId = rawCommand[0];
 					long startTime = Long.valueOf(rawCommand[1]);
 					long endTime = Long.valueOf(rawCommand[2]);
@@ -242,8 +243,8 @@ public class OrderSystemImpl implements OrderSystem {
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
 					}
-					System.out.println("start query2" );
-					/*for( int i = 0; i < 8; i++) {
+					System.out.println("start query2" );*/
+					for( int i = 0; i < 8; i++) {
 						// 启动八个线程同时查询
 						Thread query = new Thread(new Runnable() {  
 						    @Override  
@@ -277,7 +278,7 @@ public class OrderSystemImpl implements OrderSystem {
 						});  
 						
 						query.start();
-					}*/
+					}
 					
 				} else if (command.startsWith("lookup3")) {
 					// lookup:xxx 查找某个key值的value
@@ -610,7 +611,8 @@ public class OrderSystemImpl implements OrderSystem {
 			Integer surrId = String.valueOf(id).hashCode();
 			// 先在缓冲区里找
 			String result = rowCache.getFromCache(surrId, TableName.BuyerTable);
-			if( result != null) {
+			if( result != null && RecordsUtils.getValueFromLine(
+					result, RaceConfig.buyerId).equals(idString)) {
 				// 在缓冲区找到了
 				return result;
 			}
@@ -649,7 +651,8 @@ public class OrderSystemImpl implements OrderSystem {
 			Integer goodSurrId = String.valueOf(id).hashCode();
 			// 先在缓冲区里找
 			String goodResult = rowCache.getFromCache(goodSurrId, tableName);
-			if( goodResult != null) {
+			if( goodResult != null && RecordsUtils.getValueFromLine(
+					goodResult, RaceConfig.goodId).equals(idString)) {
 				return goodResult;
 			}
 			else {
