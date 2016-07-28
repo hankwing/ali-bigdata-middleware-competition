@@ -65,7 +65,8 @@ public class DiskHashTable<K,T> implements Serializable {
 	/**
 	 * 查询时bucketAddressList作为外存文件的偏移地址存储链表
 	 */
-	private Map<Integer, Long> bucketAddressList = null; // 桶对应的物理地址
+	private Map<Integer, Long> bucketAddressList = null; // 桶对应的物理地址 在创建的时候也用这个Map
+	private Map<Integer, Long> bucketDirectMemList = null; // 桶对应的直接内存地址  在查询阶段内存里的桶优先写到直接内存
 
 	private Class<?> classType = null;
 
@@ -96,6 +97,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
 
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
+		bucketDirectMemList = new ConcurrentHashMap<Integer,Long>();
 		directMemory = ByteDirectMemory.getInstance();			//	获取direct memory
 		directMemory.clear();									// 确保里面的内容清空
 		bucketCachePool = BucketCachePool.getInstance();
@@ -237,15 +239,17 @@ public class DiskHashTable<K,T> implements Serializable {
 			
 			//创建对象输出流
 			offsetOos = new ObjectOutputStream(byteArrayOs);
-	
-			lastOffset = directMemory.getPosition(memoryType);
-			//bucketPositionList存储bucket的key和offset
-			bucketAddressList.put(bucketKey, lastOffset);
 			offsetOos.writeObject(bucketList.remove(bucketKey));
+			int newPos = directMemory.put(byteArrayOs.toByteArray(), memoryType, isbuilding);
+			if( newPos != 0 ) {
+				//如果写入成功
+				bucketAddressList.put(bucketKey, (long) newPos);
+				
+			}
+			else {
+				System.out.println("direct memory is full");
+			}
 			offsetOos.reset();
-
-			//写入直接内存
-			directMemory.put(byteArrayOs.toByteArray(), memoryType);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -253,11 +257,42 @@ public class DiskHashTable<K,T> implements Serializable {
 	}
 	
 	/**
-	 * 将某个桶抛弃
+	 * 查询阶段调用的方法  将桶优先写入直接内存  直接内存无空间了就直接丢弃
 	 * @param bucketKey
 	 */
 	public void writeBucketAfterBuilding(int bucketKey) {
-		bucketList.remove(bucketKey);
+		
+		HashBucket<K, T> bucketToRemove = bucketList.remove(bucketKey);
+		try {
+			if( !directMemory.isFull(DirectMemoryType.MainSegment) ) {
+				// 有空间  试图往里写 但不一定写成功
+				if (byteArrayOs == null) {
+					byteArrayOs = new ByteArrayOutputStream();
+				}
+				//Resets the count field of this byte array output stream to zero
+				byteArrayOs.reset();
+				//创建对象输出流
+				offsetOos = new ObjectOutputStream(byteArrayOs);
+				
+				offsetOos.writeObject(bucketToRemove);
+				// 构建完之后  directmemory对于桶的类型是mainsegment 其他两个对应两个数据缓冲区的direct memory
+				int newPos = directMemory.put(byteArrayOs.toByteArray(), DirectMemoryType.MainSegment,
+						isbuilding);
+				if( newPos != 0 ) {
+					//如果写入成功 则放入另一个地址队列 不能覆盖文件的物理地址队列
+					bucketDirectMemList.put(bucketKey, (long) newPos);
+				}
+				else {
+					System.out.println("direct memory is full");
+				}
+				offsetOos.reset();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
 	}
 
 	/**
@@ -291,36 +326,54 @@ public class DiskHashTable<K,T> implements Serializable {
 					fileBucket = (HashBucket<K,T>) bucketReader.readObject();
 					fileBucket.setContext(this);
 					bucketReader.close();
-					bucketAddressList.remove(bucketKey);
 
 				} else {
-					//从文件中读取数据
+					// 查询阶段  先从directMemory拿桶数据  拿不到再从文件中读取数据
+					// 下面从direct memory中读取桶
+					Long pos = bucketDirectMemList.get(bucketKey);
+					if( pos != null) {
+						// 说明桶在directMemory里了
+						int startp = bucketAddressList.get(bucketKey).intValue();
+						int objectSize = directMemory.getIntValue(startp, memoryType);
+						byte[] bucketbytes;
+						bucketbytes = directMemory.get(startp, objectSize, memoryType);
 
-					if(bucketAddressList == null) {
-						bucketAddressList = getHashDiskTable(bucketAddressOffset);
-					}
-					RandomAccessFile reader = bucketReaderPool.take();
-					reader.seek(bucketAddressList.get(bucketKey));
-					byte[] bucketByteArray = null;
-					if( bucketKey == bucketNum -1 ) {
-						bucketByteArray = new byte[lastObjectSize];
+						ObjectInputStream bucketReader = new ObjectInputStream(
+								new ByteArrayInputStream(bucketbytes));
+
+						fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+						fileBucket.setContext(this);
+						bucketReader.close();
 					}
 					else {
-						bucketByteArray = new byte[(int) (bucketAddressList.get(bucketKey + 1) - 
-	                           bucketAddressList.get(bucketKey))];
+						//从文件里读
+						// 下面从文件里读取桶
+						if(bucketAddressList == null) {
+							bucketAddressList = getHashDiskTable(bucketAddressOffset);
+						}
+						RandomAccessFile reader = bucketReaderPool.take();
+						reader.seek(bucketAddressList.get(bucketKey));
+						byte[] bucketByteArray = null;
+						if( bucketKey == bucketNum -1 ) {
+							bucketByteArray = new byte[lastObjectSize];
+						}
+						else {
+							bucketByteArray = new byte[(int) (bucketAddressList.get(bucketKey + 1) - 
+		                           bucketAddressList.get(bucketKey))];
+						}
+						
+						reader.read(bucketByteArray);
+						ObjectInputStream bucketReader = new ObjectInputStream(
+								new ByteArrayInputStream(bucketByteArray));
+						fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+						bucketReader.close();
+						fileBucket.setContext(this);
+						bucketReaderPool.add(reader);
+						// 从文件里读的桶 才注册到桶管理器里
+						bucketCachePool.addBucket(fileBucket);
 					}
-					
-					reader.read(bucketByteArray);
-					ObjectInputStream bucketReader = new ObjectInputStream(
-							new ByteArrayInputStream(bucketByteArray));
-					fileBucket = (HashBucket<K,T>) bucketReader.readObject();
-					bucketReader.close();
-					fileBucket.setContext(this);
-					bucketReaderPool.add(reader);
 				}
-
 				bucketList.put(bucketKey, fileBucket);
-				bucketCachePool.addBucket(fileBucket);
 
 			}
 
