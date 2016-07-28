@@ -6,18 +6,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * order-system-impl-master-cabe626d3eb46a36ae1f74a33ef3e8c7182536c7order-system-impl.git
- *
  * @author Jelly
  */
-public class BucketMonitorThread extends WorkerThread {
+public class FIFOCacheMonitorThread extends WorkerThread {
     private List<FIFOCache> cacheList;
+    private static FIFOCacheMonitorThread instance = null;
 
-    public BucketMonitorThread() {
+    private FIFOCacheMonitorThread() {
         cacheList = new ArrayList<FIFOCache>();
     }
 
-    public BucketMonitorThread(List<FIFOCache> cacheList) {
+    public static FIFOCacheMonitorThread getInstance() {
+        if (instance == null) {
+            instance = new FIFOCacheMonitorThread();
+        }
+        return instance;
+    }
+
+    public FIFOCacheMonitorThread(List<FIFOCache> cacheList) {
         this.cacheList = cacheList;
     }
 
@@ -30,7 +36,6 @@ public class BucketMonitorThread extends WorkerThread {
         while (true) {
             for (FIFOCache cache: cacheList) {
                 if (cache.isReadyToRemove()) {
-//                    System.out.println("Remove");
                     cache.removeBucket();
                 }
             }

@@ -10,7 +10,7 @@ import java.util.Queue;
  * @author Jelly
  */
 public class FIFOCache {
-    Queue<HashBucket> cache;
+    private Queue<HashBucket> cache;
     private int capacity = RaceConfig.bucketCapcity;
 
     public FIFOCache() {
@@ -27,7 +27,7 @@ public class FIFOCache {
     public void removeBucket() {
         HashBucket bucket = cache.poll();
         if (bucket != null) {
-            bucket.writeSelf();
+            bucket.writeSelfWhenBuilding();
         }
     }
 
