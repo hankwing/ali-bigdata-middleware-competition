@@ -30,7 +30,7 @@ public class BucketMonitorThread extends WorkerThread {
         while (true) {
             for (FIFOCache cache: cacheList) {
                 if (cache.isReadyToRemove()) {
-                    System.out.println("Remove");
+//                    System.out.println("Remove");
                     cache.removeBucket();
                 }
             }
