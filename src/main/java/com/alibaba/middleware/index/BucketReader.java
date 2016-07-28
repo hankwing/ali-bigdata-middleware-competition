@@ -2,6 +2,7 @@ package com.alibaba.middleware.index;
 
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
+import java.io.RandomAccessFile;
 
 /**
  * 读索引文件的句柄缓冲池
@@ -10,10 +11,10 @@ import java.io.ObjectInputStream;
  */
 public class BucketReader {
 
-	public FileInputStream streamIn = null;
+	public RandomAccessFile streamIn = null;
 	public ObjectInputStream bucketReader = null;
 	
-	public BucketReader(FileInputStream streanIn, ObjectInputStream bucketReader) {
+	public BucketReader(RandomAccessFile streanIn, ObjectInputStream bucketReader) {
 		this.streamIn = streanIn;
 		this.bucketReader = bucketReader;
 	}

@@ -90,7 +90,11 @@ public class OrderSystemImpl implements OrderSystem {
     private ExecutorService queryExe = threadPool.getQueryExe();
     public ConcurrentCache rowCache = null;
 	private AtomicLong queryCounter = new AtomicLong(0L);
-	
+		
+	static List<String> buyerfiles = null;
+	static List<String> goodfiles = null;
+	static List<String> orderfiles = null;
+	static OrderSystemImpl orderSystem = null;
 
 	//直接内存
 	ByteDirectMemory directMemory = new ByteDirectMemory(1024*1024*128);
@@ -99,12 +103,10 @@ public class OrderSystemImpl implements OrderSystem {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		OrderSystemImpl orderSystem = new OrderSystemImpl();
+		orderSystem = new OrderSystemImpl();
 		Scanner scanner = new Scanner(System.in);
 		String command = null;
-		List<String> buyerfiles = null;
-		List<String> goodfiles = null;
-		List<String> orderfiles = null;
+		
 		
 		while (!(command = scanner.nextLine()).equals("quit")) {
 			try{
@@ -190,30 +192,46 @@ public class OrderSystemImpl implements OrderSystem {
 						keys.add(rawCommand[i]);
 					}
 					System.out.println("values:" + 
-					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), keys));
-					/*List<String> keys = new ArrayList<String>();
-					keys.add("orderid");
-					int count = 0;
-					for( int i = 0; i < orderfiles.size() ; i++) {
-						FileInputStream fis = new FileInputStream(orderfiles.get(i));
-					    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-					    String line = br.readLine();
-					    
-					    while( line != null) {
-					    	long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
-					    			line, RaceConfig.orderId));
-					    	if(orderSystem.queryOrder( orderid, keys) == null) {
-					    		// error
-					    		count ++;
-					    		System.out.println("cannot find orderid:" + orderid);
-					    	}
-					    	line = br.readLine();
-					    }
-					    br.close();
-					   
-					}
-					System.out.println("error count:" + count);*/
-			
+					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
+//					for( int i = 0; i < 8; i++) {
+//						// 启动八个线程同时查询
+//						Thread query = new Thread(new Runnable() {  
+//						    @Override  
+//						    public void run() {  
+//						    	List<String> keys = new ArrayList<String>();
+//								keys.add("orderid");
+//								int count = 0;
+//								for( int i = 0; i < orderfiles.size() ; i++) {
+//									FileInputStream fis;
+//									try {
+//										fis = new FileInputStream(orderfiles.get(i));
+//										BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+//									    String line = br.readLine();
+//									    
+//									    while( line != null) {
+//									    	long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
+//									    			line, RaceConfig.orderId));
+//									    	if(orderSystem.queryOrder( orderid, keys) == null) {
+//									    		// error
+//									    		count ++;
+//									    		System.out.println("cannot find orderid:" + orderid);
+//									    	}
+//									    	line = br.readLine();
+//									    }
+//									    br.close();
+//									} catch (IOException e) {
+//										// TODO Auto-generated catch block
+//										e.printStackTrace();
+//									}
+//								    
+//								   
+//								}
+//								System.out.println("error count:" + count);                
+//						    };  
+//						});  
+//						
+//						query.start();
+//					}
 					
 				}  else if (command.startsWith("lookup2")) {
 					// lookup:xxx 查找某个key值的value
@@ -226,57 +244,92 @@ public class OrderSystemImpl implements OrderSystem {
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
 					}
-					/*System.out.println("start query2" );
-					
-					Random random = new Random();
-					FileInputStream fis = new FileInputStream(buyerfiles.get(
-							random.nextInt(buyerfiles.size())));
-				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-					for( int i = 0; i< 2000; i++) {
-						String buyerId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.buyerId);
-						buyerId = buyerId == null? UUID.randomUUID().toString():buyerId;
-						long startTime = random.nextLong();
-						long endTime = random.nextLong();
+					System.out.println("start query2" );
+					/*for( int i = 0; i < 8; i++) {
+						// 启动八个线程同时查询
+						Thread query = new Thread(new Runnable() {  
+						    @Override  
+						    public void run() {  
+						    	Random random = new Random();
+								FileInputStream fis;
+								try {
+									fis = new FileInputStream(buyerfiles.get(
+											random.nextInt(buyerfiles.size())));
+									 BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+										for( int i = 0; i< 2000; i++) {
+											String buyerId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.buyerId);
+											buyerId = buyerId == null? UUID.randomUUID().toString():buyerId;
+											long startTime = random.nextLong();
+											long endTime = random.nextLong();
+											
+											Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
+											System.out.println("query2");
+											while(results.hasNext()) {
+												System.out.println("values:" + results.next());
+											}
+										}
+										System.out.println("end query2");
+										br.close();
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							                  
+						    };  
+						});  
 						
-						Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
-						System.out.println("query2");
-						while(results.hasNext()) {
-							System.out.println("values:" + results.next());
-						}
-					}
-					System.out.println("end query2");
-					br.close();*/
+						query.start();
+					}*/
+					
 				} else if (command.startsWith("lookup3")) {
 					// lookup:xxx 查找某个key值的value
-					/*System.out.println("start query3" );
-					List<String> keys = new ArrayList<String>();
-					keys.add("orderid");
-					int count = 0;
-					for( int i = 0; i < orderfiles.size() ; i++) {
-						FileInputStream fis = new FileInputStream(orderfiles.get(i));
-					    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-					    String line = br.readLine();
-					    
-					    while( line != null) {
-					    	String goodid = RecordsUtils.getValueFromLine(
-					    			line, RaceConfig.goodId);
-					    	Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodid, keys);
-							//System.out.println("query3");
-							if(results.hasNext()) {
-								
-							}
-							else {
-								count ++;
-								System.out.println("error");
-							}
-					    	line = br.readLine();
-					    }
-					    br.close();
-					   
+					
+					for( int i = 0; i < 8; i++) {
+						// 启动八个线程同时查询
+						Thread query = new Thread(new Runnable() {  
+						    @Override  
+						    public void run() {  
+						    	Random random = new Random();
+								try {
+									System.out.println("start query3" );
+									List<String> keys = new ArrayList<String>();
+									keys.add("orderid");
+									int count = 0;
+									for( int i = 0; i < orderfiles.size() ; i++) {
+										FileInputStream fis = new FileInputStream(orderfiles.get(i));
+									    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+									    String line = br.readLine();
+									    
+									    while( line != null) {
+									    	String goodid = RecordsUtils.getValueFromLine(
+									    			line, RaceConfig.goodId);
+									    	Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodid, keys);
+											//System.out.println("query3");
+											if(results.hasNext()) {
+												System.out.println(ConcurrentCache.getInstance().getSize());
+											}
+											else {
+												count ++;
+												
+												System.out.println("error");
+											}
+									    	line = br.readLine();
+									    }
+									    br.close();
+									   
+									}
+									
+									System.out.println("error count:" + count);
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							                  
+						    };  
+						});  
+						
+						query.start();
 					}
-					
-					System.out.println("error count:" + count);*/
-					
 					/*Random random = new Random();
 					FileInputStream fis = new FileInputStream(orderfiles.get(random.nextInt(
 							orderfiles.size())));
@@ -296,7 +349,7 @@ public class OrderSystemImpl implements OrderSystem {
 					}
 					System.out.println("stop query3" );*/
 					//br.close();
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
@@ -309,17 +362,17 @@ public class OrderSystemImpl implements OrderSystem {
 						//results.next();
 						System.out.println("values:" + results.next());
 					}
-					System.out.println("count:" + count);
+					System.out.println("count:" + count);*/
 					
 				} else if (command.startsWith("lookup4")) {
 					// lookup:xxx 查找某个key值的value
 					// lookup:xxx 查找某个key值的value
 					
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					String key = rawCommand[1];
-					System.out.println(orderSystem.sumOrdersByGood(goodId, key));
-					/*Random random = new Random();
+					System.out.println(orderSystem.sumOrdersByGood(goodId, key));*/
+					Random random = new Random();
 					System.out.println("start query4" );
 					FileInputStream fis = new FileInputStream(goodfiles.get(
 							random.nextInt(goodfiles.size())));
@@ -329,11 +382,11 @@ public class OrderSystemImpl implements OrderSystem {
 						
 						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
 						goodId = goodId == null? UUID.randomUUID().toString(): goodId;
-						System.out.println("query4");
+						//System.out.println("query4");
 						System.out.println(orderSystem.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
 					}		
 					br.close();
-					System.out.println("end query4" );*/
+					System.out.println("end query4" );
 					
 				} else if (command.equals("quit")) {
 					// 索引使用完毕 退出
@@ -384,11 +437,11 @@ public class OrderSystemImpl implements OrderSystem {
 		//buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
 		//goodIdSurrKeyFile = new FilePathWithIndex();
 
-		JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor");
+		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor");
 		//CacheMonitorThread cacheMonitorThread = new CacheMonitorThread(ConcurrentCache.getInstance());
-		threadPool.addMonitor(jvmMonitorThread);
+		//threadPool.addMonitor(jvmMonitorThread);
 		//threadPool.addMonitor(cacheMonitorThread);
-		threadPool.startMonitors();
+		//threadPool.startMonitors();
 		
 	}
 
@@ -558,12 +611,12 @@ public class OrderSystemImpl implements OrderSystem {
 			// 将事实键转为代理键
 			Integer surrId = String.valueOf(id).hashCode();
 			// 先在缓冲区里找
-			/*result = rowCache.getFromCache(surrId, TableName.BuyerTable);
+			String result = rowCache.getFromCache(surrId, TableName.BuyerTable);
 			if( result != null) {
 				// 在缓冲区找到了
 				return result;
 			}
-			else {*/
+			else {
 				// 在索引里找
 				for (int filePathIndex : buyerIndexMapping.getAllFileIndexs()) {
 					DiskHashTable<Integer, List<byte[]>> hashTable = buyerIdIndexList
@@ -581,6 +634,8 @@ public class OrderSystemImpl implements OrderSystem {
 								if( RecordsUtils.getValueFromLine(
 										records, RaceConfig.buyerId).equals(idString)) {
 									// 确认主键相同
+									// 放入缓冲区
+									rowCache.putInCache(surrId, records, TableName.BuyerTable);
 									return records;
 								}
 							} catch(StringIndexOutOfBoundsException e){
@@ -589,17 +644,17 @@ public class OrderSystemImpl implements OrderSystem {
 						}
 					}
 
-				//}
+				}
 			}
 			break;
 		case GoodTable:
 			Integer goodSurrId = String.valueOf(id).hashCode();
 			// 先在缓冲区里找
-			/*result = rowCache.getFromCache(goodSurrId, tableName);
-			if( result != null) {
-				return result;
+			String goodResult = rowCache.getFromCache(goodSurrId, tableName);
+			if( goodResult != null) {
+				return goodResult;
 			}
-			else {*/
+			else {
 				for (int filePathIndex : goodIndexMapping.getAllFileIndexs()) {
 					DiskHashTable<Integer, List<byte[]>> hashTable = goodIdIndexList.get(filePathIndex);
 					List<byte[]> results = hashTable.get(goodSurrId);
@@ -617,6 +672,7 @@ public class OrderSystemImpl implements OrderSystem {
 								if( RecordsUtils.getValueFromLine(
 										records, RaceConfig.goodId).equals(idString)) {
 									// 确认主键相同
+									rowCache.putInCache(goodSurrId, records, TableName.GoodTable);
 									return records;
 								}
 							} catch(StringIndexOutOfBoundsException e){
@@ -625,12 +681,15 @@ public class OrderSystemImpl implements OrderSystem {
 						}
 					}
 
-				//}
+				}
 			}
 			break;
 		}
+		if( tableName == TableName.BuyerTable || tableName == TableName.GoodTable) {
+			System.out.println("read error: have no specific data with id:" + idString);
+		}
 		
-		return null;
+		return null; 
 	}
 
 	/**
@@ -714,12 +773,6 @@ public class OrderSystemImpl implements OrderSystem {
             try {
                 iterator = future.get();
 				queryCounter.getAndIncrement();
-				/*if( goodid.equals("al-af03-8175d3722b44") || goodid.equals("al-9afe-b69ff48c2d3a")
-						|| goodid.equals("al-af03-8175d3722b44")) {
-					if(iterator.hasNext()) {
-						System.out.println("values:" + iterator.next());
-					}
-				}*/
                 System.out.println("Done ordersBySaler: " + queryCounter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();

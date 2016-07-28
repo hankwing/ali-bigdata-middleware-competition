@@ -28,5 +28,7 @@ public class ByteDirectMemory {
 		return content;
 	}
 	
-	
+	public static void clear(){
+		buffer.clear();
+	}
 }
