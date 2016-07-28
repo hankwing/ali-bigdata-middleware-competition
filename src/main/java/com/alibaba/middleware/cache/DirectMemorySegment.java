@@ -1,5 +1,7 @@
 package com.alibaba.middleware.cache;
 
+import sun.misc.Unsafe;
+
 /**
  * @author Jelly
  */
@@ -10,6 +12,4 @@ public class DirectMemorySegment {
     public DirectMemorySegment(long size) {
         this.size = size;
     }
-
-
 }
