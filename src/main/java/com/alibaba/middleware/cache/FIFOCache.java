@@ -27,7 +27,7 @@ public class FIFOCache {
     public void removeBucket() {
         HashBucket bucket = cache.poll();
         if (bucket != null) {
-            bucket.writeSelf();
+            bucket.writeSelfAfterBuilding();
         }
     }
 
