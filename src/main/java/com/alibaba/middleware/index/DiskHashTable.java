@@ -23,8 +23,10 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.alibaba.middleware.cache.BucketCachePool;
+import com.alibaba.middleware.cache.FIFOCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
+import com.alibaba.middleware.threads.FIFOCacheMonitorThread;
 
 /**
  * 索引元信息 保存桶数、记录数、使用的位数、桶对应的物理地址等信息 缓冲区管理调用的writeBucket是线程安全的
@@ -38,7 +40,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	private static final long serialVersionUID = 6020895636934444399L;
 	private int usedBits;
 	private int bucketNum;
-	private long recordNum;
+	public long recordNum;
 	// 保存数据的外村文件路径
 	private String bucketFilePath = null; 
 
@@ -72,6 +74,7 @@ public class DiskHashTable<K,T> implements Serializable {
 
 	public boolean isbuilding = true;
 	private DirectMemoryType memoryType = null;
+	private FIFOCache bucketWriterWhenBuilding = null;
 
 	//private transient LinkedBlockingQueue<HashBucket<K,T>> bucketQueue = null;
 	//private transient Timer timer  = null;
@@ -102,9 +105,13 @@ public class DiskHashTable<K,T> implements Serializable {
 		directMemory.clear();									// 确保里面的内容清空
 		bucketCachePool = BucketCachePool.getInstance();
 		bucketReaderPool = new LinkedBlockingQueue<RandomAccessFile>();
+		// 注册将桶写到direct memory的监控线程
+		bucketWriterWhenBuilding = new FIFOCache(this);
+		FIFOCacheMonitorThread.getInstance().registerFIFIOCache(bucketWriterWhenBuilding);
 		for (int i = 0; i < 10; i++) {
 			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
 			//bucketCachePool.addBucket(newBucket);
+			bucketWriterWhenBuilding.addBucket(newBucket);
 			bucketList.put(i, newBucket );
 		}
 	}
@@ -262,7 +269,8 @@ public class DiskHashTable<K,T> implements Serializable {
 	 */
 	public void writeBucketAfterBuilding(int bucketKey) {
 		
-		HashBucket<K, T> bucketToRemove = bucketList.remove(bucketKey);
+		bucketList.remove(bucketKey);
+		/*HashBucket<K, T> bucketToRemove = bucketList.remove(bucketKey);
 		try {
 			if( !directMemory.isFull(DirectMemoryType.MainSegment) ) {
 				// 有空间  试图往里写 但不一定写成功
@@ -290,7 +298,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 		
 		
 	}
@@ -443,7 +451,8 @@ public class DiskHashTable<K,T> implements Serializable {
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
 				HashBucket<K,T> newBucket = new HashBucket<K,T>(this, bucketNum, classType);
-				//BucketCachePool.getInstance().addBucket(newBucket);			// 注册桶
+				// 注册桶
+				bucketWriterWhenBuilding.addBucket(newBucket);
 				bucketNum++;
 				bucketList.put(bucketNum - 1, newBucket);
 
