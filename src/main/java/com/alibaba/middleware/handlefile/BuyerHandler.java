@@ -17,6 +17,7 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
@@ -191,7 +192,8 @@ public class BuyerHandler{
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class);
+									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
+									DirectMemoryType.MainSegment);
 
 						}
 						else {
@@ -205,7 +207,9 @@ public class BuyerHandler{
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class);
+									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
+									DirectMemoryType.MainSegment);
+
 
 						}
 					}
@@ -219,6 +223,7 @@ public class BuyerHandler{
 					buyerIdHashTable.put(RecordsUtils.getValueFromLineWithKeyList(
 							record.getRecordsData(),RaceConfig.buyerId, tempAttrList), record.getOffset());
 					//surrKey ++;
+					BucketCachePool.getInstance().removeBuckets(10);
 				}
 				else if(isEnd ) {
 					// 说明队列为空
