@@ -7,6 +7,7 @@ import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 
 public class ByteDirectMemory {
+
 	private ByteBuffer orderIdBuffer;
 	private ByteBuffer orderBuyerBuffer;
 	private ByteBuffer orderGoodBuffer;
