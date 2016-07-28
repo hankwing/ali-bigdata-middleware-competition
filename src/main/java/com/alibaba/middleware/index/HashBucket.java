@@ -22,7 +22,7 @@ public class HashBucket<K,T> implements Serializable{
 	private static final long serialVersionUID = 3610182543890121796L;
 	private int bucketKey = 0;	// 缓冲区管理需要根据这个值调用context.writeBucket将桶写出去
 	private int capacity  = 0;
-	public int recordNum = 0;
+	private int recordNum = 0;
 	private Map< String, Map<K, T>> keyToAddress = null;		// need to write to disk
 	private HashBucket<K,T> nextBucket = null;
 	private transient DiskHashTable<K,T> context = null; 
@@ -67,13 +67,9 @@ public class HashBucket<K,T> implements Serializable{
 		this.context = context;
 	}
 	
-	public void writeSelfAfterBuilding() {
+	public void writeSelf() {
 		//System.out.println("writeBucket:" + bucketKey);
-		context.writeBucketAfterBuilding(bucketKey);
-	}
-	
-	public void writeSelfWhenBuilding() {
-		context.writeBucketWhenBuilding(bucketKey);
+		context.writeBucket(bucketKey);
 	}
 	
 	public List<byte[]> getAddress(  String bucketIndex, K key) {

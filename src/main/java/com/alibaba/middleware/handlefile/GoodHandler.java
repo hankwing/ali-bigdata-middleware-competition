@@ -17,7 +17,6 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -187,8 +186,8 @@ public class GoodHandler{
 									+ indexFileName.replace("//", "_");
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									diskFileName + RaceConfig.goodIndexFileSuffix, List.class);
+
 						}
 						else {
 							// 保存当前goodId的索引  并写入索引List
@@ -201,8 +200,7 @@ public class GoodHandler{
 									+ indexFileName.replace("//", "_");
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									diskFileName + RaceConfig.goodIndexFileSuffix, List.class);
 
 						}
 					}
