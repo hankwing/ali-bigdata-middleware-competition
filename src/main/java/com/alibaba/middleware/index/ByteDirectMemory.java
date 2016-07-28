@@ -46,17 +46,17 @@ public class ByteDirectMemory {
 		switch( memoryType) {
 		case MainSegment:
 			mainSegLock.readLock().lock();
-			pos =  orderIdBuffer.position();
+			pos = mainSegOffset;
 			mainSegLock.readLock().unlock();
 			break;
 		case BuyerIdSegment:
 			orderBuyerSegLock.readLock().lock();
-			pos= orderBuyerBuffer.position();
+			pos= orderBuyerSegOffset;
 			orderBuyerSegLock.readLock().unlock();
 			break;
 		case GoodIdSegment:
 			orderGoodSegLock.readLock().lock();
-			pos= orderGoodBuffer.position();
+			pos= orderGoodSegOffset;
 			orderGoodSegLock.readLock().unlock();
 			break;
 		}
@@ -75,10 +75,11 @@ public class ByteDirectMemory {
 	public int put(byte[] byteArray, DirectMemoryType memoryType, boolean isBuilding) {
 		
 		// TODO Auto-generated method stub
-		int newPos = 0;
+		int newPos = -1;
 		switch( memoryType) {
 		case MainSegment:
 			mainSegLock.writeLock().lock();
+			newPos = mainSegOffset;
 			orderIdBuffer.position(mainSegOffset);
 			if( orderIdBuffer.remaining() < byteArray.length) {
 				// 说明空间不够了
@@ -90,12 +91,13 @@ public class ByteDirectMemory {
 					orderIdBuffer.putInt(byteArray.length);
 				}
 				orderIdBuffer.put(byteArray);
-				newPos = mainSegOffset = orderIdBuffer.position();
+				mainSegOffset = orderIdBuffer.position();
 			}
 			mainSegLock.writeLock().unlock();
 			break;
 		case BuyerIdSegment:
 			orderBuyerSegLock.writeLock().lock();
+			newPos = orderBuyerSegOffset;
 			orderBuyerBuffer.position(orderBuyerSegOffset);
 			if( orderBuyerBuffer.remaining() < byteArray.length) {
 				// 说明空间不够了
@@ -107,12 +109,13 @@ public class ByteDirectMemory {
 					orderIdBuffer.putInt(byteArray.length);
 				}
 				orderBuyerBuffer.put(byteArray);
-				newPos = orderBuyerSegOffset = orderBuyerBuffer.position();
+				orderBuyerSegOffset = orderBuyerBuffer.position();
 			}
 			orderBuyerSegLock.writeLock().unlock();
 			break;
 		case GoodIdSegment:
 			orderGoodSegLock.writeLock().lock();
+			newPos = orderGoodSegOffset;
 			orderGoodBuffer.position(orderGoodSegOffset);
 			if( orderGoodBuffer.remaining() < byteArray.length) {
 				// 说明空间不够了
@@ -124,7 +127,7 @@ public class ByteDirectMemory {
 					orderIdBuffer.putInt(byteArray.length);
 				}
 				orderGoodBuffer.put(byteArray);
-				newPos = orderGoodSegOffset = orderGoodBuffer.position();
+				orderGoodSegOffset = orderGoodBuffer.position();
 			}
 			
 			orderGoodSegLock.writeLock().unlock();

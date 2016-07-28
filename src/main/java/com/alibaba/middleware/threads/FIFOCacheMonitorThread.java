@@ -29,13 +29,21 @@ public class FIFOCacheMonitorThread extends WorkerThread {
 
     @Override
     public void run() {
-        while (true) {
-            for (FIFOCache cache: cacheList) {
-                if (cache.isReadyToRemove()) {
-                    cache.removeBucket();
-                }
-            }
-        }
+    	try {
+	        while (true) {
+	            for (FIFOCache cache: cacheList) {
+	                if (cache.isReadyToRemove()) {
+	                    cache.removeBucket();
+	                }
+	                else {
+						Thread.sleep(100);
+	                }
+	            }
+	        }
+    	} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		};
     }
 
     @Override

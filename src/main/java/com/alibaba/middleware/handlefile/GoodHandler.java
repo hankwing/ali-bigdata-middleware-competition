@@ -70,7 +70,7 @@ public class GoodHandler{
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		goodfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}},
 				RaceConfig.storeFolders[threadIndex], 
-				RaceConfig.goodFileNamePrex, (int) RaceConfig.smallIndexFileCapacity);
+				RaceConfig.goodFileNamePrex, (int) RaceConfig.maxIndexFileCapacity);
 
 		this.goodFileMapping = systemImpl.goodFileMapping;
 		this.goodIndexMapping = systemImpl.goodIndexMapping;

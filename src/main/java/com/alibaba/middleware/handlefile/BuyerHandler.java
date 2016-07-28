@@ -65,7 +65,7 @@ public class BuyerHandler{
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		buyerfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.buyerFileNamePrex, (int) RaceConfig.smallIndexFileCapacity);
+				RaceConfig.buyerFileNamePrex, (int) RaceConfig.maxIndexFileCapacity);
 		
 		//文件映射
 		this.buyerFileMapping =  systemImpl.buyerFileMapping;

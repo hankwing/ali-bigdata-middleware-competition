@@ -13,8 +13,7 @@ import java.util.Queue;
 public class FIFOCache {
 
     Queue<HashBucket> cache;
-    private long capacity = 0;
-    private long maxCapacity = RaceConfig.bigIndexFileCapacity;
+    private long maxCapacity = RaceConfig.threIndexFileCapacity;
     private DiskHashTable context = null;
 
     public FIFOCache(DiskHashTable context) {
@@ -24,7 +23,6 @@ public class FIFOCache {
 
     public boolean addBucket(HashBucket bucket) {
         if (cache.add(bucket)) {
-        	capacity += bucket.recordNum;
             return true;
         }
         return false;
@@ -33,13 +31,13 @@ public class FIFOCache {
     public void removeBucket() {
         HashBucket bucket = cache.poll();
         if (bucket != null) {
-            bucket.writeSelfAfterBuilding();
-            capacity -= bucket.recordNum;
+            bucket.writeSelfWhenBuilding();
+            context.memRecordNum -= bucket.recordNum;
         }
     }
 
     public boolean isReadyToRemove() { 
-        return context.recordNum >= maxCapacity;
+        return context.memRecordNum >= maxCapacity;
 
     }
 

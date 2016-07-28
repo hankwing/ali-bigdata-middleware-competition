@@ -41,8 +41,10 @@ public class DiskHashTable<K,T> implements Serializable {
 	private int usedBits;
 	private int bucketNum;
 	public long recordNum;
+	public long memRecordNum;					// 内存里保留的记录条数  根据这个指标判断是否将一些桶写入direct memory
 	// 保存数据的外村文件路径
 	private String bucketFilePath = null; 
+	private ReentrantReadWriteLock readWriteLock = null;
 
 	// 保存桶数据 但一加载此类时这个Map是空的 当调用查询时才会从物理地址里load进相应的桶数据
 	private transient Map<Integer, HashBucket<K,T>> bucketList = null;
@@ -95,10 +97,12 @@ public class DiskHashTable<K,T> implements Serializable {
 		usedBits = 1;
 		bucketNum = 10;
 		recordNum = 0;
+		memRecordNum = 0;
 		this.classType = classType;
 		this.bucketFilePath = bucketFilePath;
 		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
-
+		// 在调用writeAllBucket的时候禁止读写
+		readWriteLock = new ReentrantReadWriteLock();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
 		bucketDirectMemList = new ConcurrentHashMap<Integer,Long>();
 		directMemory = ByteDirectMemory.getInstance();			//	获取direct memory
@@ -131,6 +135,9 @@ public class DiskHashTable<K,T> implements Serializable {
 	public void writeAllBuckets() {
 		try {
 			//timer.cancel();
+			System.out.println("write all bucket");
+			readWriteLock.writeLock().lock();
+			
 			if (bufferedFout == null || offsetOos == null) {
 				byteArrayOs = new ByteArrayOutputStream();
 
@@ -187,7 +194,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			bufferedFout.flush();
 			isbuilding = false;
 			//bufferedFout.close();
-
+			readWriteLock.writeLock().unlock();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -236,8 +243,9 @@ public class DiskHashTable<K,T> implements Serializable {
 	 */
 	public void writeBucketWhenBuilding(int bucketKey) {
 		try {			
-			//System.out.println("write bucket to direct mem:" + bucketKey);
+			System.out.println("write bucket to direct mem:" + bucketKey);
 			//如果byteArrayOs为空，则创建byteArrayOs
+			
 			if (byteArrayOs == null) {
 				byteArrayOs = new ByteArrayOutputStream();
 			}
@@ -246,9 +254,12 @@ public class DiskHashTable<K,T> implements Serializable {
 			
 			//创建对象输出流
 			offsetOos = new ObjectOutputStream(byteArrayOs);
+			
+			//加锁
+			readWriteLock.writeLock().lock();
 			offsetOos.writeObject(bucketList.remove(bucketKey));
 			int newPos = directMemory.put(byteArrayOs.toByteArray(), memoryType, isbuilding);
-			if( newPos != 0 ) {
+			if( newPos != -1 ) {
 				//如果写入成功
 				bucketAddressList.put(bucketKey, (long) newPos);
 				
@@ -257,6 +268,7 @@ public class DiskHashTable<K,T> implements Serializable {
 				System.out.println("direct memory is full");
 			}
 			offsetOos.reset();
+			readWriteLock.writeLock().unlock();
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -314,9 +326,11 @@ public class DiskHashTable<K,T> implements Serializable {
 		HashBucket<K,T> fileBucket = bucketList.get( bucketKey);
 		try {
 			if( fileBucket == null) {
+				//readWriteLock.readLock().lock();
 				if (isbuilding) {
 					//从直接内存拿数据
-					//System.out.println("read bucket from direct mem:" + bucketKey);
+					readWriteLock.readLock().lock();
+					System.out.println("read bucket from direct mem:" + bucketKey);
 					long startp = bucketAddressList.get(bucketKey);
 					long endp = 0;
 					if (bucketAddressList.get(bucketKey+1) != null) {
@@ -326,7 +340,7 @@ public class DiskHashTable<K,T> implements Serializable {
 					}
 					byte[] bucketbytes;
 
-					bucketbytes = directMemory.get((int) startp, (int) (endp - startp), memoryType);
+					bucketbytes = directMemory.get((int)startp, (int) (endp - startp), memoryType);
 
 					ObjectInputStream bucketReader = new ObjectInputStream(
 							new ByteArrayInputStream(bucketbytes));
@@ -334,6 +348,7 @@ public class DiskHashTable<K,T> implements Serializable {
 					fileBucket = (HashBucket<K,T>) bucketReader.readObject();
 					fileBucket.setContext(this);
 					bucketReader.close();
+					readWriteLock.readLock().unlock();
 
 				} else {
 					// 查询阶段  先从directMemory拿桶数据  拿不到再从文件中读取数据
@@ -379,10 +394,9 @@ public class DiskHashTable<K,T> implements Serializable {
 						bucketReaderPool.add(reader);
 						// 从文件里读的桶 才注册到桶管理器里
 						bucketCachePool.addBucket(fileBucket);
+						bucketList.put(bucketKey, fileBucket);
 					}
 				}
-				bucketList.put(bucketKey, fileBucket);
-
 			}
 
 		} catch (FileNotFoundException e) {
@@ -448,6 +462,7 @@ public class DiskHashTable<K,T> implements Serializable {
 
 		if (bucket != null) {			
 			bucket.putAddress(getBucketStringIndex(key), key, value);
+			memRecordNum ++;
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
 				HashBucket<K,T> newBucket = new HashBucket<K,T>(this, bucketNum, classType);
