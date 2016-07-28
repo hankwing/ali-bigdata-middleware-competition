@@ -12,17 +12,21 @@ import java.io.ObjectOutputStream;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.alibaba.middleware.cache.BucketCachePool;
+import com.alibaba.middleware.cache.FIFOCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
+import com.alibaba.middleware.threads.FIFOCacheMonitorThread;
 
 /**
  * 索引元信息 保存桶数、记录数、使用的位数、桶对应的物理地址等信息 缓冲区管理调用的writeBucket是线程安全的
@@ -36,29 +40,45 @@ public class DiskHashTable<K,T> implements Serializable {
 	private static final long serialVersionUID = 6020895636934444399L;
 	private int usedBits;
 	private int bucketNum;
-	private long recordNum;
-	private String bucketFilePath = null; // save the buckets data
-	//private String dataFilePath = null;
+	public long recordNum;
+	public long memRecordNum;					// 内存里保留的记录条数  根据这个指标判断是否将一些桶写入direct memory
+	// 保存数据的外村文件路径
+	private String bucketFilePath = null; 
+	private ReentrantReadWriteLock readWriteLock = null;
+
 	// 保存桶数据 但一加载此类时这个Map是空的 当调用查询时才会从物理地址里load进相应的桶数据
 	private transient Map<Integer, HashBucket<K,T>> bucketList = null;
 
 	private transient ByteArrayOutputStream byteArrayOs = null;
 	private transient ObjectOutputStream offsetOos = null;
-	private transient BufferedOutputStream bufferedFout;
+	private transient BufferedOutputStream bufferedFout = null;
 	private transient FileOutputStream fos;
-	
+
 	private transient long lastOffset = 0;
-	private transient ReadWriteLock readWriteLock = null;
-	private transient BucketCachePool bucketCachePool = null;
+	private transient BucketCachePool bucketCachePool = null;			// 每建一个桶就往里注册一个
+
 	private transient LinkedBlockingQueue<RandomAccessFile>
-		bucketReaderPool = null;
+	bucketReaderPool = null;
+	
+	private transient ByteDirectMemory directMemory = null;
+
 	private long bucketAddressOffset = 0;					// 存桶对应物理地址的map的offset
-	private Map<Integer, Long> bucketAddressList = null; // 桶对应的物理地址
-	private Class<?> classType = null;
+	
 	private int lastObjectSize = 0;
-	
-	
-	//private transient LinkedBlockingQueue<HashBucket<T>> bucketQueue = null;
+
+	/**
+	 * 查询时bucketAddressList作为外存文件的偏移地址存储链表
+	 */
+	private Map<Integer, Long> bucketAddressList = null; // 桶对应的物理地址 在创建的时候也用这个Map
+	private Map<Integer, Long> bucketDirectMemList = null; // 桶对应的直接内存地址  在查询阶段内存里的桶优先写到直接内存
+
+	private Class<?> classType = null;
+
+	public boolean isbuilding = true;
+	private DirectMemoryType memoryType = null;
+	private FIFOCache bucketWriterWhenBuilding = null;
+
+	//private transient LinkedBlockingQueue<HashBucket<K,T>> bucketQueue = null;
 	//private transient Timer timer  = null;
 
 	public DiskHashTable() {
@@ -72,23 +92,32 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param dataFilePath
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public DiskHashTable(String bucketFilePath, Class<?> classType){
+	public DiskHashTable(String bucketFilePath, Class<?> classType, DirectMemoryType memoryType){
+		this.memoryType = memoryType;
 		usedBits = 1;
 		bucketNum = 10;
 		recordNum = 0;
-		readWriteLock = new ReentrantReadWriteLock();
+		memRecordNum = 0;
 		this.classType = classType;
 		this.bucketFilePath = bucketFilePath;
 		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
+		// 在调用writeAllBucket的时候禁止读写
+		readWriteLock = new ReentrantReadWriteLock();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
+		bucketDirectMemList = new ConcurrentHashMap<Integer,Long>();
+		directMemory = ByteDirectMemory.getInstance();			//	获取direct memory
+		directMemory.clear();									// 确保里面的内容清空
 		bucketCachePool = BucketCachePool.getInstance();
 		bucketReaderPool = new LinkedBlockingQueue<RandomAccessFile>();
+		// 注册将桶写到direct memory的监控线程
+		bucketWriterWhenBuilding = new FIFOCache(this);
+		FIFOCacheMonitorThread.getInstance().registerFIFIOCache(bucketWriterWhenBuilding);
 		for (int i = 0; i < 10; i++) {
 			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
+			//bucketCachePool.addBucket(newBucket);
+			bucketWriterWhenBuilding.addBucket(newBucket);
 			bucketList.put(i, newBucket );
 		}
-		
-		
 	}
 
 	/**
@@ -96,63 +125,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 */
 	public void restore() {
 		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
-		readWriteLock = new ReentrantReadWriteLock();
 		bucketCachePool = BucketCachePool.getInstance();
-	}
-
-	/**
-	 * 将某个桶写到外存 在Map里保存该桶的物理地址以便之后重新load到内存 线程安全
-	 * 
-	 * @param bucketKey
-	 */
-	public void writeBucket(int bucketKey) {
-		// 直接从队列里remove桶
-		bucketList.remove(bucketKey);
-		/*try {
-			
-			long offset = 0;
-			
-			if (byteArrayOs == null || bufferedFout == null) {
-				byteArrayOs = new ByteArrayOutputStream();
-				fos = new FileOutputStream(bucketFilePath, true);
-
-				if (fos.getChannel().position() > 4) {
-					// 追加模式
-					offsetOos = new AppendingObjectOutputStream(byteArrayOs);
-				} else {
-					// 第一次打开桶文件 需要写入头数据
-					offsetOos = new ObjectOutputStream(byteArrayOs);
-				}
-				readWriteLock.writeLock().lock();					// 加写锁
-				bufferedFout = new BufferedOutputStream(fos);
-				offset = fos.getChannel().position();
-				bufferedFout.write(byteArrayOs.toByteArray());
-				bufferedFout.flush();
-				readWriteLock.writeLock().unlock();					// 解写锁
-
-			}
-			
-			readWriteLock.writeLock().lock();						// 加写锁
-			byteArrayOs.reset();
-			
-			offset = fos.getChannel().position();
-			bucketAddressList.put(bucketKey, offset);
-			offsetOos.writeObject(bucketList.remove(bucketKey));
-			
-			bufferedFout.write(byteArrayOs.toByteArray());
-			bufferedFout.flush();
-			offsetOos.reset();
-			readWriteLock.writeLock().unlock();						// 解写锁
-			
-			
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-
 	}
 
 	/**
@@ -160,39 +133,49 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * 返回值：此DiskHashTable被写入dataFile的哪个位置，方便之后调用
 	 */
 	public void writeAllBuckets() {
-		long thisOffset = 0;
 		try {
 			//timer.cancel();
+			System.out.println("write all bucket");
 			readWriteLock.writeLock().lock();
+			
 			if (bufferedFout == null || offsetOos == null) {
 				byteArrayOs = new ByteArrayOutputStream();
-				
+
 				fos = new FileOutputStream(bucketFilePath);
 				offsetOos = new ObjectOutputStream(byteArrayOs);
+
 				bufferedFout = new BufferedOutputStream(fos);
 				bufferedFout.write(byteArrayOs.toByteArray());
 				lastOffset = byteArrayOs.size() + fos.getChannel().position();
-				// bucketWriter = new ObjectOutputStream(bufferedFout);
 
 			} else {
 				lastOffset = fos.getChannel().position();
 			}
+			
 			for (int key = 0; key < bucketNum ; key ++) {
+				HashBucket<K,T> writeBucket = readBucket(key);
+				if( writeBucket == null) {
+					// error
+					System.out.println("cannot find bucket !");
+				}
+				
 				bucketAddressList.put(key, lastOffset);
 				byteArrayOs.reset();
 				offsetOos = new ObjectOutputStream(byteArrayOs);
-				offsetOos.writeObject(bucketList.get(key));
+				offsetOos.writeObject(writeBucket);
 				offsetOos.reset();
 				
 				lastOffset += byteArrayOs.size();
 				// bucketWriter.writeObject(writeBucket.getValue());
 				bufferedFout.write(byteArrayOs.toByteArray());
-				
 			}
-			lastObjectSize = byteArrayOs.size();
 			
+			lastObjectSize = byteArrayOs.size();		// 存最后一个桶的物理地址
+			//buffer output stream flush to file
+			bufferedFout.flush();
 			// write this HashTable to dataFile and return offset
 			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map
+			directMemory.clear();												// 清空直接内存
 			// 建立索引文件句柄缓冲池
 			for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
 				RandomAccessFile streamIn = new RandomAccessFile(bucketFilePath,"r");
@@ -209,9 +192,9 @@ public class DiskHashTable<K,T> implements Serializable {
 			bufferedFout.write(byteArrayOs.toByteArray());
 			oos.close();
 			bufferedFout.flush();
+			isbuilding = false;
 			//bufferedFout.close();
 			readWriteLock.writeLock().unlock();
-
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -221,7 +204,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		}
 
 	}
-	
+
 	/**
 	 * 根据偏移量读取桶对应物理地址的偏移量
 	 * 
@@ -237,7 +220,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			streamIn.getChannel().position(offSet);
 			ObjectInputStream objectinputstream = new ObjectInputStream(
 					streamIn);
- 
+
 			bucketAddressList = (Map<Integer, Long>) objectinputstream.readObject();
 			objectinputstream.close();
 		} catch (FileNotFoundException e) {
@@ -255,7 +238,89 @@ public class DiskHashTable<K,T> implements Serializable {
 	}
 
 	/**
-	 * 内部调用函数 读取某个桶到内存中
+	 * 将某个桶写到直接内存在bucketAddreeeList中保存桶的偏移地址以便之后重新load到内存中
+	 * @param bucketKey
+	 */
+	public void writeBucketWhenBuilding(int bucketKey) {
+		try {			
+			if(isbuilding) {
+				// 只能在building的时候调用这个方法
+				System.out.println("write bucket to direct mem:" + bucketKey);
+				//如果byteArrayOs为空，则创建byteArrayOs
+				
+				if (byteArrayOs == null) {
+					byteArrayOs = new ByteArrayOutputStream();
+				}
+				//Resets the count field of this byte array output stream to zero
+				byteArrayOs.reset();
+				
+				//创建对象输出流
+				offsetOos = new ObjectOutputStream(byteArrayOs);
+				
+				//加锁
+				readWriteLock.writeLock().lock();
+				offsetOos.writeObject(bucketList.remove(bucketKey));
+				int newPos = directMemory.put(byteArrayOs.toByteArray(), memoryType);
+				if( newPos != -1 ) {
+					//如果写入成功
+					bucketAddressList.put(bucketKey, (long) newPos);
+					
+				}
+				else {
+					System.out.println("direct memory is full");
+				}
+				offsetOos.reset();
+				readWriteLock.writeLock().unlock();
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 查询阶段调用的方法  将桶优先写入直接内存  直接内存无空间了就直接丢弃
+	 * @param bucketKey
+	 */
+	public void writeBucketAfterBuilding(int bucketKey) {
+		
+		bucketList.remove(bucketKey);
+		/*HashBucket<K, T> bucketToRemove = bucketList.remove(bucketKey);
+		try {
+			if( !directMemory.isFull(DirectMemoryType.MainSegment) ) {
+				// 有空间  试图往里写 但不一定写成功
+				if (byteArrayOs == null) {
+					byteArrayOs = new ByteArrayOutputStream();
+				}
+				//Resets the count field of this byte array output stream to zero
+				byteArrayOs.reset();
+				//创建对象输出流
+				offsetOos = new ObjectOutputStream(byteArrayOs);
+				
+				offsetOos.writeObject(bucketToRemove);
+				// 构建完之后  directmemory对于桶的类型是mainsegment 其他两个对应两个数据缓冲区的direct memory
+				int newPos = directMemory.put(byteArrayOs.toByteArray(), DirectMemoryType.MainSegment,
+						isbuilding);
+				if( newPos != 0 ) {
+					//如果写入成功 则放入另一个地址队列 不能覆盖文件的物理地址队列
+					bucketDirectMemList.put(bucketKey, (long) newPos);
+				}
+				else {
+					System.out.println("direct memory is full");
+				}
+				offsetOos.reset();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+		
+		
+	}
+
+	/**
+	 * 内部调用函数，从直接内存读取某个桶到内存中
+	 * 查询阶段通过mappedfile进行加载数据
 	 * 
 	 * @param bucketKey
 	 * @return
@@ -264,67 +329,69 @@ public class DiskHashTable<K,T> implements Serializable {
 		HashBucket<K,T> fileBucket = bucketList.get( bucketKey);
 		try {
 			if( fileBucket == null) {
-				// 需要从文件里读桶 该桶需要缓冲区管理
-				readWriteLock.readLock().lock();
-				//if( streamIn == null) {
-				if(bucketAddressList == null) {
-					// 需要从文件中读出该map
-					bucketAddressList = getHashDiskTable(bucketAddressOffset);
-				}
-				
-				//byte[] bucketByteArray = new byte[20000];
-				//FileInputStream streamIn = new FileInputStream(bucketFilePath);
-				//streamIn.getChannel().position(bucketAddressList.get(bucketKey));
-				//streamIn.read(bucketByteArray);
-				//ByteArrayInputStream bais = new ByteArrayInputStream(bucketByteArray);
-				//ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
-				//streamIn.getChannel().position(bucketAddressList.get(bucketKey));
-				//}
-				RandomAccessFile reader = bucketReaderPool.take();
-				//}
-				
-				//streamIn.getChannel().position(bucketAddressList.get(bucketKey));
-				//fileBucket = (HashBucket<K,T>) bucketReader.readObject();
-				//bucketReader.close();
-				//reader.bucketReader.readObject();
-				//if( reader.bucketReader.available() > 0) {
-				//	//reader.bucketReader.readByte();
-				//}
-				
-				//reader.bucketReader.readObject();
-				//reader.bucketReader.readObject();
-				// 缓冲一定数量的桶到内存
-				/*for( int i= bucketKey + 1; i < RaceConfig.bucketNumberOneRead && i < bucketNum ; i++) {
-					HashBucket<K,T> cacheBucket = (HashBucket<K,T>) bucketReader.readObject();
-					cacheBucket.setContext(this);
-					bucketList.put(bucketKey, cacheBucket);
-					bucketCachePool.addBucket(fileBucket);			// 放入缓冲区
-				}
-				readWriteLock.readLock().unlock();*/
-				reader.seek(bucketAddressList.get(bucketKey));
-				//reader.streamIn.getChannel().position(bucketAddressList.get(bucketKey));
-				byte[] bucketByteArray = null;
-				if( bucketKey == bucketNum -1 ) {
-					bucketByteArray = new byte[lastObjectSize];
-				}
-				else {
-					bucketByteArray = new byte[(int) (bucketAddressList.get(bucketKey + 1) - 
-                           bucketAddressList.get(bucketKey))];
-				}
-				
-				reader.read(bucketByteArray);
-				ObjectInputStream bucketReader = new ObjectInputStream(
-						new ByteArrayInputStream(bucketByteArray));
-				fileBucket = (HashBucket<K,T>) bucketReader.readObject();
-				bucketReader.close();
-				fileBucket.setContext(this);
-				bucketReaderPool.add(reader);
-				//System.out.println("load bucket:" + bucketKey);
-				bucketList.put(bucketKey, fileBucket);
-				bucketCachePool.addBucket(fileBucket);			// 放入缓冲区
-				readWriteLock.readLock().unlock();
+				//readWriteLock.readLock().lock();
+				if (isbuilding) {
+					//从直接内存拿数据
+					readWriteLock.readLock().lock();
+					//System.out.println("read bucket from direct mem:" + bucketKey);
+					long startp = bucketAddressList.get(bucketKey);
+					byte[] bucketbytes;
 
-				
+					bucketbytes = directMemory.get((int)startp, memoryType);
+
+					ObjectInputStream bucketReader = new ObjectInputStream(
+							new ByteArrayInputStream(bucketbytes));
+
+					fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+					fileBucket.setContext(this);
+					bucketReader.close();
+					readWriteLock.readLock().unlock();
+
+				} else {
+					// 查询阶段  先从directMemory拿桶数据  拿不到再从文件中读取数据
+					// 下面从direct memory中读取桶
+					Long pos = bucketDirectMemList.get(bucketKey);
+					if( pos != null) {
+						// 说明桶在directMemory里了
+						int startp = bucketAddressList.get(bucketKey).intValue();
+						byte[] bucketbytes;
+						bucketbytes = directMemory.get(startp, memoryType);
+						ObjectInputStream bucketReader = new ObjectInputStream(
+								new ByteArrayInputStream(bucketbytes));
+
+						fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+						fileBucket.setContext(this);
+						bucketReader.close();
+					}
+					else {
+						//从文件里读
+						// 下面从文件里读取桶
+						if(bucketAddressList == null) {
+							bucketAddressList = getHashDiskTable(bucketAddressOffset);
+						}
+						RandomAccessFile reader = bucketReaderPool.take();
+						reader.seek(bucketAddressList.get(bucketKey));
+						byte[] bucketByteArray = null;
+						if( bucketKey == bucketNum -1 ) {
+							bucketByteArray = new byte[lastObjectSize];
+						}
+						else {
+							bucketByteArray = new byte[(int) (bucketAddressList.get(bucketKey + 1) - 
+		                           bucketAddressList.get(bucketKey))];
+						}
+						
+						reader.read(bucketByteArray);
+						ObjectInputStream bucketReader = new ObjectInputStream(
+								new ByteArrayInputStream(bucketByteArray));
+						fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+						bucketReader.close();
+						fileBucket.setContext(this);
+						bucketReaderPool.add(reader);
+						// 从文件里读的桶 才注册到桶管理器里
+						bucketCachePool.addBucket(fileBucket);
+						bucketList.put(bucketKey, fileBucket);
+					}
+				}
 			}
 
 		} catch (FileNotFoundException e) {
@@ -356,12 +423,10 @@ public class DiskHashTable<K,T> implements Serializable {
 		int bucketIndex = getBucketIndex( key);
 		if (bucketIndex < bucketNum) {
 			bucket = readBucket((int) bucketIndex);
-	
 		} else {
 			bucket = readBucket((int) (bucketIndex % Math.pow(10,
 					usedBits - 1)));
 		}
-
 		if (bucket != null) {
 			return bucket.getAddress(getBucketStringIndex( key), key);
 		} else {
@@ -369,7 +434,6 @@ public class DiskHashTable<K,T> implements Serializable {
 			System.out.println("read error!");
 			return null;
 		}
-
 	}
 
 	/**
@@ -391,15 +455,17 @@ public class DiskHashTable<K,T> implements Serializable {
 
 		}
 
-		if (bucket != null) {
+		if (bucket != null) {			
 			bucket.putAddress(getBucketStringIndex(key), key, value);
+			memRecordNum ++;
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
 				HashBucket<K,T> newBucket = new HashBucket<K,T>(this, bucketNum, classType);
-				//BucketCachePool.getInstance().addBucket(newBucket);
+				// 注册桶
+				bucketWriterWhenBuilding.addBucket(newBucket);
 				bucketNum++;
 				bucketList.put(bucketNum - 1, newBucket);
-				
+
 				if (bucketNum > Math.pow(10, usedBits)) {
 					usedBits++;
 				}
@@ -407,7 +473,7 @@ public class DiskHashTable<K,T> implements Serializable {
 				int newBucketIndex = bucketNum - 1;
 				HashBucket<K,T> modifyBucket = readBucket(
 						(int) (newBucketIndex % Math.pow(10, usedBits - 1)));
-				
+
 				List<Map<K, T>> temp = 
 						modifyBucket.getAllValues(String.valueOf(newBucketIndex));
 				for (Map<K, T> tempMap : temp) {
@@ -424,7 +490,7 @@ public class DiskHashTable<K,T> implements Serializable {
 							else {
 								modifyBucket.minusRecordNum(1);
 							}
-							
+
 							it.remove();
 						}
 					}
@@ -454,7 +520,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			return (int) (bucketIndex % temp);
 		}
 	}
-	
+
 	/**
 	 * 
 	 * 
@@ -486,5 +552,33 @@ public class DiskHashTable<K,T> implements Serializable {
 			e.printStackTrace();
 		}
 	}
+
+	public void setIsbuilding(boolean isbuilding) {
+		this.isbuilding = isbuilding;
+	}
+
+	/*public static void main(String args[]){
+		ByteDirectMemory directMemory = new ByteDirectMemory(1024*1024);
+		DiskHashTable<Integer, List<byte[]>> table = new DiskHashTable<Integer,List<byte[]>>
+		("1.txt",List.class, DirectMemoryType.MainSegment);
+		Random random = new Random();
+		int key = 0;
+		for( int j = 0; j < 5000; j++) {
+			table.put(key, UUID.randomUUID().toString().getBytes());
+		}
+		
+		long startTime = System.currentTimeMillis();
+		for( int i = 0; i< 2000; i++) {
+			table.writeBucketWhenBuilding(key);
+			List<byte[]> list = table.get(key);
+			for (byte[] temp : list) {
+				//System.out.println(new String(temp));
+			}
+		}
+		
+		long endTime = System.currentTimeMillis();
+		System.out.println("time:" + (endTime - startTime));
+		
+ 	}*/
 
 }
