@@ -80,13 +80,27 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 		}
 
 		Integer surrId = goodid.hashCode();
+		boolean isCached = false;
 		if (surrId == 0) {
 			return null;
 		} else {
 			// 先在缓冲区里找
 			List<byte[]> offsetList = rowCache.getFromIdCache(surrId,
 					IdIndexType.GoodIdToOrderOffsets);
-			if (offsetList == null) {
+			if( offsetList != null) {
+				ByteBuffer buffer = ByteBuffer.wrap(offsetList.get(0));
+				int fileIndex = buffer.getInt();
+				long offset = buffer.getLong();
+				String diskData = RecordsUtils.getStringFromFile(
+						system.orderHandlersList.get(fileIndex), offset,
+						TableName.OrderTable);
+				if (RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)
+						.equals(goodid)) {
+					// 说明缓冲区里找到了
+					isCached = true;
+				}
+			}
+			if (!isCached) {
 				// 说明没有找到 则在索引里找offsets
 				offsetList = new ArrayList<byte[]>();
 				for (int filePathIndex : system.orderIndexMapping
@@ -152,7 +166,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 								isGoodKey = true;
 								isFound = true;
 								longSum = row.getKV(key).valueAsLong()
-										* offsetList.size();
+										* getCorrectSize(offsetList);
 								break;
 							} else {
 								// 不存在这个key 直接退出
@@ -165,7 +179,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 							try {
 								isLong = false;
 								doubleSum = row.getKV(key).valueAsDouble()
-										* offsetList.size();
+										* getCorrectSize(offsetList);
 								break;
 							} catch (TypeException e2) {
 								// TODO Auto-generated catch block
@@ -219,5 +233,28 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			Double doubleReturn = doubleSum + longSum;
 			return new KeyValueImpl(key, String.format("%.16f", doubleReturn));
 		}
+	}
+	
+	/**
+	 * 从offsetList中得到符合要求的offset的个数  避免hashcode重复
+	 * @param offsetList
+	 * @return
+	 */
+	public int getCorrectSize( List<byte[]> offsetList) {
+		int count = 0;
+		for (byte[] encodedOffset : offsetList) {
+			ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
+			int fileIndex = buffer.getInt();
+			long offset = buffer.getLong();
+
+			String diskData = RecordsUtils.getStringFromFile(
+					system.orderHandlersList.get(fileIndex), offset,
+					TableName.OrderTable);
+			if (RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)
+					.equals(goodid)) {
+				count ++;
+			}
+		}
+		return count;
 	}
 }

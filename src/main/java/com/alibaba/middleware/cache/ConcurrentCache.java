@@ -97,21 +97,21 @@ public class ConcurrentCache {
         }
     }
 
-    /*public Row getFromCache(Object key, TableName tableType) {
-        Row row = null;
+    public String getFromCache(Object key, TableName tableType) {
+
         switch (tableType) {
             case OrderTable:
                 //row = RecordsUtils.createKVMapFromLine(orderCacheMap.get(key));
                 break;
             case BuyerTable:
-                row = RecordsUtils.createKVMapFromLine(buyerCacheMap.get(key));
-                break;
+                return buyerCacheMap.get(key);
+
             case GoodTable:
-                row = RecordsUtils.createKVMapFromLine(goodCacheMap.get(key));
-                break;
+            	return goodCacheMap.get(key);
+
         }
-        return row;
-    }*/
+        return null;
+    }
 
     public List<byte[]> getFromIdCache(Integer key, RaceConfig.IdIndexType indexType) {
         List<byte[]> cache = null;
@@ -166,6 +166,7 @@ public class ConcurrentCache {
      * */
 
     public int getSize() {
-        return buyerCacheMap.size() + goodCacheMap.size();
+        return buyerCacheMap.size() + goodCacheMap.size() + 
+        		buyerToOrderIdCacheMap.size() + goodToOrderIdCacheMap.size();
     }
 }
