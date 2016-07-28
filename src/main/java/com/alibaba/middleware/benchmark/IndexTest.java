@@ -56,7 +56,7 @@ public class IndexTest {
 		    		// writeBucket:xx 将某个索引块xx写到外存  索引块号xx可在索引块内找到
 		    		
 		    		long startTime = System.currentTimeMillis();
-		    		hashTable.writeBucket(Integer.valueOf( command.substring(command.indexOf(":") + 1)));
+		    		//hashTable.writeBucket(Integer.valueOf( command.substring(command.indexOf(":") + 1)));
 	    			System.out.println("write bucket complete:" +
 		    		(System.currentTimeMillis() - startTime) / 1000);
 		    	}
@@ -79,7 +79,7 @@ public class IndexTest {
 		    		long startTime = System.currentTimeMillis();
 		    		br = new BufferedReader(new FileReader("orderBench.txt"));
 				    String line = br.readLine();
-				    hashTable = new DiskHashTable<Long,List<Long>>("bucketFile", List.class);
+				   // hashTable = new DiskHashTable<Long,List<Long>>("bucketFile", List.class);
 				    
 				    /*while (line != null) {
 				        String[] values = line.split("\\s+?");

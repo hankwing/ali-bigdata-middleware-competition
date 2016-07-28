@@ -15,6 +15,8 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreshold = (long) (200* Math.pow(1024, 2));
 	
+	public static int directMemorySize = (int) (1000* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
+	
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
 	public static int fileHandleNumber = 8;				// 每个文件预先打开的句柄数
@@ -69,6 +71,10 @@ public class RaceConfig implements Serializable{
 	
 	public static enum IdIndexType {
 		BuyerIdToOrderOffsets, GoodIdToOrderOffsets
+	}
+	
+	public static enum DirectMemoryType {
+		MainSegment, BuyerIdSegment, GoodIdSegment
 	}
 	
 	public static String orderId = "orderid";
