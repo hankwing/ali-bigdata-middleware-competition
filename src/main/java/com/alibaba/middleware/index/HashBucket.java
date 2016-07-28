@@ -67,13 +67,9 @@ public class HashBucket<K,T> implements Serializable{
 		this.context = context;
 	}
 	
-	public void writeSelfAfterBuilding() {
+	public void writeSelf() {
 		//System.out.println("writeBucket:" + bucketKey);
-		context.writeBucketAfterBuilding(bucketKey);
-	}
-	
-	public void writeSelfWhenBuilding() {
-		context.writeBucketWhenBuilding(bucketKey);
+		context.writeBucket(bucketKey);
 	}
 	
 	public List<byte[]> getAddress(  String bucketIndex, K key) {

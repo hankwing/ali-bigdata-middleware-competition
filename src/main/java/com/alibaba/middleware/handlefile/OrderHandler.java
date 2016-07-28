@@ -20,7 +20,6 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -214,23 +213,21 @@ public class OrderHandler {
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											diskFileName
 											+ RaceConfig.orderIndexFileSuffix
-											, byte[].class, DirectMemoryType.MainSegment);
+											, byte[].class);
 									break;
 								case OrderBuyerId:
 									String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
 											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderBuyerDiskFileName
-											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class
-											,DirectMemoryType.BuyerIdSegment);
+											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class);
 									break;
 								case OrderGoodId:
 									String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
 											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderGoodDiskFileName
-											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
-											DirectMemoryType.GoodIdSegment);
+											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class);
 									break;
 								}
 
@@ -245,8 +242,7 @@ public class OrderHandler {
 											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											diskFileName
-											+ RaceConfig.orderIndexFileSuffix,byte[].class,
-											DirectMemoryType.MainSegment);
+											+ RaceConfig.orderIndexFileSuffix,byte[].class);
 									break;
 								case OrderBuyerId:
 									orderBuyerIdIndexList.put(fileIndex, idHashTable);
@@ -256,8 +252,7 @@ public class OrderHandler {
 											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderBuyerDiskFileName
-											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class,
-											DirectMemoryType.BuyerIdSegment);
+											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class);
 									break;
 								case OrderGoodId:
 									orderGoodIdIndexList.put(fileIndex, idHashTable);
@@ -267,8 +262,7 @@ public class OrderHandler {
 											+ indexFileName.replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderGoodDiskFileName
-											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
-											DirectMemoryType.GoodIdSegment);
+											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class);
 									break;
 								}
 								
