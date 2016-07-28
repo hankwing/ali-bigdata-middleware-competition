@@ -56,7 +56,7 @@ public class BucketCachePool {
 
     private void removeBucket(HashBucket bucket) {
         if( bucket != null ) {
-        	bucket.writeSelf();
+        	bucket.writeSelfAfterBuilding();
 //            bucket = null;
             bucketCounter.getAndDecrement();
         }

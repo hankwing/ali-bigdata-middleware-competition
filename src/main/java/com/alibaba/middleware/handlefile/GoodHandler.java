@@ -17,6 +17,7 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -184,7 +185,8 @@ public class GoodHandler{
 							indexFileName = record.getIndexFileName();
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);
+									indexFileName + RaceConfig.goodIndexFileSuffix, List.class,
+									DirectMemoryType.MainSegment);
 
 						}
 						else {
@@ -195,7 +197,8 @@ public class GoodHandler{
 							indexFileName = record.getIndexFileName();
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);
+									indexFileName + RaceConfig.goodIndexFileSuffix, List.class,
+									DirectMemoryType.MainSegment);
 
 						}
 					}

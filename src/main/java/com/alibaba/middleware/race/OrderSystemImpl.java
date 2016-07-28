@@ -180,8 +180,6 @@ public class OrderSystemImpl implements OrderSystem {
 						e.printStackTrace();
 					}
 					
-					DiskHashTable.isbuilding = false;
-					
 				} else if (command.startsWith("lookup1")) {
 	
 					// lookup:xxx 查找某个key值的value

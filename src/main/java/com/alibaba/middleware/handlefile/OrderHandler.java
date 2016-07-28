@@ -20,6 +20,7 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -210,17 +211,19 @@ public class OrderHandler {
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											indexFileName
 											+ RaceConfig.orderIndexFileSuffix
-											, byte[].class);
+											, byte[].class, DirectMemoryType.MainSegment);
 									break;
 								case OrderBuyerId:
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
-											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class);
+											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class
+											,DirectMemoryType.BuyerIdSegment);
 									break;
 								case OrderGoodId:
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
-											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class);
+											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
+											DirectMemoryType.GoodIdSegment);
 									break;
 								}
 
@@ -233,7 +236,8 @@ public class OrderHandler {
 									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											indexFileName
-											+ RaceConfig.orderIndexFileSuffix,byte[].class);
+											+ RaceConfig.orderIndexFileSuffix,byte[].class,
+											DirectMemoryType.MainSegment);
 									break;
 								case OrderBuyerId:
 									orderBuyerIdIndexList.put(fileIndex, idHashTable);
@@ -241,7 +245,8 @@ public class OrderHandler {
 									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
-											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class);
+											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class,
+											DirectMemoryType.BuyerIdSegment);
 									break;
 								case OrderGoodId:
 									orderGoodIdIndexList.put(fileIndex, idHashTable);
@@ -249,7 +254,8 @@ public class OrderHandler {
 									indexFileName = record.getIndexFileName();
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											indexFileName
-											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class);
+											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
+											DirectMemoryType.GoodIdSegment);
 									break;
 								}
 								
