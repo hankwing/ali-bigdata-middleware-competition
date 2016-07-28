@@ -60,7 +60,6 @@ public class BucketCachePool {
 //            bucket = null;
             bucketCounter.getAndDecrement();
         }
-        
     }
 
     /**
