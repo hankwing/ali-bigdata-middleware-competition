@@ -72,7 +72,7 @@ public class ByteDirectMemory {
 	 * @param byteArray
 	 * @param segment
 	 */
-	public int put(byte[] byteArray, DirectMemoryType memoryType, boolean isBuilding) {
+	public int put(byte[] byteArray, DirectMemoryType memoryType) {
 		
 		// TODO Auto-generated method stub
 		int newPos = -1;
@@ -86,10 +86,7 @@ public class ByteDirectMemory {
 				mainSegIsFull = true;
 			}
 			else {
-				if( !isBuilding) {
-					// 这里主要是我不想改之前的逻辑了  但是查询阶段的时候  一定要写length在前面
-					orderIdBuffer.putInt(byteArray.length);
-				}
+				orderIdBuffer.putInt(byteArray.length);
 				orderIdBuffer.put(byteArray);
 				mainSegOffset = orderIdBuffer.position();
 			}
@@ -104,10 +101,8 @@ public class ByteDirectMemory {
 				orderBuyerSegIsFull = true;
 			}
 			else {
-				if( !isBuilding) {
-					// 这里主要是我不想改之前的逻辑了  但是查询阶段的时候  一定要写length在前面
-					orderIdBuffer.putInt(byteArray.length);
-				}
+				// 先写int代表大小
+				orderIdBuffer.putInt(byteArray.length);
 				orderBuyerBuffer.put(byteArray);
 				orderBuyerSegOffset = orderBuyerBuffer.position();
 			}
@@ -122,10 +117,7 @@ public class ByteDirectMemory {
 				orderGoodSegIsFull = true;
 			}
 			else {
-				if( !isBuilding) {
-					// 这里主要是我不想改之前的逻辑了  但是查询阶段的时候  一定要写length在前面
-					orderIdBuffer.putInt(byteArray.length);
-				}
+				orderIdBuffer.putInt(byteArray.length);
 				orderGoodBuffer.put(byteArray);
 				orderGoodSegOffset = orderGoodBuffer.position();
 			}
@@ -136,25 +128,28 @@ public class ByteDirectMemory {
 		return newPos;
 	}
 
-	public byte[] get(int position, int size,DirectMemoryType memoryType ) {
+	public byte[] get(int position,DirectMemoryType memoryType ) {
 		// TODO Auto-generated method stub
-		byte[] content = new byte[size];
+		byte[] content = null;
 		switch( memoryType) {
 		case MainSegment:
 			mainSegLock.writeLock().lock();
 			orderIdBuffer.position( position);
+			content = new byte[orderIdBuffer.getInt()];
 			orderIdBuffer.get(content);
 			mainSegLock.writeLock().unlock();
 			break;
 		case BuyerIdSegment:
 			orderBuyerSegLock.writeLock().lock();
 			orderBuyerBuffer.position(position);
+			content = new byte[orderBuyerBuffer.getInt()];
 			orderBuyerBuffer.get(content);
 			orderBuyerSegLock.writeLock().unlock();
 			break;
 		case GoodIdSegment:
 			orderGoodSegLock.writeLock().lock();
 			orderGoodBuffer.position( position);
+			content = new byte[orderGoodBuffer.getInt()];
 			orderGoodBuffer.get(content);
 			orderGoodSegLock.writeLock().unlock();
 			break;
@@ -180,7 +175,7 @@ public class ByteDirectMemory {
 	 * @param memoryType
 	 * @return
 	 */
-	public int getIntValue( int pos, DirectMemoryType memoryType) {
+	/*public int getIntValue( int pos, DirectMemoryType memoryType) {
 		switch( memoryType) {
 		case MainSegment:
 			return orderIdBuffer.getInt(pos);
@@ -190,7 +185,7 @@ public class ByteDirectMemory {
 			return orderGoodBuffer.getInt(pos);
 		}
 		return 0;
-	}
+	}*/
 	
 	public void clear(){
 		orderIdBuffer.clear();

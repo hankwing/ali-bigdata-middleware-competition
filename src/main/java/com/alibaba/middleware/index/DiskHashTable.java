@@ -258,7 +258,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			//加锁
 			readWriteLock.writeLock().lock();
 			offsetOos.writeObject(bucketList.remove(bucketKey));
-			int newPos = directMemory.put(byteArrayOs.toByteArray(), memoryType, isbuilding);
+			int newPos = directMemory.put(byteArrayOs.toByteArray(), memoryType);
 			if( newPos != -1 ) {
 				//如果写入成功
 				bucketAddressList.put(bucketKey, (long) newPos);
@@ -332,15 +332,9 @@ public class DiskHashTable<K,T> implements Serializable {
 					readWriteLock.readLock().lock();
 					System.out.println("read bucket from direct mem:" + bucketKey);
 					long startp = bucketAddressList.get(bucketKey);
-					long endp = 0;
-					if (bucketAddressList.get(bucketKey+1) != null) {
-						endp = bucketAddressList.get(bucketKey+1);
-					}else {
-						endp = directMemory.getPosition( memoryType);
-					}
 					byte[] bucketbytes;
 
-					bucketbytes = directMemory.get((int)startp, (int) (endp - startp), memoryType);
+					bucketbytes = directMemory.get((int)startp, memoryType);
 
 					ObjectInputStream bucketReader = new ObjectInputStream(
 							new ByteArrayInputStream(bucketbytes));
@@ -357,10 +351,8 @@ public class DiskHashTable<K,T> implements Serializable {
 					if( pos != null) {
 						// 说明桶在directMemory里了
 						int startp = bucketAddressList.get(bucketKey).intValue();
-						int objectSize = directMemory.getIntValue(startp, memoryType);
 						byte[] bucketbytes;
-						bucketbytes = directMemory.get(startp, objectSize, memoryType);
-
+						bucketbytes = directMemory.get(startp, memoryType);
 						ObjectInputStream bucketReader = new ObjectInputStream(
 								new ByteArrayInputStream(bucketbytes));
 
