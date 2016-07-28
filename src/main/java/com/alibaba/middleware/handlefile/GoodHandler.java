@@ -17,7 +17,6 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -70,7 +69,7 @@ public class GoodHandler{
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		goodfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}},
 				RaceConfig.storeFolders[threadIndex], 
-				RaceConfig.goodFileNamePrex, (int) RaceConfig.maxIndexFileCapacity);
+				RaceConfig.goodFileNamePrex, (int) RaceConfig.smallIndexFileCapacity);
 
 		this.goodFileMapping = systemImpl.goodFileMapping;
 		this.goodIndexMapping = systemImpl.goodIndexMapping;
@@ -184,11 +183,11 @@ public class GoodHandler{
 							// 第一次建立索引文件
 							indexFileName = record.getIndexFileName();
 							String diskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
-									+ indexFileName.replace("//", "_");
+									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									diskFileName + RaceConfig.goodIndexFileSuffix, List.class);
+
 						}
 						else {
 							// 保存当前goodId的索引  并写入索引List
@@ -198,11 +197,10 @@ public class GoodHandler{
 							indexFileName = record.getIndexFileName();
 							// 将三张表的索引写到不同的disk里去
 							String diskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
-									+ indexFileName.replace("//", "_");
+									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									diskFileName + RaceConfig.goodIndexFileSuffix, List.class);
 
 						}
 					}

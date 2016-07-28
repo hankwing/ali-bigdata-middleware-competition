@@ -56,10 +56,11 @@ public class BucketCachePool {
 
     private void removeBucket(HashBucket bucket) {
         if( bucket != null ) {
-        	bucket.writeSelfAfterBuilding();
+        	bucket.writeSelf();
 //            bucket = null;
             bucketCounter.getAndDecrement();
         }
+        
     }
 
     /**

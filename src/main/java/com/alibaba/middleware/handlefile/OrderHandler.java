@@ -20,7 +20,6 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -81,7 +80,7 @@ public class OrderHandler {
 		add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}},
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.orderFileNamePrex,
-				(int) RaceConfig.maxIndexFileCapacity);
+				(int) RaceConfig.bigIndexFileCapacity);
 
 		//文件映射
 		this.orderFileMapping = systemImpl.orderFileMapping;
@@ -210,27 +209,25 @@ public class OrderHandler {
 								switch(indexType) {
 								case OrderId:
 									String diskFileName = RaceConfig.storeFolders[threadIndex]
-											+ indexFileName.replace("//", "_");
+											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											diskFileName
 											+ RaceConfig.orderIndexFileSuffix
-											, byte[].class, DirectMemoryType.MainSegment);
+											, byte[].class);
 									break;
 								case OrderBuyerId:
 									String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
-											+ indexFileName.replace("//", "_");
+											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderBuyerDiskFileName
-											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class
-											,DirectMemoryType.BuyerIdSegment);
+											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class);
 									break;
 								case OrderGoodId:
 									String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
-											+ indexFileName.replace("//", "_");
+											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderGoodDiskFileName
-											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
-											DirectMemoryType.GoodIdSegment);
+											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class);
 									break;
 								}
 
@@ -242,33 +239,30 @@ public class OrderHandler {
 									orderIdIndexList.put(fileIndex, idHashTable);
 									indexFileName = record.getIndexFileName();
 									String diskFileName = RaceConfig.storeFolders[threadIndex]
-											+ indexFileName.replace("//", "_");
+											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											diskFileName
-											+ RaceConfig.orderIndexFileSuffix,byte[].class,
-											DirectMemoryType.MainSegment);
+											+ RaceConfig.orderIndexFileSuffix,byte[].class);
 									break;
 								case OrderBuyerId:
 									orderBuyerIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
 									indexFileName = record.getIndexFileName();
 									String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
-											+ indexFileName.replace("//", "_");
+											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderBuyerDiskFileName
-											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class,
-											DirectMemoryType.BuyerIdSegment);
+											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class);
 									break;
 								case OrderGoodId:
 									orderGoodIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
 									indexFileName = record.getIndexFileName();
 									String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
-											+ indexFileName.replace("//", "_");
+											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderGoodDiskFileName
-											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
-											DirectMemoryType.GoodIdSegment);
+											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class);
 									break;
 								}
 								

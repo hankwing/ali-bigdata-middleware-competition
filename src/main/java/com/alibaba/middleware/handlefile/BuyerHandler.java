@@ -17,7 +17,6 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
@@ -65,7 +64,7 @@ public class BuyerHandler{
 		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
 		buyerfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
-				RaceConfig.buyerFileNamePrex, (int) RaceConfig.maxIndexFileCapacity);
+				RaceConfig.buyerFileNamePrex, (int) RaceConfig.smallIndexFileCapacity);
 		
 		//文件映射
 		this.buyerFileMapping =  systemImpl.buyerFileMapping;
@@ -188,12 +187,11 @@ public class BuyerHandler{
 							// 第一次建立索引文件
 							indexFileName = record.getIndexFileName();
 							String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
-									+ indexFileName.replace("//", "_");
+									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class);
 
 						}
 						else {
@@ -203,13 +201,11 @@ public class BuyerHandler{
 							buyerIdIndexList.put(fileIndex, buyerIdHashTable);
 							indexFileName = record.getIndexFileName();
 							String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
-									+ indexFileName.replace("//", "_");
+									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
-
+									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class);
 
 						}
 					}
