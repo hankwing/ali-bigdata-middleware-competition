@@ -182,9 +182,11 @@ public class GoodHandler{
 						if( indexFileName == null) {
 							// 第一次建立索引文件
 							indexFileName = record.getIndexFileName();
+							String diskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
+									+ indexFileName.replace("//", "_");
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);
+									diskFileName + RaceConfig.goodIndexFileSuffix, List.class);
 
 						}
 						else {
@@ -193,9 +195,12 @@ public class GoodHandler{
 							//smallFile.setGoodIdIndex(0);
 							goodIdIndexList.put(fileIndex, goodIdHashTable);	
 							indexFileName = record.getIndexFileName();
+							// 将三张表的索引写到不同的disk里去
+							String diskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
+									+ indexFileName.replace("//", "_");
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									indexFileName + RaceConfig.goodIndexFileSuffix, List.class);
+									diskFileName + RaceConfig.goodIndexFileSuffix, List.class);
 
 						}
 					}

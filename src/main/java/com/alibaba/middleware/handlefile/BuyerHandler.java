@@ -186,10 +186,12 @@ public class BuyerHandler{
 						if( indexFileName == null) {
 							// 第一次建立索引文件
 							indexFileName = record.getIndexFileName();
+							String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
+									+ indexFileName.replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									indexFileName + RaceConfig.buyerIndexFileSuffix, List.class);
+									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class);
 
 						}
 						else {
@@ -198,10 +200,12 @@ public class BuyerHandler{
 							//smallFile.setBuyerIdIndex(0);
 							buyerIdIndexList.put(fileIndex, buyerIdHashTable);
 							indexFileName = record.getIndexFileName();
+							String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
+									+ indexFileName.replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									indexFileName + RaceConfig.buyerIndexFileSuffix, List.class);
+									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class);
 
 						}
 					}

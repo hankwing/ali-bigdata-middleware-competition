@@ -120,16 +120,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-					buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");
-					//buyerfiles.add("benchmark/buyer_records_1.txt");
+					/*buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");*/
+					buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-					goodfiles.add("prerun_data/good.0.0");
+					/*goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");
-					//goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.2.2");*/
+					goodfiles.add("benchmark/good_records_1.txt");
 					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
@@ -137,15 +137,15 @@ public class OrderSystemImpl implements OrderSystem {
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
 					orderfiles = new ArrayList<String>();
-					orderfiles.add("disk1/orders/order.0.0");
+					/*orderfiles.add("disk1/orders/order.0.0");
 					orderfiles.add("disk2/orders/order.0.3");
 					orderfiles.add("disk3/orders/order.1.1");
-					orderfiles.add("disk1/orders/order.2.2");
+					orderfiles.add("disk1/orders/order.2.2");*/
 					
-					/*orderfiles.add("benchmark/order_records_1.txt");
+					orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
-					orderfiles.add("benchmark/order_records_+5.txt");
+					/*orderfiles.add("benchmark/order_records_+5.txt");
 					orderfiles.add("benchmark/order_records_+6.txt");
 					orderfiles.add("benchmark/order_records_+7.txt");
 					orderfiles.add("benchmark/order_records_+8.txt");
@@ -229,7 +229,7 @@ public class OrderSystemImpl implements OrderSystem {
 					
 				}  else if (command.startsWith("lookup2")) {
 					// lookup:xxx 查找某个key值的value
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String buyerId = rawCommand[0];
 					long startTime = Long.valueOf(rawCommand[1]);
 					long endTime = Long.valueOf(rawCommand[2]);
@@ -238,8 +238,8 @@ public class OrderSystemImpl implements OrderSystem {
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
 					}
-					System.out.println("start query2" );
-					/*for( int i = 0; i < 8; i++) {
+					System.out.println("start query2" );*/
+					for( int i = 0; i < 8; i++) {
 						// 启动八个线程同时查询
 						Thread query = new Thread(new Runnable() {  
 						    @Override  
@@ -273,12 +273,12 @@ public class OrderSystemImpl implements OrderSystem {
 						});  
 						
 						query.start();
-					}*/
+					}
 					
 				} else if (command.startsWith("lookup3")) {
 					// lookup:xxx 查找某个key值的value
 					
-					/*for( int i = 0; i < 8; i++) {
+					for( int i = 0; i < 8; i++) {
 						// 启动八个线程同时查询
 						Thread query = new Thread(new Runnable() {  
 						    @Override  
@@ -323,7 +323,7 @@ public class OrderSystemImpl implements OrderSystem {
 						});  
 						
 						query.start();
-					}*/
+					}
 					/*Random random = new Random();
 					FileInputStream fis = new FileInputStream(orderfiles.get(random.nextInt(
 							orderfiles.size())));
@@ -343,7 +343,7 @@ public class OrderSystemImpl implements OrderSystem {
 					}
 					System.out.println("stop query3" );*/
 					//br.close();
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
@@ -356,17 +356,17 @@ public class OrderSystemImpl implements OrderSystem {
 						//results.next();
 						System.out.println("values:" + results.next());
 					}
-					System.out.println("count:" + count);
+					System.out.println("count:" + count);*/
 					
 				} else if (command.startsWith("lookup4")) {
 					// lookup:xxx 查找某个key值的value
 					// lookup:xxx 查找某个key值的value
 					
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					String key = rawCommand[1];
-					System.out.println(orderSystem.sumOrdersByGood(goodId, key));
-					/*Random random = new Random();
+					System.out.println(orderSystem.sumOrdersByGood(goodId, key));*/
+					Random random = new Random();
 					System.out.println("start query4" );
 					FileInputStream fis = new FileInputStream(goodfiles.get(
 							random.nextInt(goodfiles.size())));
@@ -380,7 +380,7 @@ public class OrderSystemImpl implements OrderSystem {
 						System.out.println(orderSystem.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
 					}		
 					br.close();
-					System.out.println("end query4" );*/
+					System.out.println("end query4" );
 					
 				} else if (command.equals("quit")) {
 					// 索引使用完毕 退出
