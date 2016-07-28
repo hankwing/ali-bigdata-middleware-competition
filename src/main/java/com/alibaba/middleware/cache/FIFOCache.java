@@ -38,7 +38,6 @@ public class FIFOCache {
 
     public boolean isReadyToRemove() { 
         return context.memRecordNum >= maxCapacity;
-
     }
 
     public synchronized int getSize() {
