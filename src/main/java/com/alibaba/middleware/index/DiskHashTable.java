@@ -322,9 +322,6 @@ public class DiskHashTable<K,T> implements Serializable {
 				}
 				offsetOos.reset();
 			}
-			else {
-				bucketList.remove(bucketKey);
-			}
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -335,7 +332,14 @@ public class DiskHashTable<K,T> implements Serializable {
 		
 		
 	}
-
+	
+	/**
+	 * 直接丢弃
+	 * @param bucketKey
+	 */
+	public void discardBucket(int bucketKey) {
+		bucketList.remove(bucketKey);
+	}
 	/**
 	 * 内部调用函数，从直接内存读取某个桶到内存中
 	 * 查询阶段通过mappedfile进行加载数据
