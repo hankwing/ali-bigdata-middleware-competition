@@ -381,7 +381,7 @@ public class DiskHashTable<K,T> implements Serializable {
 						bucketReaderPool.add(reader);
 						// 从文件里读的桶 才注册到桶管理器里
 						bucketCachePool.addBucket(fileBucket);
-						bucketList.put(bucketKey, fileBucket);
+						//bucketList.put(bucketKey, fileBucket);
 					}
 				}
 			}

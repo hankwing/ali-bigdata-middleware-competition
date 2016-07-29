@@ -131,16 +131,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-					buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");
-					//buyerfiles.add("benchmark/buyer_records_1.txt");
+					/*buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");*/
+					buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-					goodfiles.add("prerun_data/good.0.0");
+					/*goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");
-					//goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.2.2");*/
+					goodfiles.add("benchmark/good_records_1.txt");
 					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
@@ -149,27 +149,27 @@ public class OrderSystemImpl implements OrderSystem {
 	
 					orderfiles = new ArrayList<String>();
 
-					orderfiles.add("disk1/orders/order.0.0");
+					/*orderfiles.add("disk1/orders/order.0.0");
 					orderfiles.add("disk2/orders/order.0.3");
 					orderfiles.add("disk3/orders/order.1.1");
-					orderfiles.add("disk1/orders/order.2.2");
+					orderfiles.add("disk1/orders/order.2.2");*/
 					
-					/*orderfiles.add("benchmark/order_records_1.txt");
+					orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
 					orderfiles.add("benchmark/order_records_+5.txt");
 					orderfiles.add("benchmark/order_records_+6.txt");
 					orderfiles.add("benchmark/order_records_+7.txt");
 					orderfiles.add("benchmark/order_records_+8.txt");
-					orderfiles.add("benchmark/order_records_+9.txt");*/
-					/*orderfiles.add("benchmark/order_records_+10.txt");
+					orderfiles.add("benchmark/order_records_+9.txt");
+					orderfiles.add("benchmark/order_records_+10.txt");
 					orderfiles.add("benchmark/order_records_+11.txt");
 					orderfiles.add("benchmark/order_records_+12.txt");
 					orderfiles.add("benchmark/order_records_+13.txt");
 					orderfiles.add("benchmark/order_records_+14.txt");
 					orderfiles.add("benchmark/order_records_+15.txt");
 					orderfiles.add("benchmark/order_records_+16.txt");
-					orderfiles.add("benchmark/order_records_+17.txt");*/
+					orderfiles.add("benchmark/order_records_+17.txt");
 	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
@@ -192,53 +192,53 @@ public class OrderSystemImpl implements OrderSystem {
 				} else if (command.startsWith("lookup1")) {
 	
 					// lookup:xxx 查找某个key值的value
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
 	                    System.out.println(rawCommand[i]);
 						keys.add(rawCommand[i]);
 					}
 					System.out.println("values:" + 
-					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
-//					for( int i = 0; i < 8; i++) {
-//						// 启动八个线程同时查询
-//						Thread query = new Thread(new Runnable() {  
-//						    @Override  
-//						    public void run() {  
-//						    	List<String> keys = new ArrayList<String>();
-//								keys.add("orderid");
-//								int count = 0;
-//								for( int i = 0; i < orderfiles.size() ; i++) {
-//									FileInputStream fis;
-//									try {
-//										fis = new FileInputStream(orderfiles.get(i));
-//										BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-//									    String line = br.readLine();
-//									    
-//									    while( line != null) {
-//									    	long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
-//									    			line, RaceConfig.orderId));
-//									    	if(orderSystem.queryOrder( orderid, keys) == null) {
-//									    		// error
-//									    		count ++;
-//									    		System.out.println("cannot find orderid:" + orderid);
-//									    	}
-//									    	line = br.readLine();
-//									    }
-//									    br.close();
-//									} catch (IOException e) {
-//										// TODO Auto-generated catch block
-//										e.printStackTrace();
-//									}
-//								    
-//								   
-//								}
-//								System.out.println("error count:" + count);                
-//						    };  
-//						});  
-//						
-//						query.start();
-//					}
+					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));*/
+					for( int i = 0; i < 8; i++) {
+						// 启动八个线程同时查询
+						Thread query = new Thread(new Runnable() {  
+						    @Override  
+						    public void run() {  
+						    	List<String> keys = new ArrayList<String>();
+								keys.add("orderid");
+								int count = 0;
+								for( int i = 0; i < orderfiles.size() ; i++) {
+									FileInputStream fis;
+									try {
+										fis = new FileInputStream(orderfiles.get(i));
+										BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+									    String line = br.readLine();
+									    
+									    while( line != null) {
+									    	long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
+									    			line, RaceConfig.orderId));
+									    	if(orderSystem.queryOrder( orderid, keys) == null) {
+									    		// error
+									    		count ++;
+									    		System.out.println("cannot find orderid:" + orderid);
+									    	}
+									    	line = br.readLine();
+									    }
+									    br.close();
+									} catch (IOException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+								    
+								   
+								}
+								System.out.println("error count:" + count);                
+						    };  
+						});  
+						
+						query.start();
+					}
 					
 				}  else if (command.startsWith("lookup2")) {
 					// lookup:xxx 查找某个key值的value
@@ -291,7 +291,7 @@ public class OrderSystemImpl implements OrderSystem {
 				} else if (command.startsWith("lookup3")) {
 					// lookup:xxx 查找某个key值的value
 					
-					/*for( int i = 0; i < 8; i++) {
+					for( int i = 0; i < 8; i++) {
 						// 启动八个线程同时查询
 						Thread query = new Thread(new Runnable() {  
 						    @Override  
@@ -336,7 +336,7 @@ public class OrderSystemImpl implements OrderSystem {
 						});  
 						
 						query.start();
-					}*/
+					}
 					/*Random random = new Random();
 					FileInputStream fis = new FileInputStream(orderfiles.get(random.nextInt(
 							orderfiles.size())));
@@ -356,7 +356,7 @@ public class OrderSystemImpl implements OrderSystem {
 					}
 					System.out.println("stop query3" );*/
 					//br.close();
-					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
@@ -369,7 +369,7 @@ public class OrderSystemImpl implements OrderSystem {
 						//results.next();
 						System.out.println("values:" + results.next());
 					}
-					System.out.println("count:" + count);
+					System.out.println("count:" + count);*/
 					
 				} else if (command.startsWith("lookup4")) {
 					// lookup:xxx 查找某个key值的value
@@ -759,7 +759,7 @@ public class OrderSystemImpl implements OrderSystem {
                 long costTime = System.currentTimeMillis() - before;
                 q2Sum.getAndAdd(costTime);
                 System.out.println("Done query2: " + queryCounter.get() + ", Cost: " + costTime + "ms");
-                System.out.println("Until now, done query2-" + q2Counter.get() + " average cost time: " + q2Sum.get() / q2Counter.get());
+                System.out.println("Until now, done query2 " + q2Counter.get() + " average cost time: " + q2Sum.get() / q2Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -796,7 +796,7 @@ public class OrderSystemImpl implements OrderSystem {
                 long costTime = System.currentTimeMillis() - before;
                 q3Sum.getAndAdd(costTime);
                 System.out.println("Done query3: " + queryCounter.get() + ", Cost: " + costTime + "ms");
-                System.out.println("Until now, done query3" + q3Counter.get() + " average cost time: " + q3Sum.get() / q3Counter.get());
+                System.out.println("Until now, done query3 " + q3Counter.get() + " average cost time: " + q3Sum.get() / q3Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -833,7 +833,7 @@ public class OrderSystemImpl implements OrderSystem {
                 long costTime = System.currentTimeMillis() - before;
                 q4Sum.getAndAdd(costTime);
                 System.out.println("Done query4: " + queryCounter.get() + ", Cost: " + costTime + "ms");
-                System.out.println("Until now, done query4" + q4Sum.get() + " average cost time: " + q4Sum.get() / q4Counter.get());
+                System.out.println("Until now, done query4 " + q4Sum.get() + " average cost time: " + q4Sum.get() / q4Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
