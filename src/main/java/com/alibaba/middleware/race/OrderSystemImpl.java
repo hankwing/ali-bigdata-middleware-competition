@@ -90,7 +90,15 @@ public class OrderSystemImpl implements OrderSystem {
     private ExecutorService queryExe = threadPool.getQueryExe();
     public ConcurrentCache rowCache = null;
 	private AtomicLong queryCounter = new AtomicLong(0L);
-		
+    private AtomicLong q1Sum = new AtomicLong(0L);
+    private AtomicLong q2Sum = new AtomicLong(0L);
+    private AtomicLong q3Sum = new AtomicLong(0L);
+    private AtomicLong q4Sum = new AtomicLong(0L);
+    private AtomicLong q1Counter = new AtomicLong(0L);
+    private AtomicLong q2Counter = new AtomicLong(0L);
+    private AtomicLong q3Counter = new AtomicLong(0L);
+    private AtomicLong q4Counter = new AtomicLong(0L);
+
 	static List<String> buyerfiles = null;
 	static List<String> goodfiles = null;
 	static List<String> orderfiles = null;
@@ -705,12 +713,17 @@ public class OrderSystemImpl implements OrderSystem {
 		// 主要思想：先判断keys在哪个表里 之后根据索引在不同表里找不同字段
 		ResultImpl result = null;
         if (queryExe != null) {
+            long before = System.currentTimeMillis();
             QueryOrderThread t = new QueryOrderThread(this,orderId, keys);
             Future<ResultImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
 				queryCounter.getAndIncrement();
-                System.out.println("Done order: " + queryCounter.get());
+                q1Counter.getAndIncrement();
+                long costTime = System.currentTimeMillis() - before;
+                q1Sum.addAndGet(costTime);
+                System.out.println("Done query1: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Until now, done query1 " + q1Counter.get() + " average cost time: " + q1Sum.get() / q1Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -736,12 +749,17 @@ public class OrderSystemImpl implements OrderSystem {
 
         Iterator<Result> iterator = null;
         if (queryExe != null) {
+            long before = System.currentTimeMillis();
             QueryOrderByBuyerThread t = new QueryOrderByBuyerThread(this, startTime, endTime, buyerid);
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
 				queryCounter.getAndIncrement();
-                System.out.println("Done ordersByBuyer: " + queryCounter.get());
+                q2Counter.getAndIncrement();
+                long costTime = System.currentTimeMillis() - before;
+                q2Sum.getAndAdd(costTime);
+                System.out.println("Done query2: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Until now, done query2-" + q2Counter.get() + " average cost time: " + q2Sum.get() / q2Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -768,12 +786,17 @@ public class OrderSystemImpl implements OrderSystem {
 
         Iterator<Result> iterator = null;
         if (queryExe != null) {
+            long before = System.currentTimeMillis();
             QueryOrdersBySalerThread t = new QueryOrdersBySalerThread(this,salerid, goodid, keys);
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
 				queryCounter.getAndIncrement();
-                System.out.println("Done ordersBySaler: " + queryCounter.get());
+                q3Counter.getAndIncrement();
+                long costTime = System.currentTimeMillis() - before;
+                q3Sum.getAndAdd(costTime);
+                System.out.println("Done query3: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Until now, done query3" + q3Counter.get() + " average cost time: " + q3Sum.get() / q3Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {
@@ -800,12 +823,17 @@ public class OrderSystemImpl implements OrderSystem {
 		KeyValueImpl result = null;
 
         if (queryExe != null) {
+            long before = System.currentTimeMillis();
             SumOrdersByGoodThread t = new SumOrdersByGoodThread(this,goodid, key);
             Future<KeyValueImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
 				queryCounter.getAndIncrement();
-                System.out.println("Done sumOrdersByGood: " + queryCounter.get());
+                q4Counter.getAndIncrement();
+                long costTime = System.currentTimeMillis() - before;
+                q4Sum.getAndAdd(costTime);
+                System.out.println("Done query4: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Until now, done query4" + q4Sum.get() + " average cost time: " + q4Sum.get() / q4Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) {

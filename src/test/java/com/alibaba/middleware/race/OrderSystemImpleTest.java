@@ -135,7 +135,7 @@ public class OrderSystemImpleTest {
             System.out.println("query2 " + startTime + " - " + endTime + " - " + buyerId);
             Iterator<OrderSystem.Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
             while(results.hasNext()) {
-//                System.out.println("values:" + results.next());
+                System.out.println("values:" + results.next());
                 results.next();
             }
         }
@@ -155,7 +155,7 @@ public class OrderSystemImpleTest {
             Iterator<OrderSystem.Result> results = orderSystem.queryOrdersBySaler("", goodId, null);
             System.out.println("query3 " + goodId);
             if(results.hasNext()) {
-//                System.out.println("values:" + results.next());
+                System.out.println("values:" + results.next());
                 results.next();
             }
         }
