@@ -121,7 +121,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
     	// 根据买家ID在索引里找到结果 再判断结果是否介于startTime和endTime之间 结果集合按照createTime插入排序
 		TreeMap<Long, List<Result>> results = new TreeMap<Long, List<Result>>(
 				Collections.reverseOrder());
-		Integer surrId = buyerid.hashCode();
+		int surrId = buyerid.hashCode();
 		boolean isCached = false;
 		if( surrId == 0) {
 			//不存在该买家
