@@ -33,7 +33,7 @@ public class RaceConfig implements Serializable{
 	public static int rowCacheNumber = 5000000;					// 在内存里最多保留几个row数据
 	public static int monitorThreadNum = 2;
     public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 1;
-	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 1;
+	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	// JVMMonitorThread
     public static int monitorInitDelayInMills = 20 *1000;			// 20s后开始检测内存
     public static int monitorFixedDelayInMills = 5 * 1000;			// 每10s检测一次内存
@@ -47,12 +47,12 @@ public class RaceConfig implements Serializable{
 	 * Cache pool config
 	 * */
     public static int cacheInitCapacity = 5000;                    // ConcurrentCache中每个队列的初始大小
-    public static int cacheMaxCapacity = 10000;                    // ConcurrentCache中每个队列的最大大小
+    public static int cacheMaxCapacity = 100000;                    // ConcurrentCache中每个队列的最大大小
     public static int bucketCapcity = 100;                        // 桶CACHE的最大上限
     public static int bucketRemoveNum = 10;                        // 每次桶的CACHE达到上限后删除一定量的桶
 
 
-	public static int hash_index_block_capacity = 500;			// 一个索引桶里的数据量
+	public static int hash_index_block_capacity = 300;			// 一个索引桶里的数据量
 
 	public static String booleanTrueValue = "true";
 	public static String booleanFalseValue = "false";
@@ -92,9 +92,6 @@ public class RaceConfig implements Serializable{
 	public static int goodFileCapacity = 10000;
 	public static int columnFileCapacity = 10000;*/
 
-	
-	
-	
 	public static String[] storeFolders = null;
 	public static String buyerFileNamePrex = "/buyer_";
 	public static String goodFileNamePrex = "/good_";

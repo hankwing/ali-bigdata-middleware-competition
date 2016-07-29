@@ -189,7 +189,7 @@ public class GoodHandler{
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.NoWrite);
+									DirectMemoryType.MainSegment);
 						}
 						else {
 							// 保存当前goodId的索引  并写入索引List
@@ -204,7 +204,7 @@ public class GoodHandler{
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.NoWrite);
+									DirectMemoryType.MainSegment);
 
 						}
 					}
