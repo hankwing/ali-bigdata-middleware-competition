@@ -244,6 +244,7 @@ public class OrderHandler {
 									indexFileName = record.getIndexFileName();
 									String diskFileName = RaceConfig.storeFolders[threadIndex]
 											+ indexFileName.replace("/", "_").replace("//", "_");
+									System.out.println("create order index:" + diskFileName);
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											diskFileName
 											+ RaceConfig.orderIndexFileSuffix,byte[].class,
