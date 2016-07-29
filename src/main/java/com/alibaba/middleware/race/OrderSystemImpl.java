@@ -31,10 +31,12 @@ import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.ConstructSystem;
 import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
+import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.threads.*;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
+import com.sun.org.apache.bcel.internal.generic.NEW;
 
 /**
  * 订单系统实现
@@ -88,13 +90,14 @@ public class OrderSystemImpl implements OrderSystem {
     private ExecutorService queryExe = threadPool.getQueryExe();
     public ConcurrentCache rowCache = null;
 	private AtomicLong queryCounter = new AtomicLong(0L);
-	
-	
+		
 	static List<String> buyerfiles = null;
 	static List<String> goodfiles = null;
 	static List<String> orderfiles = null;
 	static OrderSystemImpl orderSystem = null;
 
+	//直接内存
+	ByteDirectMemory directMemory = new ByteDirectMemory(1024*1024*128);
 	/**
 	 * 测试类 construct测试construct方法
 	 * @param args
@@ -137,6 +140,7 @@ public class OrderSystemImpl implements OrderSystem {
 					//goodfiles.add("benchmark/good_records_1.txt");
 	
 					orderfiles = new ArrayList<String>();
+
 					/*orderfiles.add("disk1/orders/order.0.0");
 					orderfiles.add("disk2/orders/order.0.3");
 					orderfiles.add("disk3/orders/order.1.1");
@@ -145,11 +149,11 @@ public class OrderSystemImpl implements OrderSystem {
 					orderfiles.add("benchmark/order_records_1.txt");
 					orderfiles.add("benchmark/order_records_2.txt");
 					orderfiles.add("benchmark/order_records_4.txt");
-					/*orderfiles.add("benchmark/order_records_+5.txt");
+					orderfiles.add("benchmark/order_records_+5.txt");
 					orderfiles.add("benchmark/order_records_+6.txt");
 					orderfiles.add("benchmark/order_records_+7.txt");
 					orderfiles.add("benchmark/order_records_+8.txt");
-					orderfiles.add("benchmark/order_records_+9.txt");*/
+					orderfiles.add("benchmark/order_records_+9.txt");
 					/*orderfiles.add("benchmark/order_records_+10.txt");
 					orderfiles.add("benchmark/order_records_+11.txt");
 					orderfiles.add("benchmark/order_records_+12.txt");
@@ -176,56 +180,57 @@ public class OrderSystemImpl implements OrderSystem {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
+					
 				} else if (command.startsWith("lookup1")) {
 	
 					// lookup:xxx 查找某个key值的value
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
 	                    System.out.println(rawCommand[i]);
 						keys.add(rawCommand[i]);
 					}
 					System.out.println("values:" + 
-					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), keys));*/
-					for( int i = 0; i < 8; i++) {
-						// 启动八个线程同时查询
-						Thread query = new Thread(new Runnable() {  
-						    @Override  
-						    public void run() {  
-						    	List<String> keys = new ArrayList<String>();
-								keys.add("orderid");
-								int count = 0;
-								for( int i = 0; i < orderfiles.size() ; i++) {
-									FileInputStream fis;
-									try {
-										fis = new FileInputStream(orderfiles.get(i));
-										BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-									    String line = br.readLine();
-									    
-									    while( line != null) {
-									    	long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
-									    			line, RaceConfig.orderId));
-									    	if(orderSystem.queryOrder( orderid, keys) == null) {
-									    		// error
-									    		count ++;
-									    		System.out.println("cannot find orderid:" + orderid);
-									    	}
-									    	line = br.readLine();
-									    }
-									    br.close();
-									} catch (IOException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
-								    
-								   
-								}
-								System.out.println("error count:" + count);                
-						    };  
-						});  
-						
-						query.start();
-					}
+					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
+//					for( int i = 0; i < 8; i++) {
+//						// 启动八个线程同时查询
+//						Thread query = new Thread(new Runnable() {  
+//						    @Override  
+//						    public void run() {  
+//						    	List<String> keys = new ArrayList<String>();
+//								keys.add("orderid");
+//								int count = 0;
+//								for( int i = 0; i < orderfiles.size() ; i++) {
+//									FileInputStream fis;
+//									try {
+//										fis = new FileInputStream(orderfiles.get(i));
+//										BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+//									    String line = br.readLine();
+//									    
+//									    while( line != null) {
+//									    	long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
+//									    			line, RaceConfig.orderId));
+//									    	if(orderSystem.queryOrder( orderid, keys) == null) {
+//									    		// error
+//									    		count ++;
+//									    		System.out.println("cannot find orderid:" + orderid);
+//									    	}
+//									    	line = br.readLine();
+//									    }
+//									    br.close();
+//									} catch (IOException e) {
+//										// TODO Auto-generated catch block
+//										e.printStackTrace();
+//									}
+//								    
+//								   
+//								}
+//								System.out.println("error count:" + count);                
+//						    };  
+//						});  
+//						
+//						query.start();
+//					}
 					
 				}  else if (command.startsWith("lookup2")) {
 					// lookup:xxx 查找某个key值的value
@@ -433,9 +438,8 @@ public class OrderSystemImpl implements OrderSystem {
 
 		//JVMMonitorThread jvmMonitorThread = new JVMMonitorThread("JVMMonitor");
 		//CacheMonitorThread cacheMonitorThread = new CacheMonitorThread(ConcurrentCache.getInstance());
-		//threadPool.addMonitor(jvmMonitorThread);
-		//threadPool.addMonitor(cacheMonitorThread);
-		//threadPool.startMonitors();
+		//threadPool.addWorker(FIFOCacheMonitorThread.getInstance());
+		//threadPool.startWorkers();
 		
 	}
 
