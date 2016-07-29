@@ -304,7 +304,7 @@ public final class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V>
 
       // Notify the listener only if the entry was evicted
       if (data.remove(node.key, node)) {
-          System.out.println("Eviction");
+         // System.out.println("Eviction");
 //        pendingNotifications.add(node);
       }
 

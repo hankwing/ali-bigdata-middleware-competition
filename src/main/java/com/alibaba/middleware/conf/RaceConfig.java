@@ -15,7 +15,7 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreshold = (long) (200* Math.pow(1024, 2));
 	
-	public static int directMemorySize = (int) (1* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
+	public static int directMemorySize = (int) (1000* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
 	
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
@@ -32,8 +32,8 @@ public class RaceConfig implements Serializable{
 	 * */
 	public static int rowCacheNumber = 5000000;					// 在内存里最多保留几个row数据
 	public static int monitorThreadNum = 2;
-    public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 2;
-	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;
+    public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 1;
+	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 1;
 	// JVMMonitorThread
     public static int monitorInitDelayInMills = 20 *1000;			// 20s后开始检测内存
     public static int monitorFixedDelayInMills = 5 * 1000;			// 每10s检测一次内存
@@ -47,7 +47,7 @@ public class RaceConfig implements Serializable{
 	 * Cache pool config
 	 * */
     public static int cacheInitCapacity = 5000;                    // ConcurrentCache中每个队列的初始大小
-    public static int cacheMaxCapacity = 30000;                    // ConcurrentCache中每个队列的最大大小
+    public static int cacheMaxCapacity = 10000;                    // ConcurrentCache中每个队列的最大大小
     public static int bucketCapcity = 100;                        // 桶CACHE的最大上限
     public static int bucketRemoveNum = 10;                        // 每次桶的CACHE达到上限后删除一定量的桶
 
