@@ -23,9 +23,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
-import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.ConstructSystem;
@@ -33,13 +31,12 @@ import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
-import com.alibaba.middleware.index.HashBucket;
-import com.alibaba.middleware.threads.*;
-import com.alibaba.middleware.tools.BytesKey;
+import com.alibaba.middleware.threads.QueryOrderByBuyerThread;
+import com.alibaba.middleware.threads.QueryOrderThread;
+import com.alibaba.middleware.threads.QueryOrdersBySalerThread;
+import com.alibaba.middleware.threads.SumOrdersByGoodThread;
+import com.alibaba.middleware.threads.ThreadPool;
 import com.alibaba.middleware.tools.RecordsUtils;
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Registration;
-import com.sun.org.apache.bcel.internal.generic.NEW;
 
 /**
  * 订单系统实现
