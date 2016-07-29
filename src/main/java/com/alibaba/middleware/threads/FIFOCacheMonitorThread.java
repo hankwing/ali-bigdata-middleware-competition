@@ -5,6 +5,7 @@ import com.alibaba.middleware.cache.FIFOCache;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Jelly
@@ -12,6 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class FIFOCacheMonitorThread extends WorkerThread {
     private List<FIFOCache> cacheList;
     private static FIFOCacheMonitorThread instance = null;
+    private AtomicBoolean isReadyToStop = new AtomicBoolean(false);
 
     private FIFOCacheMonitorThread() {
         cacheList = new CopyOnWriteArrayList<FIFOCache>();
@@ -32,6 +34,10 @@ public class FIFOCacheMonitorThread extends WorkerThread {
     public void run() {
     	try {
 	        while (true) {
+                if (readyToStop()) {
+                    System.out.println("Stop fifo monitor");
+                    break;
+                }
 	            for (FIFOCache cache: cacheList) {
 	                if (cache.isReadyToRemove()) {
 	                    cache.removeBucket();
@@ -54,10 +60,11 @@ public class FIFOCacheMonitorThread extends WorkerThread {
 
     @Override
     public void setReadyToStop() {
+        isReadyToStop.set(true);
     }
 
     @Override
     public boolean readyToStop() {
-        return false;
+        return isReadyToStop.get();
     }
 }

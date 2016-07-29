@@ -12,19 +12,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ThreadPoolTest {
     private static ThreadPool threadPool = ThreadPool.getInstance();
+    private static FIFOCacheMonitorThread fifoThread = FIFOCacheMonitorThread.getInstance();
 
     public static void main(String[] args) {
-//        exampleThreadTest();
+        exampleThreadTest();
 //        jvmMonitorThreadTest();
     }
 
     public static void exampleThreadTest() {
-        for (int i = 0; i < 5; i++) {
-            ExampleThread exampleThread = new ExampleThread("worker" + i);
-            threadPool.addWorker(exampleThread);
-        }
+//        for (int i = 0; i < 5; i++) {
+//            ExampleThread exampleThread = new ExampleThread("worker" + i);
+//            threadPool.addWorker(exampleThread);
+//        }
+        System.out.println("Start test");
+        threadPool.addWorker(fifoThread);
         threadPool.startWorkers();
 //        threadPool.stopWorkers();
+        fifoThread.setReadyToStop();
         threadPool.shutdown();
     }
 
