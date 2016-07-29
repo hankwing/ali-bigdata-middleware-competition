@@ -35,6 +35,7 @@ import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
+import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.ComparableKeys;
 import com.alibaba.middleware.index.DiskHashTable;
@@ -53,6 +54,17 @@ public class Test {
 
 	public static void main(String[] args) {
 		
+		Map<Integer, List<byte[]>> cache = new HashMap<Integer, List<byte[]>>();
+		
+		for( int j = 0; j < 30000; j++) {
+			List<byte[]> values = new ArrayList<byte[]>();
+			for( int i = 0; i < 50; i++) {
+				byte[] byteArray = new byte[12];
+				values.add(byteArray);
+			}
+			cache.put(j, values);
+		}
+		int a = 0;
 		
 		/*String line = "orderid:xxxxx\tbuyerid:1234567";
 		int location = line.indexOf("buyerid");

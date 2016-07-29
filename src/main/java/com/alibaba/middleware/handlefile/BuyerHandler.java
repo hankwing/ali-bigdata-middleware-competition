@@ -193,7 +193,7 @@ public class BuyerHandler{
 							System.out.println("create buyer index:" + diskFileName);
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
-									DirectMemoryType.NoWrite);
+									DirectMemoryType.MainSegment);
 
 						}
 						else {
@@ -208,7 +208,7 @@ public class BuyerHandler{
 							System.out.println("create buyer index:" + diskFileName);
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
-									DirectMemoryType.NoWrite);
+									DirectMemoryType.MainSegment);
 
 
 						}

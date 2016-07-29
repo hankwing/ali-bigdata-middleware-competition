@@ -105,7 +105,7 @@ public class OrderSystemImpl implements OrderSystem {
 	static OrderSystemImpl orderSystem = null;
 
 	//直接内存
-	ByteDirectMemory directMemory = new ByteDirectMemory(1024*1024*128);
+	//ByteDirectMemory directMemory = new ByteDirectMemory(1024*1024*128);
 	/**
 	 * 测试类 construct测试construct方法
 	 * @param args
@@ -161,7 +161,7 @@ public class OrderSystemImpl implements OrderSystem {
 					orderfiles.add("benchmark/order_records_+6.txt");
 					orderfiles.add("benchmark/order_records_+7.txt");
 					orderfiles.add("benchmark/order_records_+8.txt");
-					orderfiles.add("benchmark/order_records_+9.txt");
+					/*orderfiles.add("benchmark/order_records_+9.txt");
 					orderfiles.add("benchmark/order_records_+10.txt");
 					orderfiles.add("benchmark/order_records_+11.txt");
 					orderfiles.add("benchmark/order_records_+12.txt");
@@ -169,7 +169,7 @@ public class OrderSystemImpl implements OrderSystem {
 					orderfiles.add("benchmark/order_records_+14.txt");
 					orderfiles.add("benchmark/order_records_+15.txt");
 					orderfiles.add("benchmark/order_records_+16.txt");
-					orderfiles.add("benchmark/order_records_+17.txt");
+					orderfiles.add("benchmark/order_records_+17.txt");*/
 	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
@@ -722,7 +722,7 @@ public class OrderSystemImpl implements OrderSystem {
                 q1Counter.getAndIncrement();
                 long costTime = System.currentTimeMillis() - before;
                 q1Sum.addAndGet(costTime);
-                System.out.println("Done query1: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Done query1: orderid: " + orderId + " " + ", Cost: " + costTime + "ms");
                 System.out.println("Until now, done query1 " + q1Counter.get() + " average cost time: " + q1Sum.get() / q1Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -758,7 +758,7 @@ public class OrderSystemImpl implements OrderSystem {
                 q2Counter.getAndIncrement();
                 long costTime = System.currentTimeMillis() - before;
                 q2Sum.getAndAdd(costTime);
-                System.out.println("Done query2: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Done query2: buyerid: " + buyerid + " " + ", Cost: " + costTime + "ms");
                 System.out.println("Until now, done query2 " + q2Counter.get() + " average cost time: " + q2Sum.get() / q2Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -795,7 +795,7 @@ public class OrderSystemImpl implements OrderSystem {
                 q3Counter.getAndIncrement();
                 long costTime = System.currentTimeMillis() - before;
                 q3Sum.getAndAdd(costTime);
-                System.out.println("Done query3: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Done query3: salerid: " + goodid + " " + queryCounter.get() + ", Cost: " + costTime + "ms");
                 System.out.println("Until now, done query3 " + q3Counter.get() + " average cost time: " + q3Sum.get() / q3Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -832,7 +832,7 @@ public class OrderSystemImpl implements OrderSystem {
                 q4Counter.getAndIncrement();
                 long costTime = System.currentTimeMillis() - before;
                 q4Sum.getAndAdd(costTime);
-                System.out.println("Done query4: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Done query4: goodid: " + goodid + " " + queryCounter.get() + ", Cost: " + costTime + "ms");
                 System.out.println("Until now, done query4 " + q4Sum.get() + " average cost time: " + q4Sum.get() / q4Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
