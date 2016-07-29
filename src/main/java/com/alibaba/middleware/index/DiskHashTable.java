@@ -21,12 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.FIFOCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.threads.FIFOCacheMonitorThread;
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Registration;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -57,17 +59,14 @@ public class DiskHashTable<K,T> implements Serializable {
 	private transient FileOutputStream fos;
 
 	private transient long lastOffset = 0;
-	private transient BucketCachePool bucketCachePool = null;			// 每建一个桶就往里注册一个
+	//private transient BucketCachePool bucketCachePool = null;			// 每建一个桶就往里注册一个
 
 	private transient LinkedBlockingQueue<RandomAccessFile>
 	bucketReaderPool = null;
-	
 	private transient ByteDirectMemory directMemory = null;
-
 	private long bucketAddressOffset = 0;					// 存桶对应物理地址的map的offset
-	
 	private int lastObjectSize = 0;
-
+	//private Registration classReg = null;					// kryo用的注册类
 	/**
 	 * 查询时bucketAddressList作为外存文件的偏移地址存储链表
 	 */
@@ -109,7 +108,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		bucketDirectMemList = new ConcurrentHashMap<Integer,Long>();
 		directMemory = ByteDirectMemory.getInstance();			//	获取direct memory
 		//directMemory.clear();									// 先不清空了
-		bucketCachePool = BucketCachePool.getInstance();
+		//bucketCachePool = BucketCachePool.getInstance();
 		bucketReaderPool = new LinkedBlockingQueue<RandomAccessFile>();
 		// 注册将桶写到direct memory的监控线程
 		//bucketWriterWhenBuilding = new FIFOCache(this);
@@ -127,7 +126,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 */
 	public void restore() {
 		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
-		bucketCachePool = BucketCachePool.getInstance();
+		//bucketCachePool = BucketCachePool.getInstance();
 	}
 
 	/**
@@ -136,10 +135,12 @@ public class DiskHashTable<K,T> implements Serializable {
 	 */
 	public void writeAllBuckets() {
 		try {
+			// 往kryo里注册类
+			Kryo kryo = new Kryo();
+			//classReg = kryo.register(HashBucket.class);
 			//timer.cancel();
 			//System.out.println("write all bucket");
 			//readWriteLock.writeLock().lock();
-			Kryo kryo = new Kryo();
 			Output output = null;
 		            
 			if (bufferedFout == null) {
@@ -147,12 +148,7 @@ public class DiskHashTable<K,T> implements Serializable {
 				output = new Output( byteArrayOs);
 				fos = new FileOutputStream(bucketFilePath);
 				//offsetOos = new ObjectOutputStream(byteArrayOs);
-
 				bufferedFout = new BufferedOutputStream(fos);
-				bufferedFout.write(byteArrayOs.toByteArray());
-				lastOffset = byteArrayOs.size() + fos.getChannel().position();
-
-			} else {
 				lastOffset = fos.getChannel().position();
 			}
 			
@@ -172,11 +168,11 @@ public class DiskHashTable<K,T> implements Serializable {
 						System.exit(0);
 					}
 					bucketAddressList.put(key, lastOffset);
-					//byteArrayOs.reset();
+					byteArrayOs.reset();
 					//output.clear();
 					
 					//offsetOos = new ObjectOutputStream(byteArrayOs);
-					kryo.writeClassAndObject(output, writeBucket);
+					kryo.writeObject(output, writeBucket);
 					kryo.reset();
 					output.flush();
 					
@@ -187,7 +183,7 @@ public class DiskHashTable<K,T> implements Serializable {
 				
 			}
 			
-			lastObjectSize = byteArrayOs.size();		// 存最后一个桶的物理地址
+			lastObjectSize = byteArrayOs.size();		// 存最后一个桶的size
 			//buffer output stream flush to file
 			bufferedFout.flush();
 			// write this HashTable to dataFile and return offset
@@ -200,14 +196,16 @@ public class DiskHashTable<K,T> implements Serializable {
 				bucketReaderPool.add(streamIn);
 			}
 			// 把桶对应物理地址的map写出去  减少内存开销
+			
+			byteArrayOs.reset();
 			output.clear();
 			//ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
-			/*bucketAddressOffset = lastOffset ;
-			kryo.writeClassAndObject(output, bucketAddressList);
+			bucketAddressOffset = lastOffset;									// 桶地址列表的地址
+			kryo.writeObject(output, bucketAddressList);
 			output.flush();
 			kryo.reset();	
 			bucketAddressList = null;				// 清空桶的地址列表数据  空出内存
-			bufferedFout.write(byteArrayOs.toByteArray());*/
+			bufferedFout.write(byteArrayOs.toByteArray());
 			
 			bufferedFout.flush();
 			isbuilding = false;
@@ -241,7 +239,8 @@ public class DiskHashTable<K,T> implements Serializable {
 			//ObjectInputStream bucketReader = new ObjectInputStream(
 			//		new ByteArrayInputStream(bucketbytes));
 			
-			bucketAddressList = (Map<Integer, Long>) kryo.readClassAndObject(input);
+			bucketAddressList = (ConcurrentHashMap<Integer, Long>) 
+					kryo.readObject(input, ConcurrentHashMap.class);
 			input.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -313,7 +312,8 @@ public class DiskHashTable<K,T> implements Serializable {
 			byteArrayOs.reset();
 			Output output = new Output(byteArrayOs);
 			Kryo kryo = new Kryo();
-			kryo.writeClassAndObject(output, bucketToRemove);
+			kryo.writeObject(output, bucketToRemove);
+			kryo.reset();
 			output.flush();
 			//创建对象输出流
 			//offsetOos = new ObjectOutputStream(byteArrayOs);
@@ -388,7 +388,7 @@ public class DiskHashTable<K,T> implements Serializable {
 						//ObjectInputStream bucketReader = new ObjectInputStream(
 						//		new ByteArrayInputStream(bucketbytes));
 						
-						fileBucket = (HashBucket<K,T>) kryo.readClassAndObject(input);
+						fileBucket = (HashBucket<K,T>) kryo.readObject(input, HashBucket.class);
 						fileBucket.setContext(this);
 						input.close();
 						// 不用放到桶队列里去 用完就删
@@ -411,14 +411,19 @@ public class DiskHashTable<K,T> implements Serializable {
 						}
 						
 						reader.read(bucketByteArray);
-						ObjectInputStream bucketReader = new ObjectInputStream(
-								new ByteArrayInputStream(bucketByteArray));
-						fileBucket = (HashBucket<K,T>) bucketReader.readObject();
-						bucketReader.close();
+						
+						Input input = new Input(bucketByteArray);
+						Kryo kryo = new Kryo();
+						//ObjectInputStream bucketReader = new ObjectInputStream(
+						//		new ByteArrayInputStream(bucketbytes));
+						
+						fileBucket = (HashBucket<K,T>) kryo.readObject(input, HashBucket.class);
+						
+						input.close();
 						fileBucket.setContext(this);
 						bucketReaderPool.add(reader);
 						// 从文件里读的桶 才注册到桶管理器里
-						bucketCachePool.addBucket(fileBucket);
+						//bucketCachePool.addBucket(fileBucket);
 						bucketList.put(bucketKey, fileBucket);
 					}
 				}

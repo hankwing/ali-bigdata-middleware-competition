@@ -15,7 +15,7 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreshold = (long) (200* Math.pow(1024, 2));
 	
-	public static int directMemorySize = (int) (1000* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
+	public static int directMemorySize = (int) (1* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
 	
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
@@ -48,8 +48,8 @@ public class RaceConfig implements Serializable{
 	 * */
     public static int cacheInitCapacity = 5000;                    // ConcurrentCache中每个队列的初始大小
     public static int cacheMaxCapacity = 30000;                    // ConcurrentCache中每个队列的最大大小
-    public static int bucketCapcity = 400;                        // 桶CACHE的最大上限
-    public static int bucketRemoveNum = 100;                        // 每次桶的CACHE达到上限后删除一定量的桶
+    public static int bucketCapcity = 100;                        // 桶CACHE的最大上限
+    public static int bucketRemoveNum = 10;                        // 每次桶的CACHE达到上限后删除一定量的桶
 
 
 	public static int hash_index_block_capacity = 5000;			// 一个索引桶里的数据量
