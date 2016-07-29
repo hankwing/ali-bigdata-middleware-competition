@@ -27,6 +27,8 @@ public class HashBucket<K,T> implements Serializable{
 	private HashBucket<K,T> nextBucket = null;
 	private transient DiskHashTable<K,T> context = null; 
 	private Class<?> classType = null;
+	
+	public HashBucket() { }
 
 	public HashBucket( DiskHashTable<K,T> context, int bucketKey, Class<?> classType ) {
 		this.context = context;

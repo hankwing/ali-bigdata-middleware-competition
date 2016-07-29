@@ -38,6 +38,7 @@ import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.ComparableKeys;
 import com.alibaba.middleware.index.DiskHashTable;
+import com.alibaba.middleware.index.HashBucket;
 import com.alibaba.middleware.race.OrderSystem.TypeException;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.tools.RecordsUtils;
@@ -52,11 +53,7 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-		DirectMemoryType i = DirectMemoryType.NoWrite;
 		
-		if( i == DirectMemoryType.NoWrite) {
-			System.out.println("yes");
-		}
 		/*String line = "orderid:xxxxx\tbuyerid:1234567";
 		int location = line.indexOf("buyerid");
 		int endLocation = line.indexOf("\t", location);

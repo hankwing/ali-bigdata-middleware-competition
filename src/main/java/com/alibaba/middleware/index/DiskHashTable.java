@@ -21,12 +21,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.FIFOCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.threads.FIFOCacheMonitorThread;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 
 /**
  * 索引元信息 保存桶数、记录数、使用的位数、桶对应的物理地址等信息 缓冲区管理调用的writeBucket是线程安全的
@@ -47,7 +49,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	private ReentrantReadWriteLock readWriteLock = null;
 
 	// 保存桶数据 但一加载此类时这个Map是空的 当调用查询时才会从物理地址里load进相应的桶数据
-	private transient Map<Integer, HashBucket<K,T>> bucketList = null;
+	public transient Map<Integer, HashBucket<K,T>> bucketList = null;
 
 	private transient ByteArrayOutputStream byteArrayOs = null;
 	private transient ObjectOutputStream offsetOos = null;
@@ -137,12 +139,14 @@ public class DiskHashTable<K,T> implements Serializable {
 			//timer.cancel();
 			//System.out.println("write all bucket");
 			//readWriteLock.writeLock().lock();
-			
-			if (bufferedFout == null || offsetOos == null) {
+			Kryo kryo = new Kryo();
+			Output output = null;
+		            
+			if (bufferedFout == null) {
 				byteArrayOs = new ByteArrayOutputStream();
-
+				output = new Output( byteArrayOs);
 				fos = new FileOutputStream(bucketFilePath);
-				offsetOos = new ObjectOutputStream(byteArrayOs);
+				//offsetOos = new ObjectOutputStream(byteArrayOs);
 
 				bufferedFout = new BufferedOutputStream(fos);
 				bufferedFout.write(byteArrayOs.toByteArray());
@@ -168,10 +172,13 @@ public class DiskHashTable<K,T> implements Serializable {
 						System.exit(0);
 					}
 					bucketAddressList.put(key, lastOffset);
-					byteArrayOs.reset();
-					offsetOos = new ObjectOutputStream(byteArrayOs);
-					offsetOos.writeObject(writeBucket);
-					offsetOos.reset();
+					//byteArrayOs.reset();
+					//output.clear();
+					
+					//offsetOos = new ObjectOutputStream(byteArrayOs);
+					kryo.writeClassAndObject(output, writeBucket);
+					kryo.reset();
+					output.flush();
 					
 					lastOffset += byteArrayOs.size();
 					// bucketWriter.writeObject(writeBucket.getValue());
@@ -193,14 +200,15 @@ public class DiskHashTable<K,T> implements Serializable {
 				bucketReaderPool.add(streamIn);
 			}
 			// 把桶对应物理地址的map写出去  减少内存开销
-			byteArrayOs.reset();
-			ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
-			bucketAddressOffset = lastOffset ;
-			oos.writeObject(bucketAddressList);
+			output.clear();
+			//ObjectOutputStream oos = new ObjectOutputStream(byteArrayOs);
+			/*bucketAddressOffset = lastOffset ;
+			kryo.writeClassAndObject(output, bucketAddressList);
+			output.flush();
+			kryo.reset();	
 			bucketAddressList = null;				// 清空桶的地址列表数据  空出内存
-			oos.flush();
-			bufferedFout.write(byteArrayOs.toByteArray());
-			oos.close();
+			bufferedFout.write(byteArrayOs.toByteArray());*/
+			
 			bufferedFout.flush();
 			isbuilding = false;
 			//bufferedFout.close();
@@ -228,18 +236,17 @@ public class DiskHashTable<K,T> implements Serializable {
 		try {
 			streamIn = new FileInputStream(bucketFilePath);
 			streamIn.getChannel().position(offSet);
-			ObjectInputStream objectinputstream = new ObjectInputStream(
-					streamIn);
-
-			bucketAddressList = (Map<Integer, Long>) objectinputstream.readObject();
-			objectinputstream.close();
+			Input input = new Input(streamIn);
+			Kryo kryo = new Kryo();
+			//ObjectInputStream bucketReader = new ObjectInputStream(
+			//		new ByteArrayInputStream(bucketbytes));
+			
+			bucketAddressList = (Map<Integer, Long>) kryo.readClassAndObject(input);
+			input.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -297,35 +304,33 @@ public class DiskHashTable<K,T> implements Serializable {
 		//bucketList.remove(bucketKey);
 		boolean isSuccess = false;
 		HashBucket<K, T> bucketToRemove = bucketList.get(bucketKey);
-		try {
-			if( !directMemory.isFull(memoryType) ) {
-				// 有空间  试图往里写 但不一定写成功
-				if (byteArrayOs == null) {
-					byteArrayOs = new ByteArrayOutputStream();
-				}
-				//Resets the count field of this byte array output stream to zero
-				byteArrayOs.reset();
-				//创建对象输出流
-				offsetOos = new ObjectOutputStream(byteArrayOs);
-				
-				offsetOos.writeObject(bucketToRemove);
-				// 构建完之后  directmemory对于桶的类型是mainsegment 其他两个对应两个数据缓冲区的direct memory
-				int newPos = directMemory.put(byteArrayOs.toByteArray(), memoryType);
-				if( newPos != -1 ) {
-					//如果写入成功 则放入另一个地址队列 不能覆盖文件的物理地址队列
-					isSuccess = true;
-					bucketList.remove(bucketKey);
-					bucketDirectMemList.put(bucketKey, (long) newPos);
-				}
-				else {
-					System.out.println("direct memory is full");
-				}
-				offsetOos.reset();
+		if( !directMemory.isFull(memoryType) ) {
+			// 有空间  试图往里写 但不一定写成功
+			if (byteArrayOs == null) {
+				byteArrayOs = new ByteArrayOutputStream();
 			}
+			//Resets the count field of this byte array output stream to zero
+			byteArrayOs.reset();
+			Output output = new Output(byteArrayOs);
+			Kryo kryo = new Kryo();
+			kryo.writeClassAndObject(output, bucketToRemove);
+			output.flush();
+			//创建对象输出流
+			//offsetOos = new ObjectOutputStream(byteArrayOs);
 			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//offsetOos.writeObject(bucketToRemove);
+			// 构建完之后  directmemory对于桶的类型是mainsegment 其他两个对应两个数据缓冲区的direct memory
+			int newPos = directMemory.put(byteArrayOs.toByteArray(), memoryType);
+			if( newPos != -1 ) {
+				//如果写入成功 则放入另一个地址队列 不能覆盖文件的物理地址队列
+				isSuccess = true;
+				bucketList.remove(bucketKey);
+				bucketDirectMemList.put(bucketKey, (long) newPos);
+			}
+			else {
+				System.out.println("direct memory is full");
+			}
+			//offsetOos.reset();
 		}
 		
 		return isSuccess;
@@ -378,12 +383,14 @@ public class DiskHashTable<K,T> implements Serializable {
 						//int startp = bucketAddressList.get(bucketKey).intValue();
 						byte[] bucketbytes;
 						bucketbytes = directMemory.get(pos.intValue(), memoryType);
-						ObjectInputStream bucketReader = new ObjectInputStream(
-								new ByteArrayInputStream(bucketbytes));
-
-						fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+						Input input = new Input(bucketbytes);
+						Kryo kryo = new Kryo();
+						//ObjectInputStream bucketReader = new ObjectInputStream(
+						//		new ByteArrayInputStream(bucketbytes));
+						
+						fileBucket = (HashBucket<K,T>) kryo.readClassAndObject(input);
 						fileBucket.setContext(this);
-						bucketReader.close();
+						input.close();
 						// 不用放到桶队列里去 用完就删
 					}
 					else {
@@ -591,6 +598,24 @@ public class DiskHashTable<K,T> implements Serializable {
 		}
 		
 		long startTime = System.currentTimeMillis();
+
+        //serialise object
+		HashBucket bucket = table.bucketList.get(0);
+        //try-with-resources used to autoclose resources
+		ByteArrayOutputStream byteArrayOs = new ByteArrayOutputStream();
+		
+       Output output = new Output(byteArrayOs);
+       Kryo kryo=new Kryo();
+       kryo.writeClassAndObject(output, bucket);
+       output.close();
+        //deserialise object
+
+        HashBucket<Integer, List<byte[]>> retrievedObject=null;
+        Input input = new Input(byteArrayOs.toByteArray());
+            Kryo kryo2=new Kryo();
+            retrievedObject=(HashBucket<Integer, List<byte[]>>)kryo2.readClassAndObject(input);
+
+        System.out.println("Retrieved from file: " + retrievedObject.toString());
 		for( int i = 0; i< 2000; i++) {
 			table.writeBucketWhenBuilding(key);
 			List<byte[]> list = table.get(key);
