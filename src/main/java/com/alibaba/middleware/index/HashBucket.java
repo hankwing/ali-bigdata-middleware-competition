@@ -69,7 +69,7 @@ public class HashBucket<K,T> implements Serializable{
 	
 	public void writeSelfAfterBuilding() {
 		//System.out.println("writeBucket:" + bucketKey);
-		context.writeBucketAfterBuilding(bucketKey);
+		context.discardBucket(bucketKey);
 	}
 	
 	public void writeSelfWhenBuilding() {
