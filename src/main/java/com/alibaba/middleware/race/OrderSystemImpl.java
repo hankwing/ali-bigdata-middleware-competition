@@ -722,7 +722,7 @@ public class OrderSystemImpl implements OrderSystem {
                 q1Counter.getAndIncrement();
                 long costTime = System.currentTimeMillis() - before;
                 q1Sum.addAndGet(costTime);
-                System.out.println("Done order: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Done query1: " + queryCounter.get() + ", Cost: " + costTime + "ms");
                 System.out.println("Until now, done query1 " + q1Counter.get() + " average cost time: " + q1Sum.get() / q1Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -758,7 +758,7 @@ public class OrderSystemImpl implements OrderSystem {
                 q2Counter.getAndIncrement();
                 long costTime = System.currentTimeMillis() - before;
                 q2Sum.getAndAdd(costTime);
-                System.out.println("Done ordersByBuyer: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Done query2: " + queryCounter.get() + ", Cost: " + costTime + "ms");
                 System.out.println("Until now, done query2-" + q2Counter.get() + " average cost time: " + q2Sum.get() / q2Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -795,7 +795,7 @@ public class OrderSystemImpl implements OrderSystem {
                 q3Counter.getAndIncrement();
                 long costTime = System.currentTimeMillis() - before;
                 q3Sum.getAndAdd(costTime);
-                System.out.println("Done ordersBySaler: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Done query3: " + queryCounter.get() + ", Cost: " + costTime + "ms");
                 System.out.println("Until now, done query3" + q3Counter.get() + " average cost time: " + q3Sum.get() / q3Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -832,7 +832,7 @@ public class OrderSystemImpl implements OrderSystem {
                 q4Counter.getAndIncrement();
                 long costTime = System.currentTimeMillis() - before;
                 q4Sum.getAndAdd(costTime);
-                System.out.println("Done sumOrdersByGood: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+                System.out.println("Done query4: " + queryCounter.get() + ", Cost: " + costTime + "ms");
                 System.out.println("Until now, done query4" + q4Sum.get() + " average cost time: " + q4Sum.get() / q4Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
