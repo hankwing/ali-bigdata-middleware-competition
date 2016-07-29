@@ -41,7 +41,7 @@ public class BucketCachePool {
             bucketCounter.getAndIncrement();
             return true;
         } else {
-        	System.out.println("bucket too much in cache");
+        	//System.out.println("bucket too much in cache");
             removeBuckets(RaceConfig.bucketRemoveNum);
             return false;
         }
