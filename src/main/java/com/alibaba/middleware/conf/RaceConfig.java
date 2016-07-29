@@ -23,7 +23,7 @@ public class RaceConfig implements Serializable{
 	
 	//public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	//public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
-	public static long maxIndexFileCapacity = 100000;				// 一个索引最多存多少行数据
+	public static long maxIndexFileCapacity = 10000000;				// 一个索引最多存多少行数据
 	public static long threIndexFileCapacity = 1000;			// 索引建立xx条后开始向direct memory里写桶
 	public static long singleFileMaxLines = 10000000;			// 合并后的文件最大行数
 	
@@ -47,8 +47,8 @@ public class RaceConfig implements Serializable{
 	 * Cache pool config
 	 * */
     public static int cacheInitCapacity = 5000;                    // ConcurrentCache中每个队列的初始大小
-    public static int cacheMaxCapacity = 10000;                    // ConcurrentCache中每个队列的最大大小
-    public static int bucketCapcity = 700;                        // 桶CACHE的最大上限
+    public static int cacheMaxCapacity = 30000;                    // ConcurrentCache中每个队列的最大大小
+    public static int bucketCapcity = 400;                        // 桶CACHE的最大上限
     public static int bucketRemoveNum = 100;                        // 每次桶的CACHE达到上限后删除一定量的桶
 
 
@@ -74,7 +74,7 @@ public class RaceConfig implements Serializable{
 	}
 	
 	public static enum DirectMemoryType {
-		MainSegment, BuyerIdSegment, GoodIdSegment
+		MainSegment, BuyerIdSegment, GoodIdSegment, NoWrite
 	}
 	
 	public static String orderId = "orderid";

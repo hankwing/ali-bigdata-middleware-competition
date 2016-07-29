@@ -190,10 +190,10 @@ public class BuyerHandler{
 							String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
-							
+							System.out.println("create buyer index:" + diskFileName);
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									DirectMemoryType.NoWrite);
 
 						}
 						else {
@@ -205,10 +205,10 @@ public class BuyerHandler{
 							String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
-							
+							System.out.println("create buyer index:" + diskFileName);
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									DirectMemoryType.NoWrite);
 
 
 						}
