@@ -3,6 +3,10 @@ package com.alibaba.middleware;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -23,7 +27,7 @@ public class CompressionTest {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length);
 
         deflater.finish();
-        byte buffer[] = new byte[512];
+        byte buffer[] = new byte[10*8];
         while (!deflater.finished()) {
             int count = deflater.deflate(buffer);
             outputStream.write(buffer, 0, count);
@@ -39,7 +43,7 @@ public class CompressionTest {
         inflater.setInput(data);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length);
-        byte buffer[] = new byte[512];
+        byte buffer[] = new byte[10*8];
         while (!inflater.finished()) {
             int count = inflater.inflate(buffer);
             outputStream.write(buffer, 0, count);
@@ -51,10 +55,22 @@ public class CompressionTest {
     }
 
     public static void main(String[] args) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(8*2014);
+        Random random = new Random();
+        ByteBuffer byteBuffer = ByteBuffer.allocate(8*10);
         System.out.println(longSize);
-        for (int i = 0; i < 1024; i++) {
-            byteBuffer.putLong(i*longSize, Long.valueOf(i*2));
+        List<Long> longList = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            long value = random.nextLong();
+            longList.add(value);
+            System.out.println(value);
+        }
+        Collections.sort(longList);
+        System.out.println("Sorting");
+        for (int i = 0; i < 10; i++) {
+            System.out.println(longList.get(i));
+        }
+        for (int i = 0; i < 10; i++) {
+            byteBuffer.putLong(i, longList.get(i));
         }
         byte originB[] = byteBuffer.array();
         System.out.println("Origin size: " + originB.length);
@@ -65,8 +81,8 @@ public class CompressionTest {
 
             byte decompressed[] = decompress(compressed);
             ByteBuffer decompressedByteBuffer = ByteBuffer.wrap(decompressed);
-            for (int i = 0; i < 1024; i++) {
-                System.out.println(decompressedByteBuffer.getLong(i*longSize));
+            for (int i = 0; i < 10; i++) {
+                System.out.println(decompressedByteBuffer.getLong(i*longSize) + "|" + longList.get(i));
             }
         } catch (IOException e) {
             e.printStackTrace();
