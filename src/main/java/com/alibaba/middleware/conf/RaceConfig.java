@@ -15,7 +15,7 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreshold = (long) (200* Math.pow(1024, 2));
 	
-	public static int directMemorySize = (int) (1000* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
+	public static int directMemorySize = (int) (1500* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
 	
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
@@ -54,8 +54,9 @@ public class RaceConfig implements Serializable{
 
 	public static int hash_index_block_capacity = 400;			// 一个索引桶里的数据量
 	
-	public static int compressed_max_bytes_length = 12;		// 商品表和买家表索引对应的orderid列表压缩后最大空间
+	//public static int compressed_max_bytes_lenth = 1024;		// 商品表和买家表索引对应的orderid列表压缩后最大空间
 	public static int compressed_min_bytes_length = 10;		// orderid索引对应的orderid列表压缩后最大空间
+	public static int compressed_remaining_bytes_length = 10240;
 
 	public static String booleanTrueValue = "true";
 	public static String booleanFalseValue = "false";

@@ -432,23 +432,56 @@ public class DiskHashTable<K,T> implements Serializable {
 		if (bucket != null) {
 			List<byte[]> offsets = bucket.getAddress(getBucketStringIndex( key), key);
 			for( byte[] offset : offsets) {
-				// 得到对应的文件和偏移地址
-				// 解压缩 byte[]数组
-				byte[] originByte = null;
-				try {
-					originByte = LZFDecoder.decode(offset);
-				} catch (LZFException e) {
-					// TODO Auto-generated catch block
-					originByte = offset;
+				// 根据offset得到在直接内存里的地址  如果没有 则新创建一个直接内存地址  并加入appendOffset进去
+				ByteBuffer byteBuffer = ByteBuffer.wrap(offset);
+				if( offset.length > RaceConfig.compressed_min_bytes_length) {
+					// 说明已经有直接内存地址了
+					byteBuffer.position(RaceConfig.compressed_min_bytes_length);
+					int pos = byteBuffer.getInt();				// 得到直接内存地址
+					byte[] originByte = null;
+					try {
+						originByte = LZFDecoder.decode(directMemory.get(pos, memoryType));
+					} catch (LZFException e) {
+						// TODO Auto-generated catch block
+						originByte = offset;
+					}
+					ByteBuffer buffer = ByteBuffer.allocate(originByte.length + 
+							RaceConfig.compressed_min_bytes_length);
+					// 下面将appendOffset加入byte[]数组里 并压缩存储
+					buffer.put(originByte);
+					buffer.put(appendOffset);
+					// 排序
+					byte[] compressBytes = LZFEncoder.encode(buffer.array());
+					if( compressBytes.length > RaceConfig.compressed_remaining_bytes_length) {
+						// 说明超过了最大预留空间  需要写到尾部去
+						int newPos = directMemory.putAndAppendRemaining(compressBytes, memoryType);
+						if( newPos != -1) {
+							// 重新写入成功
+							byteBuffer.position(RaceConfig.compressed_min_bytes_length);
+							byteBuffer.putInt(newPos);
+							bucket.replaceAddress(getBucketStringIndex( key), key,(T)byteBuffer.array());
+						}
+					}
+					else {
+						// 重新写入直接内存中
+						directMemory.putInSprcificPos(compressBytes,pos, memoryType);
+					}
+					//bucket.replaceAddress(getBucketStringIndex(key), key, compressBytes);
 				}
-				ByteBuffer buffer = ByteBuffer.allocate(originByte.length + 
-						RaceConfig.compressed_min_bytes_length);
-				// 下面将appendOffset加入byte[]数组里 并压缩存储
-				buffer.put(originByte);
-				buffer.put(appendOffset);
-				T compressBytes = (T) LZFEncoder.encode(buffer.array());
-				// 用新值替换旧值
-				bucket.replaceAddress(getBucketStringIndex(key), key, compressBytes);
+				else {
+					// 说明还没有创建直接内存地址  给它创建一个
+					ByteBuffer newBuffer = ByteBuffer.allocate(appendOffset.length);
+					// 第一个放进去的无所谓压不压缩了
+					newBuffer.put(appendOffset);
+					int pos = directMemory.putAndAppendRemaining(
+							LZFEncoder.encode(newBuffer.array()), memoryType);
+					if( pos != -1) {
+						// 说明写成功了  将地址放到offset的后面
+						byteBuffer = ByteBuffer.allocate(RaceConfig.compressed_min_bytes_length + 4).
+							put(offset).putInt(pos);
+						bucket.replaceAddress(getBucketStringIndex(key), key, (T)byteBuffer.array());
+					}
+				}
 				
 			}
 			

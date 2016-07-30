@@ -7,10 +7,12 @@ import java.util.List;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
+import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.KeyValueImpl;
 import com.alibaba.middleware.race.OrderSystem.TypeException;
@@ -35,9 +37,11 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 	private String key;
 	private OrderSystemImpl system = null;
 	private ConcurrentCache rowCache = null;
+	private ByteDirectMemory directMemory = null;
 
 	public SumOrdersByGoodThread(OrderSystemImpl system, String goodid,
 			String key) {
+		directMemory = ByteDirectMemory.getInstance();
 		rowCache = ConcurrentCache.getInstance();
 		this.system = system;
 		this.goodid = goodid;
@@ -105,9 +109,12 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 				if( encodedOffsets.size() != 0) {
 					// 找到了
 					try {
-						offsetList = ByteUtils.splitBytes(LZFDecoder.decode(encodedOffsets.get(0)));
-						// 排除掉第一个  第一个是本身的offset
-						offsetList.remove(0);
+						ByteBuffer tempBuffer = ByteBuffer.wrap(encodedOffsets.get(0));
+						tempBuffer.position(RaceConfig.compressed_min_bytes_length);
+						byte[] offsetsEncoded = directMemory.get(tempBuffer.getInt(), 
+								DirectMemoryType.GoodIdSegment);
+						offsetList = ByteUtils.splitBytes(LZFDecoder.decode(offsetsEncoded));
+
 					} catch (LZFException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

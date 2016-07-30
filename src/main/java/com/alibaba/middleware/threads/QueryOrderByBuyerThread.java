@@ -1,12 +1,15 @@
 package com.alibaba.middleware.threads;
 
 import com.alibaba.middleware.cache.ConcurrentCache;
+import com.alibaba.middleware.cache.DirectMemoryCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
+import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystem.Result;
 import com.alibaba.middleware.race.OrderSystem.TypeException;
@@ -36,6 +39,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
     private String buyerid;
     private OrderSystemImpl system;
     private ConcurrentCache rowCache = null;
+    private ByteDirectMemory directMemory = null;
 
     public QueryOrderByBuyerThread(OrderSystemImpl system, long startTime, long endTime, String buyerid) {
         this.startTime = startTime;
@@ -43,6 +47,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
         this.buyerid = buyerid;
         this.system = system;
         rowCache = ConcurrentCache.getInstance();
+        directMemory = ByteDirectMemory.getInstance();
     }
     
     /**
@@ -132,17 +137,19 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 		}
 		if( !isCached) {*/
 			// 没找到则在索引里找offsetlist
-		List<byte[]> offsets = null;
+		List<byte[]> offsetList = null;
 		for( int filePathIndex : system.buyerIndexMapping.getAllFileIndexs()) {
 			DiskHashTable<BytesKey, byte[]> hashTable = 
 					system.buyerIdIndexList.get(filePathIndex);
 			// 一次性解析所有offset
-			List<byte[]> encodedOffsets = hashTable.get(surrId);
-			if( encodedOffsets.size() != 0) {
+			List<byte[]> offsets = hashTable.get(surrId);
+			if( offsets.size() != 0) {
 				// 解析出offset列表
-				offsets = ByteUtils.splitBytes(LZFDecoder.decode(encodedOffsets.get(0)));
-				// 排除掉第一个  第一个是本身的offset
-				offsets.remove(0);
+				ByteBuffer tempBuffer = ByteBuffer.wrap(offsets.get(0));
+				tempBuffer.position(RaceConfig.compressed_min_bytes_length);
+				byte[] offsetsEncoded = directMemory.get(tempBuffer.getInt(), 
+						DirectMemoryType.BuyerIdSegment);
+				offsetList = ByteUtils.splitBytes(LZFDecoder.decode(offsetsEncoded));
 			}
 		}
 		/*for (int filePathIndex : system.orderIndexMapping.getAllFileIndexs()) {
@@ -157,7 +164,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 		}*/
 		// 将offsetlist放入缓冲区
 		//rowCache.putInIdCache(surrId, offsets, IdIndexType.BuyerIdToOrderOffsets);
-		handleOffsetList(offsets, results);
+		handleOffsetList(offsetList, results);
 		//}
 		
 		List<Result> returnResults = new ArrayList<Result>();

@@ -107,7 +107,7 @@ public class HashBucket<K,T> implements Serializable{
 	public void replaceAddress( String bucketIndex, K key, T newvalue) {
 
 		Map<K,T> values = keyToAddress.get(bucketIndex);
-		if( values.get(key) != null) {
+		if( values != null && values.get(key) != null) {
 			values.put(key, newvalue);
 		}
 		else {

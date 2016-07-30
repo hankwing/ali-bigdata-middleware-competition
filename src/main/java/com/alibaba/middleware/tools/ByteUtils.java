@@ -34,7 +34,7 @@ public class ByteUtils {
     public static List<byte[]> splitBytes(byte[] line){
 		List<byte[]> list = new ArrayList<byte[]>();
 		int interval = RaceConfig.compressed_min_bytes_length;
-		for (int i = 0; i < line.length; i=i+interval) {
+		for (int i = 0; i < line.length; i= i+interval) {
 			list.add(Arrays.copyOfRange(line, i, i+interval));
 		}
 		return list;

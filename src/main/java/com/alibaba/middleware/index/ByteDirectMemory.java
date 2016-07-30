@@ -63,6 +63,119 @@ public class ByteDirectMemory {
 		return pos;
 		
 	}
+	
+	/**
+	 * 将字节数组放入直接内存中 直接内存分为三段  这里需要判断是否还有剩余空间
+	 * 
+	 * 返回写完之后的pos  如果pos为0则说明写入没有成功
+	 * @param byteArray
+	 * @param segment
+	 */
+	public void putInSprcificPos(byte[] byteArray, int pos, DirectMemoryType memoryType) {
+		
+		// TODO Auto-generated method stub
+		switch( memoryType) {
+/*		case MainSegment:
+			mainSegLock.writeLock().lock();
+			orderIdBuffer.position(mainSegOffset);
+			if( orderIdBuffer.remaining() < byteArray.length) {
+				// 说明空间不够了
+				mainSegIsFull = true;
+			}
+			else {
+				newPos = mainSegOffset;
+				orderIdBuffer.putInt(byteArray.length);
+				orderIdBuffer.put(byteArray);
+				mainSegOffset = orderIdBuffer.position();
+			}
+			mainSegLock.writeLock().unlock();
+			break;*/
+		case BuyerIdSegment:
+			orderBuyerSegLock.writeLock().lock();
+			orderBuyerBuffer.position(pos);
+			orderBuyerBuffer.putInt(byteArray.length);
+			orderBuyerBuffer.put(byteArray);
+			orderBuyerSegLock.writeLock().unlock();
+			break;
+		case GoodIdSegment:
+			orderGoodSegLock.writeLock().lock();
+			orderGoodBuffer.position(pos);
+			orderGoodBuffer.putInt(byteArray.length);
+			orderGoodBuffer.put(byteArray);
+			orderGoodSegLock.writeLock().unlock();
+			break;
+		}
+	}
+	
+	/**
+	 * 将字节数组放入直接内存中 在末尾写入1024个空白字节 以便后来修改用
+	 * 
+	 * 返回写完之后的pos  如果pos为0则说明写入没有成功
+	 * @param byteArray
+	 * @param segment
+	 */
+	public int putAndAppendRemaining(byte[] byteArray, DirectMemoryType memoryType) {
+		
+		// TODO Auto-generated method stub
+		int newPos = -1;
+		switch( memoryType) {
+/*		case MainSegment:
+			mainSegLock.writeLock().lock();
+			orderIdBuffer.position(mainSegOffset);
+			if( orderIdBuffer.remaining() < byteArray.length) {
+				// 说明空间不够了
+				mainSegIsFull = true;
+			}
+			else {
+				newPos = mainSegOffset;
+				orderIdBuffer.putInt(byteArray.length);
+				orderIdBuffer.put(byteArray);
+				mainSegOffset = orderIdBuffer.position();
+			}
+			mainSegLock.writeLock().unlock();
+			break;*/
+		case BuyerIdSegment:
+			orderBuyerSegLock.writeLock().lock();
+			
+			orderBuyerBuffer.position(orderBuyerSegOffset);
+			if( orderBuyerBuffer.remaining() < byteArray.length + 
+					RaceConfig.compressed_remaining_bytes_length) {
+				// 说明空间不够了
+				System.out.println("orderBuyerBuffer direct memory have no space!");
+				orderBuyerSegIsFull = true;
+			}
+			else {
+				// 先写int代表大小
+				newPos = orderBuyerSegOffset;
+				orderBuyerBuffer.putInt(byteArray.length);
+				orderBuyerBuffer.put(byteArray);
+				orderBuyerBuffer.put(new byte[RaceConfig.compressed_remaining_bytes_length]);
+				orderBuyerSegOffset = orderBuyerBuffer.position();
+			}
+			orderBuyerSegLock.writeLock().unlock();
+			break;
+		case GoodIdSegment:
+			orderGoodSegLock.writeLock().lock();
+			orderGoodBuffer.position(orderGoodSegOffset);
+			if( orderGoodBuffer.remaining() < byteArray.length + 
+					RaceConfig.compressed_remaining_bytes_length) {
+				// 说明空间不够了
+				System.out.println("orderGoodBuffer direct memory have no space!");
+				orderGoodSegIsFull = true;
+			}
+			else {
+				newPos = orderGoodSegOffset;
+				orderGoodBuffer.putInt(byteArray.length);
+				orderGoodBuffer.put(byteArray);
+				orderGoodBuffer.put(new byte[RaceConfig.compressed_remaining_bytes_length]);
+				orderGoodSegOffset = orderGoodBuffer.position();
+			}
+			
+			orderGoodSegLock.writeLock().unlock();
+			break;
+		}
+		return newPos;
+	}
 
 	/**
 	 * 将字节数组放入直接内存中 直接内存分为三段  这里需要判断是否还有剩余空间
