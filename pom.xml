@@ -42,11 +42,4 @@
       </plugin> 
     </plugins> 
   </build>  
-  <dependencies>
-    <dependency>
-      <groupId>me.lemire.integercompression</groupId>
-      <artifactId>JavaFastPFOR</artifactId>
-      <version>0.1.6</version>
-    </dependency>
-  </dependencies> 
 </project>
