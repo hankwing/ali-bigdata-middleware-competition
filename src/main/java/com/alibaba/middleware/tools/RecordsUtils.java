@@ -293,7 +293,7 @@ public class RecordsUtils {
 		return kvs[1];
 	}*/
 	
-	public List<byte[]> splitBytes(byte[] line){
+	public static List<byte[]> splitBytes(byte[] line){
 		List<byte[]> list = new ArrayList<>();
 		int interval = 12;
 		for (int i = 0; i < line.length; i=i+interval) {
