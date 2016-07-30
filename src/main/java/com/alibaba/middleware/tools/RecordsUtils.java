@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -290,4 +292,14 @@ public class RecordsUtils {
 		String[] kvs = keyValue.split(":");
 		return kvs[1];
 	}*/
+	
+	public static List<byte[]> splitBytes(byte[] line){
+		List<byte[]> list = new ArrayList<>();
+		int interval = 12;
+		for (int i = 0; i < line.length; i=i+interval) {
+			list.add(Arrays.copyOfRange(line, i, i+interval));
+		}
+		return list;
+	}
+	
 }

@@ -35,7 +35,6 @@ import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
-import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.ComparableKeys;
 import com.alibaba.middleware.index.DiskHashTable;
@@ -54,17 +53,6 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-		ByteBuffer byteBuffer = ByteBuffer.allocate(11* 1024);
-		
-		byteBuffer.putInt(20);
-		byteBuffer.putInt(30);
-		byteBuffer.putInt(40);
-		
-		byteBuffer.position(0);
-		byteBuffer.putLong(100);
-		
-		long longvalue = byteBuffer.getLong(0);
-		int intVaule = byteBuffer.getInt();
 		
 		/*String line = "orderid:xxxxx\tbuyerid:1234567";
 		int location = line.indexOf("buyerid");
