@@ -163,6 +163,7 @@ public class DiskHashTable<K,T> implements Serializable {
 					lastOffset += objectByte.length;
 					lastObjectSize = objectByte.length;		// 存最后一个桶的size
 					bufferedFout.write(objectByte);
+					bucketList.remove(key);					// 及时移走
 				}
 				
 			}
