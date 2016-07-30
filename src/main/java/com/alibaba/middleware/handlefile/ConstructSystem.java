@@ -12,8 +12,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
-import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
-import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.tools.FilePathWithIndex;
@@ -134,9 +132,7 @@ public class ConstructSystem {
 			countDownLatch.await();
 			System.out.println("buyer time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
-			
-			System.out.println("the first cache remaining:" + 
-					ByteDirectMemory.getInstance().getPosition(DirectMemoryType.MainSegment));
+
 			// 处理good表
 			countDownLatch = new CountDownLatch(threadNum);
 			for (int i = 0; i < threadNum; i++) {
@@ -145,9 +141,6 @@ public class ConstructSystem {
 			}
 			countDownLatch.await();
 
-			System.out.println("the first cache remaining:" + 
-					ByteDirectMemory.getInstance().getPosition(DirectMemoryType.MainSegment));
-			
 			// 处理order表
 			System.out.println("good time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
