@@ -54,17 +54,17 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-		Map<Integer, List<byte[]>> cache = new HashMap<Integer, List<byte[]>>();
+		ByteBuffer byteBuffer = ByteBuffer.allocate(11* 1024);
 		
-		for( int j = 0; j < 30000; j++) {
-			List<byte[]> values = new ArrayList<byte[]>();
-			for( int i = 0; i < 50; i++) {
-				byte[] byteArray = new byte[12];
-				values.add(byteArray);
-			}
-			cache.put(j, values);
-		}
-		int a = 0;
+		byteBuffer.putInt(20);
+		byteBuffer.putInt(30);
+		byteBuffer.putInt(40);
+		
+		byteBuffer.position(0);
+		byteBuffer.putLong(100);
+		
+		long longvalue = byteBuffer.getLong(0);
+		int intVaule = byteBuffer.getInt();
 		
 		/*String line = "orderid:xxxxx\tbuyerid:1234567";
 		int location = line.indexOf("buyerid");
