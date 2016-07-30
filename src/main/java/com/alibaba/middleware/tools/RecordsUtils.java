@@ -152,11 +152,11 @@ public class RecordsUtils {
 	 * @param offset
 	 * @return
 	 */
-	public static byte[] encodeIndex(int dataSerialNumber, long offset, int size){
+	public static byte[] encodeIndex(int dataSerialNumber, long offset){
 		// 先预留足够的位置给
-		ByteBuffer buffer = ByteBuffer.allocate(size);
+		ByteBuffer buffer = ByteBuffer.allocate(RaceConfig.compressed_min_bytes_length);
 		//放入源数据文件编号
-		buffer.putInt(dataSerialNumber);
+		buffer.putShort((short) dataSerialNumber);
 		buffer.putLong(offset);
 		//buffer.clear();
 		return buffer.array();
@@ -169,7 +169,7 @@ public class RecordsUtils {
 	 */
 	public static FileIndexWithOffset decodeIndex(byte[] indexBytes){
 		ByteBuffer buffer = ByteBuffer.wrap(indexBytes);
-		return new FileIndexWithOffset( buffer.getInt(), buffer.getLong());
+		return new FileIndexWithOffset( buffer.getShort(), buffer.getLong());
 	}
 	
 	/**
@@ -177,10 +177,11 @@ public class RecordsUtils {
 	 * @param line
 	 * @return
 	 */
-	public static Integer getValueFromLineWithKeyList(
+	public static String getValueFromLineWithKeyList(
 			String line, String targetKey, HashSet<String> keyList) {
+		String result = null;
 		if( line != null) {
-			int keyHashCode = 0;
+			//int keyHashCode = 0;
 			//Row kvMap = new Row();
 			String[] kvs = line.split("\t");
 			for (String rawkv : kvs) {
@@ -190,14 +191,15 @@ public class RecordsUtils {
 				keyList.add(key);
 				if( key.equals(targetKey)) {
 					// 找到了所需的key
-					keyHashCode = value.hashCode();
+					result = value;
+					//keyHashCode = value.hashCode();
 				}
 				/*if (key.length() == 0 || value.length() == 0) {
 					throw new RuntimeException("Bad data:" + line);
 				}*/
 				
 			}
-			return keyHashCode;
+			return result;
 		}
 		else {
 			return null;

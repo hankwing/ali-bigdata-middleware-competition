@@ -28,6 +28,7 @@ import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
@@ -50,8 +51,8 @@ public class OrderHandler {
 	//ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
 	//ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
 	// 两个小表的引用
-	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> buyerIdIndexList = null;
-	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> goodIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> buyerIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> goodIdIndexList = null;
 	//ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
 	//DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
 	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
@@ -127,8 +128,7 @@ public class OrderHandler {
 					String record = reader.readLine();
 					while (record != null) {
 						//Utils.getAttrsFromRecords(orderAttrList, record);
-						orderfile.writeLine(dataFileSerialNumber, record, 
-								RaceConfig.compressed_min_bytes_length);
+						orderfile.writeLine(dataFileSerialNumber, record);
 						record = reader.readLine();
 					}
 					reader.close();
@@ -165,7 +165,7 @@ public class OrderHandler {
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					smallFileWriter.writeLine( record, RaceConfig.compressed_min_bytes_length);
+					smallFileWriter.writeLine( record);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -173,7 +173,7 @@ public class OrderHandler {
 				e.printStackTrace();
 			}
 		}
-		smallFileWriter.writeLine(null, RaceConfig.compressed_min_bytes_length);
+		smallFileWriter.writeLine(null);
 		smallFileWriter.closeFile();
 		System.out.println("end order handling!");
 	}
@@ -222,20 +222,20 @@ public class OrderHandler {
 											, byte[].class, DirectMemoryType.NoWrite);
 									break;
 								case OrderBuyerId:
-									/*String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
+									String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderBuyerDiskFileName
 											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class
-											,DirectMemoryType.BuyerIdSegment);*/
+											,DirectMemoryType.BuyerIdSegment);
 									break;
 								case OrderGoodId:
-									/*String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
+									String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderGoodDiskFileName
 											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
-											DirectMemoryType.GoodIdSegment);*/
+											DirectMemoryType.GoodIdSegment);
 									break;
 								}
 
@@ -295,10 +295,8 @@ public class OrderHandler {
 							// 这里要从小表索引里拿出数据来修改
 							String buyerId = RecordsUtils.getValueFromLine(
 									record.getRecordsData(),RaceConfig.buyerId);
-							int buyerIdHashCode = buyerId.hashCode();
 							for( DiskHashTable modifyTable : buyerIdIndexList.values()) {
-								modifyTable.putOffset( buyerIdHashCode, RaceConfig.buyerId, buyerId,
-										record.getOffset(), system.buyerHandlersList);
+								modifyTable.putOffset( new BytesKey(buyerId.getBytes()),record.getOffset());
 							}
 							//idHashTable.put(buyerIdHashCode, record.getOffset());
 
@@ -306,10 +304,8 @@ public class OrderHandler {
 						case OrderGoodId:
 							String goodId = RecordsUtils.getValueFromLine(
 									record.getRecordsData(),RaceConfig.goodId);
-							int goodIdHashCode = goodId.hashCode();
 							for( DiskHashTable modifyTable : goodIdIndexList.values()) {
-								modifyTable.putOffset( goodIdHashCode, RaceConfig.goodId,goodId,
-										record.getOffset(),system.goodHandlersList);
+								modifyTable.putOffset( new BytesKey(goodId.getBytes()),record.getOffset());
 							}
 							//idHashTable.put(goodIdHashCode, record.getOffset());
 							break;
@@ -322,6 +318,7 @@ public class OrderHandler {
 							orderIdIndexList.put(fileIndex, idHashTable);
 							break;
 						case OrderBuyerId:
+							// 这里可以选择把两个小表索引写到直接内存里面去
 							//idHashTable.writeAllBuckets();
 							//orderBuyerIdIndexList.put(fileIndex, idHashTable);
 							break;

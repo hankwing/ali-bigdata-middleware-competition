@@ -22,7 +22,9 @@ import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
+import com.ning.compress.lzf.LZFEncoder;
 
 /***
  * 卖家信息处理
@@ -46,7 +48,7 @@ public class BuyerHandler{
 	//阻塞队列用于存索引
 	LinkedBlockingQueue<IndexItem> indexQueue;
 	//DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
-	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> buyerIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> buyerIdIndexList = null;
 	HashSet<String> buyerAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
@@ -109,8 +111,7 @@ public class BuyerHandler{
 						record = reader.readLine();
 						while (record != null) {
 							//Utils.getAttrsFromRecords(buyerAttrList, record);
-							buyerfile.writeLine(dataFileSerialNumber, record, 
-									RaceConfig.compressed_max_bytes_length);
+							buyerfile.writeLine(dataFileSerialNumber, record);
 							record = reader.readLine();
 						}
 						reader.close();
@@ -145,7 +146,7 @@ public class BuyerHandler{
 					record = reader.readLine();
 					while (record != null) {
 						//Utils.getAttrsFromRecords(buyerAttrList, record);
-						smallFileWriter.writeLine(record, RaceConfig.compressed_max_bytes_length);
+						smallFileWriter.writeLine(record);
 						record = reader.readLine();
 					}
 					reader.close();
@@ -153,7 +154,7 @@ public class BuyerHandler{
 					e.printStackTrace();
 				}
 			}
-			smallFileWriter.writeLine(null, RaceConfig.compressed_max_bytes_length);
+			smallFileWriter.writeLine(null);
 			smallFileWriter.closeFile();
 
 		System.out.println("end buyer handling!");
@@ -163,7 +164,7 @@ public class BuyerHandler{
 	public class BuyerIndexConstructor implements Runnable {
 
 		String indexFileName = null;
-		DiskHashTable<Integer, List<byte[]>> buyerIdHashTable = null;
+		DiskHashTable<BytesKey, byte[]> buyerIdHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
 		int fileIndex = 0;
@@ -192,14 +193,14 @@ public class BuyerHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							System.out.println("create buyer index:" + diskFileName);
-							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
+							buyerIdHashTable = new DiskHashTable<BytesKey,byte[]>(
+									diskFileName + RaceConfig.buyerIndexFileSuffix, byte[].class,
 									DirectMemoryType.BuyerIdSegment);
 
 						}
 						else {
 							// 保存当前buyerId的索引  并写入索引List
-							buyerIdHashTable.writeAllBuckets();
+							//buyerIdHashTable.writeAllBuckets();
 							//smallFile.setBuyerIdIndex(0);
 							buyerIdIndexList.put(fileIndex, buyerIdHashTable);
 							indexFileName = record.getIndexFileName();
@@ -207,8 +208,8 @@ public class BuyerHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							System.out.println("create buyer index:" + diskFileName);
-							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
+							buyerIdHashTable = new DiskHashTable<BytesKey,byte[]>(
+									diskFileName + RaceConfig.buyerIndexFileSuffix, byte[].class,
 									DirectMemoryType.BuyerIdSegment);
 
 
@@ -221,9 +222,9 @@ public class BuyerHandler{
 					// 放入缓冲区中
 					//rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
 					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
-					buyerIdHashTable.put(RecordsUtils.getValueFromLineWithKeyList(
-							record.getRecordsData(),RaceConfig.buyerId, tempAttrList), record.getOffset());
-					//surrKey ++;
+					buyerIdHashTable.put(new BytesKey(RecordsUtils.getValueFromLineWithKeyList(
+							record.getRecordsData(),RaceConfig.buyerId, tempAttrList).getBytes()) ,
+							record.getOffset());
 				}
 				else if(isEnd ) {
 					// 说明队列为空
@@ -234,8 +235,8 @@ public class BuyerHandler{
 						buyerAttrList.addAll(tempAttrList);
 					}
 					BucketCachePool.getInstance().removeAllBucket();
-
-					buyerIdHashTable.writeAllBuckets();
+					// 先不把小表索引写出去了   留在内存里  等order索引建完后再写到直接内存里
+					//buyerIdHashTable.writeAllBuckets();
 					buyerIdIndexList.put(fileIndex, buyerIdHashTable);
 					latch.countDown();
 					break;

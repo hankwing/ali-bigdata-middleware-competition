@@ -104,29 +104,14 @@ public class HashBucket<K,T> implements Serializable{
 	 * @param key
 	 * @param value
 	 */
-	public void replaceAddress( String bucketIndex, K key, byte[] oldValue, byte[] newvalue) {
+	public void replaceAddress( String bucketIndex, K key, T newvalue) {
 
 		Map<K,T> values = keyToAddress.get(bucketIndex);
-		
-		if( classType == List.class) {
-			boolean isFound = false;
-			List<byte[]> valueList = (List<byte[]>) values.get(key);
-			if(valueList != null) {
-				for( int i = 0; i < valueList.size(); i++) {
-					if(Arrays.equals(valueList.get(i), oldValue)) {
-						// 找到替换的对象了
-						isFound = true;
-						valueList.remove(i);
-						valueList.add(newvalue);
-						break;
-					}
-				}
-			}
-			
-			if( !isFound) {
-				// 还要去溢出桶里找
-				nextBucket.replaceAddress(bucketIndex, key, oldValue, newvalue);
-			}
+		if( values.get(key) != null) {
+			values.put(key, newvalue);
+		}
+		else {
+			nextBucket.replaceAddress(bucketIndex, key, newvalue);
 		}
 		
 	}

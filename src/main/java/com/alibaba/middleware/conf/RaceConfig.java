@@ -54,8 +54,8 @@ public class RaceConfig implements Serializable{
 
 	public static int hash_index_block_capacity = 400;			// 一个索引桶里的数据量
 	
-	public static int compressed_max_bytes_length = 1000;		// 商品表和买家表索引对应的orderid列表压缩后最大空间
-	public static int compressed_min_bytes_length = 12;		// orderid索引对应的orderid列表压缩后最大空间
+	public static int compressed_max_bytes_length = 12;		// 商品表和买家表索引对应的orderid列表压缩后最大空间
+	public static int compressed_min_bytes_length = 10;		// orderid索引对应的orderid列表压缩后最大空间
 
 	public static String booleanTrueValue = "true";
 	public static String booleanFalseValue = "false";

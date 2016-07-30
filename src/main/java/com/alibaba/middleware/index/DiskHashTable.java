@@ -418,8 +418,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param key
 	 * @param offset
 	 */
-	public void putOffset( K key, String id, String realKey, byte[] appendOffset,
-			ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlerList) {
+	public void putOffset( K key, byte[] appendOffset) {
 		// 先拿到相应的桶
 		HashBucket<K,T> bucket = null;
 		int bucketIndex = getBucketIndex( key);
@@ -437,35 +436,19 @@ public class DiskHashTable<K,T> implements Serializable {
 				// 解压缩 byte[]数组
 				byte[] originByte = null;
 				try {
-					originByte = LZFDecoder.safeDecode(offset);
+					originByte = LZFDecoder.decode(offset);
 				} catch (LZFException e) {
 					// TODO Auto-generated catch block
 					originByte = offset;
 				}
-				ByteBuffer buffer = ByteBuffer.wrap(originByte);
-				int fileIndex = buffer.getInt();
-				long fileOffset = buffer.getLong();
-				
-				String diskData = RecordsUtils.getStringFromFile(
-						fileHandlerList.get(fileIndex), 
-						fileOffset, TableName.OrderTable);
-				if( RecordsUtils.getValueFromLine(diskData, id).equals(realKey)) {
-					// 下面将appendOffset加入byte[]数组里 并压缩存储
-					buffer.put(appendOffset);
-					// 压缩后  判断是否超过阈值  如果超过则需要写到direct memory的尾部
-					
-					byte[] compressBytes = LZFEncoder.encode(buffer.array());
-					// 用新值替换旧值
-					bucket.replaceAddress(getBucketStringIndex(key), key, offset, compressBytes);
-					if(compressBytes.length > RaceConfig.compressed_max_bytes_length ) {
-						// 说明要将桶写到direct memory尾部了
-						writeBucketAfterBuilding(bucketIndex);
-						System.out.println("modify byte[] exceed max value");
-						
-					}
-					
-				}
-				
+				ByteBuffer buffer = ByteBuffer.allocate(originByte.length + 
+						RaceConfig.compressed_min_bytes_length);
+				// 下面将appendOffset加入byte[]数组里 并压缩存储
+				buffer.put(originByte);
+				buffer.put(appendOffset);
+				T compressBytes = (T) LZFEncoder.encode(buffer.array());
+				// 用新值替换旧值
+				bucket.replaceAddress(getBucketStringIndex(key), key, compressBytes);
 				
 			}
 			
