@@ -28,7 +28,6 @@ import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
-import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
@@ -48,8 +47,11 @@ public class OrderHandler {
 	LinkedBlockingQueue<IndexItem> orderBuyerIndexQueue;
 	LinkedBlockingQueue<IndexItem> orderGoodIndexQueue;
 	ConcurrentHashMap<Integer, DiskHashTable<Long, byte[]>> orderIdIndexList = null;
-	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
-	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
+	//ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
+	//ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
+	// 两个小表的引用
+	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> buyerIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> goodIdIndexList = null;
 	//ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
 	//DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
 	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
@@ -58,16 +60,18 @@ public class OrderHandler {
 	CountDownLatch countDownLatch = null;
 	private ConcurrentCache rowCache = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> orderHandlersList = null;
-
+	private OrderSystemImpl system = null;
 	public double MEG = Math.pow(1024, 2);
 	List<String> smallFiles = new ArrayList<String>();
 
 	public OrderHandler( OrderSystemImpl systemImpl, int thread, CountDownLatch countDownLatch) {
+		system = systemImpl;
 		rowCache = ConcurrentCache.getInstance();
 		this.countDownLatch = countDownLatch;
 		this.orderIdIndexList = systemImpl.orderIdIndexList;
-		this.orderBuyerIdIndexList = systemImpl.orderBuyerIdIndexList;
-		this.orderGoodIdIndexList = systemImpl.orderGoodIdIndexList;
+		// 两个小表的引用传进来
+		this.buyerIdIndexList = systemImpl.buyerIdIndexList;
+		this.goodIdIndexList = systemImpl.goodIdIndexList;
 		//this.orderCountableIndexList = systemImpl.orderCountableIndexList;
 		//this.orderAttrList = systemImpl.orderAttrList;
 		this.orderHandlersList = systemImpl.orderHandlersList;
@@ -123,7 +127,8 @@ public class OrderHandler {
 					String record = reader.readLine();
 					while (record != null) {
 						//Utils.getAttrsFromRecords(orderAttrList, record);
-						orderfile.writeLine(dataFileSerialNumber, record, TableName.OrderTable);
+						orderfile.writeLine(dataFileSerialNumber, record, 
+								RaceConfig.compressed_min_bytes_length);
 						record = reader.readLine();
 					}
 					reader.close();
@@ -160,7 +165,7 @@ public class OrderHandler {
 				record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					smallFileWriter.writeLine( record, TableName.OrderTable);
+					smallFileWriter.writeLine( record, RaceConfig.compressed_min_bytes_length);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -168,7 +173,7 @@ public class OrderHandler {
 				e.printStackTrace();
 			}
 		}
-		smallFileWriter.writeLine(null, TableName.OrderTable);
+		smallFileWriter.writeLine(null, RaceConfig.compressed_min_bytes_length);
 		smallFileWriter.closeFile();
 		System.out.println("end order handling!");
 	}
@@ -187,7 +192,6 @@ public class OrderHandler {
 		public OrderIndexConstructor( IndexType indexType, LinkedBlockingQueue<IndexItem> indexQueue) {
 			this.indexType = indexType;
 			this.indexQueue = indexQueue;
-
 		}
 
 		@SuppressWarnings("unchecked")
@@ -215,23 +219,23 @@ public class OrderHandler {
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											diskFileName
 											+ RaceConfig.orderIndexFileSuffix
-											, byte[].class, DirectMemoryType.MainSegment);
+											, byte[].class, DirectMemoryType.NoWrite);
 									break;
 								case OrderBuyerId:
-									String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
+									/*String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderBuyerDiskFileName
 											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class
-											,DirectMemoryType.BuyerIdSegment);
+											,DirectMemoryType.BuyerIdSegment);*/
 									break;
 								case OrderGoodId:
-									String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
+									/*String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderGoodDiskFileName
 											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
-											DirectMemoryType.GoodIdSegment);
+											DirectMemoryType.GoodIdSegment);*/
 									break;
 								}
 
@@ -248,10 +252,10 @@ public class OrderHandler {
 									idHashTable = new DiskHashTable<Long, byte[]>(
 											diskFileName
 											+ RaceConfig.orderIndexFileSuffix,byte[].class,
-											DirectMemoryType.MainSegment);
+											DirectMemoryType.NoWrite);
 									break;
 								case OrderBuyerId:
-									orderBuyerIdIndexList.put(fileIndex, idHashTable);
+									/*orderBuyerIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
 									indexFileName = record.getIndexFileName();
 									String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
@@ -259,10 +263,10 @@ public class OrderHandler {
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderBuyerDiskFileName
 											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class,
-											DirectMemoryType.BuyerIdSegment);
+											DirectMemoryType.BuyerIdSegment);*/
 									break;
 								case OrderGoodId:
-									orderGoodIdIndexList.put(fileIndex, idHashTable);
+									/*orderGoodIdIndexList.put(fileIndex, idHashTable);
 									idHashTable.writeAllBuckets();
 									indexFileName = record.getIndexFileName();
 									String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
@@ -270,7 +274,7 @@ public class OrderHandler {
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
 											orderGoodDiskFileName
 											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
-											DirectMemoryType.GoodIdSegment);
+											DirectMemoryType.GoodIdSegment);*/
 									break;
 								}
 								
@@ -286,21 +290,30 @@ public class OrderHandler {
 							// 将order表的数据放入缓冲区
 							//rowCache.putInCache(new BytesKey(record.getOffset()), record.getRecordsData(), TableName.OrderTable);
 							idHashTable.put(orderId, record.getOffset());
-
 							break;
 						case OrderBuyerId:
-							int buyerIdHashCode = RecordsUtils.getValueFromLine(
-									record.getRecordsData(),RaceConfig.buyerId).hashCode();
-							idHashTable.put(buyerIdHashCode, record.getOffset());
+							// 这里要从小表索引里拿出数据来修改
+							String buyerId = RecordsUtils.getValueFromLine(
+									record.getRecordsData(),RaceConfig.buyerId);
+							int buyerIdHashCode = buyerId.hashCode();
+							for( DiskHashTable modifyTable : buyerIdIndexList.values()) {
+								modifyTable.putOffset( buyerIdHashCode, RaceConfig.buyerId, buyerId,
+										record.getOffset(), system.buyerHandlersList);
+							}
+							//idHashTable.put(buyerIdHashCode, record.getOffset());
 
 							break;
 						case OrderGoodId:
-							int goodIdHashCode = RecordsUtils.getValueFromLine(
-									record.getRecordsData(),RaceConfig.goodId).hashCode();
-							idHashTable.put(goodIdHashCode, record.getOffset());
+							String goodId = RecordsUtils.getValueFromLine(
+									record.getRecordsData(),RaceConfig.goodId);
+							int goodIdHashCode = goodId.hashCode();
+							for( DiskHashTable modifyTable : goodIdIndexList.values()) {
+								modifyTable.putOffset( goodIdHashCode, RaceConfig.goodId,goodId,
+										record.getOffset(),system.goodHandlersList);
+							}
+							//idHashTable.put(goodIdHashCode, record.getOffset());
 							break;
 						}
-
 					} else if (isEnd) {
 						// 保存当前goodId的索引 并写入索引List
 						switch(indexType) {
@@ -309,14 +322,14 @@ public class OrderHandler {
 							orderIdIndexList.put(fileIndex, idHashTable);
 							break;
 						case OrderBuyerId:
-							idHashTable.writeAllBuckets();
-							orderBuyerIdIndexList.put(fileIndex, idHashTable);
+							//idHashTable.writeAllBuckets();
+							//orderBuyerIdIndexList.put(fileIndex, idHashTable);
 							break;
 						case OrderGoodId:
-							idHashTable.writeAllBuckets();
-							orderGoodIdIndexList.put(fileIndex,idHashTable);
+//							idHashTable.writeAllBuckets();
+//							orderGoodIdIndexList.put(fileIndex,idHashTable);
 							break;
-						}	
+						}
 						BucketCachePool.getInstance().removeAllBucket();
 
 						countDownLatch.countDown();

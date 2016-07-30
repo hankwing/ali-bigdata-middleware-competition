@@ -53,7 +53,7 @@ public class BuyerHandler{
 	ConcurrentCache rowCache = null;
 	ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList = null;
 	List<String> smallFiles = new ArrayList<String>();
-
+	
 	public BuyerHandler( OrderSystemImpl systemImpl, int threadIndex, CountDownLatch latch) {
 		rowCache = ConcurrentCache.getInstance();
 		this.latch = latch;
@@ -84,11 +84,11 @@ public class BuyerHandler{
 			try {
 				System.out.println("buyer file:" + file);
 				File bf = new File(file);
-				if (bf.length() < RaceConfig.smallFileSizeThreshold) {
+				/*if (bf.length() < RaceConfig.smallFileSizeThreshold) {
 					// 属于小文件
 					System.out.println("small buyer file:" + file);
 					smallFiles.add(file);
-				}else {
+				}else {*/
 					// 属于大文件
 					dataFileSerialNumber = buyerFileMapping.addDataFileName(file);
 					// 建立文件句柄
@@ -109,7 +109,8 @@ public class BuyerHandler{
 						record = reader.readLine();
 						while (record != null) {
 							//Utils.getAttrsFromRecords(buyerAttrList, record);
-							buyerfile.writeLine(dataFileSerialNumber, record, TableName.BuyerTable);
+							buyerfile.writeLine(dataFileSerialNumber, record, 
+									RaceConfig.compressed_max_bytes_length);
 							record = reader.readLine();
 						}
 						reader.close();
@@ -117,7 +118,7 @@ public class BuyerHandler{
 						e.printStackTrace();
 					}
 					
-				}
+				//}
 				
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
@@ -144,7 +145,7 @@ public class BuyerHandler{
 					record = reader.readLine();
 					while (record != null) {
 						//Utils.getAttrsFromRecords(buyerAttrList, record);
-						smallFileWriter.writeLine(record, TableName.BuyerTable);
+						smallFileWriter.writeLine(record, RaceConfig.compressed_max_bytes_length);
 						record = reader.readLine();
 					}
 					reader.close();
@@ -152,7 +153,7 @@ public class BuyerHandler{
 					e.printStackTrace();
 				}
 			}
-			smallFileWriter.writeLine(null, TableName.BuyerTable);
+			smallFileWriter.writeLine(null, RaceConfig.compressed_max_bytes_length);
 			smallFileWriter.closeFile();
 
 		System.out.println("end buyer handling!");
@@ -193,7 +194,7 @@ public class BuyerHandler{
 							System.out.println("create buyer index:" + diskFileName);
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									DirectMemoryType.BuyerIdSegment);
 
 						}
 						else {
@@ -208,7 +209,7 @@ public class BuyerHandler{
 							System.out.println("create buyer index:" + diskFileName);
 							buyerIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.buyerIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									DirectMemoryType.BuyerIdSegment);
 
 
 						}

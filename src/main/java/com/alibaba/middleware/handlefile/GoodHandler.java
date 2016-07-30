@@ -82,11 +82,11 @@ public class GoodHandler{
 		for (String file : files) {
 			System.out.println("good file:" + file);
 			File bf = new File(file);
-			if (bf.length() < RaceConfig.smallFileSizeThreshold) {
+			/*if (bf.length() < RaceConfig.smallFileSizeThreshold) {
 				System.out.println("small good file:" + file);
 				smallFiles.add(file);
 
-			}else{
+			}else{*/
 				try {
 					// 属于大文件
 					dataFileSerialNumber = goodFileMapping.addDataFileName(file);
@@ -106,7 +106,8 @@ public class GoodHandler{
 					String record = reader.readLine();
 					while (record != null) {
 						//Utils.getAttrsFromRecords(goodAttrList, record);
-						goodfile.writeLine(dataFileSerialNumber, record, TableName.GoodTable);
+						goodfile.writeLine(dataFileSerialNumber, record,
+								RaceConfig.compressed_max_bytes_length);
 						record = reader.readLine();
 					}
 					reader.close();
@@ -118,7 +119,7 @@ public class GoodHandler{
 					e.printStackTrace();
 				}
 
-			}
+			//}
 		}
 
 		smallFileWriter = new SmallFileWriter(
@@ -136,7 +137,7 @@ public class GoodHandler{
 				String record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					smallFileWriter.writeLine(record, TableName.GoodTable);
+					smallFileWriter.writeLine(record, RaceConfig.compressed_max_bytes_length);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -148,7 +149,7 @@ public class GoodHandler{
 				e.printStackTrace();
 			}
 		}
-		smallFileWriter.writeLine(null, TableName.GoodTable);
+		smallFileWriter.writeLine(null, RaceConfig.compressed_max_bytes_length);
 		smallFileWriter.closeFile();
 		
 		System.out.println("end good handling!");
@@ -189,7 +190,7 @@ public class GoodHandler{
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									DirectMemoryType.GoodIdSegment);
 						}
 						else {
 							// 保存当前goodId的索引  并写入索引List
@@ -204,7 +205,7 @@ public class GoodHandler{
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
 							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
 									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.MainSegment);
+									DirectMemoryType.GoodIdSegment);
 
 						}
 					}

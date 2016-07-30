@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
 import java.util.List;
@@ -20,8 +21,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
+import com.alibaba.middleware.conf.RaceConfig.TableName;
+import com.alibaba.middleware.race.OrderSystemImpl;
+import com.alibaba.middleware.tools.RecordsUtils;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
+import com.ning.compress.lzf.LZFDecoder;
+import com.ning.compress.lzf.LZFEncoder;
+import com.ning.compress.lzf.LZFException;
 
 /**
  * 索引元信息 保存桶数、记录数、使用的位数、桶对应的物理地址等信息 缓冲区管理调用的writeBucket是线程安全的
@@ -83,7 +90,8 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param dataFilePath
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public DiskHashTable(String bucketFilePath, Class<?> classType, DirectMemoryType memoryType){
+	public DiskHashTable( String bucketFilePath, 
+			Class<?> classType, DirectMemoryType memoryType){
 		this.memoryType = memoryType;
 		usedBits = 1;
 		bucketNum = 10;
@@ -292,6 +300,7 @@ public class DiskHashTable<K,T> implements Serializable {
 				bucketDirectMemList.put(bucketKey, (long) newPos);
 			}
 			else {
+				
 				System.out.println("direct memory is full");
 			}
 		}
@@ -402,6 +411,68 @@ public class DiskHashTable<K,T> implements Serializable {
 		} 
 		return fileBucket;
 
+	}
+	
+	/**
+	 * 将小表商品id和买家id的索引的key值对应的byte列表加上offset值
+	 * @param key
+	 * @param offset
+	 */
+	public void putOffset( K key, String id, String realKey, byte[] appendOffset,
+			ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlerList) {
+		// 先拿到相应的桶
+		HashBucket<K,T> bucket = null;
+		int bucketIndex = getBucketIndex( key);
+		if (bucketIndex < bucketNum) {
+			bucket = readBucket((int) bucketIndex);
+		} else {
+			bucket = readBucket((int) (bucketIndex % Math.pow(10,
+					usedBits - 1)));
+		}
+		// 拿完桶了
+		if (bucket != null) {
+			List<byte[]> offsets = bucket.getAddress(getBucketStringIndex( key), key);
+			for( byte[] offset : offsets) {
+				// 得到对应的文件和偏移地址
+				// 解压缩 byte[]数组
+				byte[] originByte = null;
+				try {
+					originByte = LZFDecoder.safeDecode(offset);
+				} catch (LZFException e) {
+					// TODO Auto-generated catch block
+					originByte = offset;
+				}
+				ByteBuffer buffer = ByteBuffer.wrap(originByte);
+				int fileIndex = buffer.getInt();
+				long fileOffset = buffer.getLong();
+				
+				String diskData = RecordsUtils.getStringFromFile(
+						fileHandlerList.get(fileIndex), 
+						fileOffset, TableName.OrderTable);
+				if( RecordsUtils.getValueFromLine(diskData, id).equals(realKey)) {
+					// 下面将appendOffset加入byte[]数组里 并压缩存储
+					buffer.put(appendOffset);
+					// 压缩后  判断是否超过阈值  如果超过则需要写到direct memory的尾部
+					
+					byte[] compressBytes = LZFEncoder.encode(buffer.array());
+					// 用新值替换旧值
+					bucket.replaceAddress(getBucketStringIndex(key), key, offset, compressBytes);
+					if(compressBytes.length > RaceConfig.compressed_max_bytes_length ) {
+						// 说明要将桶写到direct memory尾部了
+						writeBucketAfterBuilding(bucketIndex);
+						System.out.println("modify byte[] exceed max value");
+						
+					}
+					
+				}
+				
+				
+			}
+			
+		} else {
+			// need to read from file
+			System.out.println("read error!");
+		}
 	}
 
 	/**

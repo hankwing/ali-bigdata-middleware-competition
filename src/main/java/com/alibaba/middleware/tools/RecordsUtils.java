@@ -18,6 +18,8 @@ import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.race.KeyValueImpl;
 import com.alibaba.middleware.race.Row;
+import com.ning.compress.lzf.LZFDecoder;
+import com.ning.compress.lzf.LZFEncoder;
 
 
 public class RecordsUtils {
@@ -150,8 +152,9 @@ public class RecordsUtils {
 	 * @param offset
 	 * @return
 	 */
-	public static byte[] encodeIndex(int dataSerialNumber, long offset){
-		ByteBuffer buffer = ByteBuffer.allocate(12);
+	public static byte[] encodeIndex(int dataSerialNumber, long offset, int size){
+		// 先预留足够的位置给
+		ByteBuffer buffer = ByteBuffer.allocate(size);
 		//放入源数据文件编号
 		buffer.putInt(dataSerialNumber);
 		buffer.putLong(offset);

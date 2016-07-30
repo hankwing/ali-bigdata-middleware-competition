@@ -1,5 +1,6 @@
 package com.alibaba.middleware.handlefile;
 
+import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.tools.RecordsUtils;
 
 public class IndexItem {
@@ -11,11 +12,12 @@ public class IndexItem {
 	//Row rowData = null;
 	byte[] encodedOffset = null;
 
-	public IndexItem(String indexFileName,int dataSerialNumber ,String recordsData, long offset) {
+	public IndexItem(String indexFileName,int dataSerialNumber ,String recordsData, long offset,
+			int size) {
 		this.indexFileName = indexFileName;
 		this.dataSerialNumber = dataSerialNumber;
 		this.recordsData = recordsData;
-		encodedOffset = RecordsUtils.encodeIndex(dataSerialNumber, offset);
+		encodedOffset = RecordsUtils.encodeIndex(dataSerialNumber, offset, size);
 	}
 	
 	public byte[] getOffset() {

@@ -2,6 +2,7 @@ package com.alibaba.middleware.benchmark;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,10 +27,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.xerial.snappy.Snappy;
 
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.conf.RaceConfig;
@@ -42,6 +46,7 @@ import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.index.HashBucket;
 import com.alibaba.middleware.race.OrderSystem.TypeException;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.RecordsUtils;
 
 /**
@@ -54,18 +59,26 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-		ByteBuffer byteBuffer = ByteBuffer.allocate(11* 1024);
 		
-		byteBuffer.putInt(20);
-		byteBuffer.putInt(30);
-		byteBuffer.putInt(40);
+		try {
+			ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
+			Random random = new Random();
+			for( int i = 0; i< 100; i++) {
+				byteArray.write(ByteUtils.longToBytes(random.nextLong()));
+			}
+			System.out.println("before:" + byteArray.size());
+			 byte[] compressed = Snappy.compress(byteArray.toByteArray());
+			 System.out.println("after:" + compressed.length);
+			 byte[] uncompressed = Snappy.uncompress(compressed);
+			 
+				String result = new String(uncompressed, "UTF-8");
+				System.out.println(result);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
-		byteBuffer.position(0);
-		byteBuffer.putLong(100);
-		
-		long longvalue = byteBuffer.getLong(0);
-		int intVaule = byteBuffer.getInt();
-		
+			
 		/*String line = "orderid:xxxxx\tbuyerid:1234567";
 		int location = line.indexOf("buyerid");
 		int endLocation = line.indexOf("\t", location);

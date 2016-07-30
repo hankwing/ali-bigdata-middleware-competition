@@ -13,7 +13,6 @@ import com.alibaba.middleware.race.OrderSystem.TypeException;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.ResultImpl;
 import com.alibaba.middleware.race.Row;
-import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 

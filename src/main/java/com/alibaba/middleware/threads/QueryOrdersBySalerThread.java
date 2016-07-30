@@ -14,7 +14,6 @@ import com.alibaba.middleware.race.ResultImpl;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.race.OrderSystem.Result;
 import com.alibaba.middleware.race.OrderSystemImpl;
-import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 

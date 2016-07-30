@@ -8,21 +8,21 @@ import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 
 public class ByteDirectMemory {
 
-	private ByteBuffer orderIdBuffer;
+	//private ByteBuffer orderIdBuffer;
 	private ByteBuffer orderBuyerBuffer;
 	private ByteBuffer orderGoodBuffer;
-	private ReentrantReadWriteLock mainSegLock = new ReentrantReadWriteLock();
+	//private ReentrantReadWriteLock mainSegLock = new ReentrantReadWriteLock();
 	private ReentrantReadWriteLock orderBuyerSegLock = new ReentrantReadWriteLock();
 	private ReentrantReadWriteLock orderGoodSegLock = new ReentrantReadWriteLock();
 	private static ByteDirectMemory instance = null;
 	
 	// 用于判断队列是否满
-	private boolean mainSegIsFull = false;
+	//private boolean mainSegIsFull = false;
 	private boolean orderBuyerSegIsFull = false;
 	private boolean orderGoodSegIsFull = false;
 	
 	// 记录队列最后的位置
-	private int mainSegOffset = 0;
+	//private int mainSegOffset = 0;
 	private int orderBuyerSegOffset = 0;
 	private int orderGoodSegOffset = 0;
 	
@@ -35,7 +35,7 @@ public class ByteDirectMemory {
 	
 	public ByteDirectMemory(int size) {
 		// TODO Auto-generated constructor stub
-		orderIdBuffer = ByteBuffer.allocateDirect(size);
+		//orderIdBuffer = ByteBuffer.allocateDirect(size);
 		orderBuyerBuffer = ByteBuffer.allocateDirect(size);
 		orderGoodBuffer = ByteBuffer.allocateDirect(size);
 	}
@@ -44,11 +44,11 @@ public class ByteDirectMemory {
 		// TODO Auto-generated method stub
 		long pos = 0;
 		switch( memoryType) {
-		case MainSegment:
+/*		case MainSegment:
 			mainSegLock.readLock().lock();
 			pos = mainSegOffset;
 			mainSegLock.readLock().unlock();
-			break;
+			break;*/
 		case BuyerIdSegment:
 			orderBuyerSegLock.readLock().lock();
 			pos= orderBuyerSegOffset;
@@ -64,7 +64,6 @@ public class ByteDirectMemory {
 		
 	}
 
-
 	/**
 	 * 将字节数组放入直接内存中 直接内存分为三段  这里需要判断是否还有剩余空间
 	 * 
@@ -77,7 +76,7 @@ public class ByteDirectMemory {
 		// TODO Auto-generated method stub
 		int newPos = -1;
 		switch( memoryType) {
-		case MainSegment:
+/*		case MainSegment:
 			mainSegLock.writeLock().lock();
 			orderIdBuffer.position(mainSegOffset);
 			if( orderIdBuffer.remaining() < byteArray.length) {
@@ -91,7 +90,7 @@ public class ByteDirectMemory {
 				mainSegOffset = orderIdBuffer.position();
 			}
 			mainSegLock.writeLock().unlock();
-			break;
+			break;*/
 		case BuyerIdSegment:
 			orderBuyerSegLock.writeLock().lock();
 			
@@ -133,13 +132,13 @@ public class ByteDirectMemory {
 		// TODO Auto-generated method stub
 		byte[] content = null;
 		switch( memoryType) {
-		case MainSegment:
+/*		case MainSegment:
 			mainSegLock.writeLock().lock();
 			orderIdBuffer.position( position);
 			content = new byte[orderIdBuffer.getInt()];
 			orderIdBuffer.get(content);
 			mainSegLock.writeLock().unlock();
-			break;
+			break;*/
 		case BuyerIdSegment:
 			orderBuyerSegLock.writeLock().lock();
 			orderBuyerBuffer.position(position);
@@ -160,8 +159,8 @@ public class ByteDirectMemory {
 	
 	public boolean isFull(DirectMemoryType memoryType ) {
 		switch( memoryType) {
-		case MainSegment:
-			return mainSegIsFull;
+/*		case MainSegment:
+			return mainSegIsFull;*/
 		case BuyerIdSegment:
 			return orderBuyerSegIsFull;
 		case GoodIdSegment:
@@ -189,7 +188,7 @@ public class ByteDirectMemory {
 	}*/
 	
 	public void clear(){
-		orderIdBuffer.clear();
+		//orderIdBuffer.clear();
 		orderGoodBuffer.clear();
 		orderBuyerBuffer.clear();
 	}

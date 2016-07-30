@@ -109,7 +109,7 @@ public class SmallFileWriter {
 	 * @param line
 	 * @param tableType
 	 */
-	public void writeLine(String line, TableName tableType){
+	public void writeLine(String line, int byteSize){
 		try {
 
 			//当记录达到一定数目进行创建新的源数据文件,即将小文件进行合并
@@ -137,7 +137,8 @@ public class SmallFileWriter {
 			}
 			if (line!=null) {
 				writer.write(line+"\n");
-				IndexItem sendItem = new IndexItem(dataFileName, dataFileSerialNumber, line, offset);
+				IndexItem sendItem = new IndexItem(dataFileName, dataFileSerialNumber, line, offset
+						, byteSize);
 				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
 						queue.put(sendItem);
@@ -155,7 +156,7 @@ public class SmallFileWriter {
 				// 还需要发送结束IndexItem
 				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
-						queue.put(new IndexItem(null, dataFileSerialNumber, line, offset));
+						queue.put(new IndexItem(null, dataFileSerialNumber, line, offset, byteSize));
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

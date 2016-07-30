@@ -46,7 +46,8 @@ public class WriteFile {
 	 * @param name	文件名
 	 * @param maxLines	每个小文件最大记录数
 	 */	
-	public WriteFile(List<LinkedBlockingQueue<IndexItem>> indexQueues, String path, String name, long maxLines) {
+	public WriteFile(List<LinkedBlockingQueue<IndexItem>> indexQueues, 
+			String path, String name, long maxLines) {
 		this.offset = 0;
 		this.count = 0;
 		this.indexFileNumber = 0;
@@ -73,7 +74,7 @@ public class WriteFile {
 	 * @param line
 	 * @param tableType
 	 */
-	public void writeLine(int dataFileSerialNumber, String line, TableName tableType){
+	public void writeLine(int dataFileSerialNumber, String line, int byteSize){
 		try {
 			/***
 			 * 索引文件为空时创建新的索引文件
@@ -98,7 +99,7 @@ public class WriteFile {
 				count = 0;
 			}
 			// 将数据放入队列中 供建索引的线程建索引
-			IndexItem sendItem = new IndexItem(indexFileName, dataFileSerialNumber,line, offset);
+			IndexItem sendItem = new IndexItem(indexFileName, dataFileSerialNumber,line, offset,byteSize);
 			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
 				queue.put(sendItem);
 			}
