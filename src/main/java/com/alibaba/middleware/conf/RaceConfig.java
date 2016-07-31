@@ -55,7 +55,10 @@ public class RaceConfig implements Serializable{
 	
 	//public static int compressed_max_bytes_lenth = 1024;		// 商品表和买家表索引对应的orderid列表压缩后最大空间
 	public static int compressed_min_bytes_length = 5;		// orderid索引对应的orderid列表压缩后最大空间
-	public static int compressed_remaining_bytes_length = 2048;
+	public static int buyer_remaining_bytes_length = 200;
+	public static int good_remaining_bytes_length = 375;
+	
+	//public static int advanced_remaining_bytes_length = 500;
 
 
 	public static String booleanTrueValue = "true";

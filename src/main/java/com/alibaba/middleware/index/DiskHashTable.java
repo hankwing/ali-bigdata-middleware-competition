@@ -472,7 +472,10 @@ public class DiskHashTable<K,T> implements Serializable {
 					buffer.put(appendOffset);
 					// 排序
 					byte[] compressBytes = buffer.array();
-					if( compressBytes.length > RaceConfig.compressed_remaining_bytes_length) {
+					
+					if( compressBytes.length > (memoryType == DirectMemoryType.BuyerIdSegment ?
+							RaceConfig.buyer_remaining_bytes_length :
+								RaceConfig.good_remaining_bytes_length)) {
 						// 说明超过了最大预留空间  需要写到尾部去
 						int newPos = directMemory.putAndAppendRemaining(compressBytes, memoryType);
 						if( newPos != -1) {
