@@ -99,13 +99,13 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			// 说明没有找到 则在索引里找offsets
 		List<byte[]> offsetList = new ArrayList<byte[]>();
 			for( int filePathIndex : system.goodIndexMapping.getAllFileIndexs()) {
-				DiskHashTable<BytesKey, byte[]> hashTable = 
+				DiskHashTable<BytesKey> hashTable = 
 						system.goodIdIndexList.get(filePathIndex);
 				// 一次性解析所有offset
-				List<byte[]> encodedOffsets = hashTable.get(surrId);
-				if( encodedOffsets.size() != 0) {
+				byte[] encodedOffsets = hashTable.get(surrId);
+				if(encodedOffsets != null) {
 					// 找到了
-					ByteBuffer tempBuffer = ByteBuffer.wrap(encodedOffsets.get(0));
+					ByteBuffer tempBuffer = ByteBuffer.wrap(encodedOffsets);
 					tempBuffer.position(RaceConfig.byte_size + RaceConfig.compressed_min_bytes_length);
 					// 得到所有的byte+offset对
 					List<byte[]> byteAndInts = ByteUtils.splitByteBuffer(tempBuffer);

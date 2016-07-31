@@ -36,7 +36,7 @@ import com.esotericsoftware.kryo.io.Input;
  * @author hankwing
  *
  */
-public class DiskHashTable<K,T> implements Serializable {
+public class DiskHashTable<K> implements Serializable {
 
 	private static final long serialVersionUID = 6020895636934444399L;
 	private int usedBits;
@@ -48,7 +48,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	private ReentrantReadWriteLock readWriteLock = null;
 
 	// 保存桶数据 但一加载此类时这个Map是空的 当调用查询时才会从物理地址里load进相应的桶数据
-	public transient Map<Integer, HashBucket<K,T>> bucketList = null;
+	public transient Map<Integer, HashBucket<K>> bucketList = null;
 	//private transient ByteArrayOutputStream byteArrayOs = null;
 	//private transient ObjectOutputStream offsetOos = null;
 	private transient BufferedOutputStream bufferedFout = null;
@@ -100,16 +100,14 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param dataFilePath
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public DiskHashTable( OrderSystemImpl system, String bucketFilePath, 
-			Class<?> classType, DirectMemoryType memoryType){
+	public DiskHashTable( OrderSystemImpl system, String bucketFilePath, DirectMemoryType memoryType){
 		this.memoryType = memoryType;
 		usedBits = 1;
 		bucketNum = 10;
 		recordNum = 0;
 		memRecordNum = 0;
-		this.classType = classType;
 		this.bucketFilePath = bucketFilePath;
-		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
+		bucketList = new ConcurrentHashMap<Integer, HashBucket<K>>();
 		// 在调用writeAllBucket的时候禁止读写
 		readWriteLock = new ReentrantReadWriteLock();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
@@ -141,7 +139,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		});
 		
 		for (int i = 0; i < 10; i++) {
-			HashBucket<K,T> newBucket = new HashBucket<K,T>(this, i, classType);
+			HashBucket<K> newBucket = new HashBucket<K>(this, i);
 			//bucketCachePool.addBucket(newBucket);
 			//bucketWriterWhenBuilding.addBucket(newBucket);
 			bucketList.put(i, newBucket );
@@ -152,7 +150,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * 从文件里读取此类时 调用restore恢复初始化一些数据
 	 */
 	public void restore() {
-		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
+		bucketList = new ConcurrentHashMap<Integer, HashBucket<K>>();
 		//bucketCachePool = BucketCachePool.getInstance();
 	}
 	
@@ -235,7 +233,7 @@ public class DiskHashTable<K,T> implements Serializable {
 				else {
 					// 否则写到文件里
 					//System.out.println("write to file:" + key);
-					HashBucket<K,T> writeBucket = readBucket(key);
+					HashBucket<K> writeBucket = readBucket(key);
 					if( writeBucket == null) {
 						// error
 						System.out.println("cannot find bucket !");
@@ -253,7 +251,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			//buffer output stream flush to file
 			bufferedFout.flush();
 			// write this HashTable to dataFile and return offset
-			bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();		// 清空map
+			bucketList = new ConcurrentHashMap<Integer, HashBucket<K>>();		// 清空map
 			//directMemory.clear();												// 清空直接内存
 			// 建立索引文件句柄缓冲池
 			for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
@@ -361,7 +359,7 @@ public class DiskHashTable<K,T> implements Serializable {
 		
 		//bucketList.remove(bucketKey);
 		boolean isSuccess = false;
-		HashBucket<K, T> bucketToRemove = bucketList.get(bucketKey);
+		HashBucket<K> bucketToRemove = bucketList.get(bucketKey);
 		if( !directMemory.isFull(memoryType) ) {
 			// 有空间  试图往里写 但不一定写成功
 
@@ -401,8 +399,8 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public HashBucket<K,T> readBucket(int bucketKey) {
-		HashBucket<K,T> fileBucket = bucketList.get( bucketKey);
+	public HashBucket<K> readBucket(int bucketKey) {
+		HashBucket<K> fileBucket = bucketList.get( bucketKey);
 		try {
 			if( fileBucket == null) {
 				//readWriteLock.readLock().lock();
@@ -418,7 +416,7 @@ public class DiskHashTable<K,T> implements Serializable {
 					ObjectInputStream bucketReader = new ObjectInputStream(
 							new ByteArrayInputStream(bucketbytes));
 
-					fileBucket = (HashBucket<K,T>) bucketReader.readObject();
+					fileBucket = (HashBucket<K>) bucketReader.readObject();
 					fileBucket.setContext(this);
 					bucketReader.close();
 					readWriteLock.readLock().unlock();
@@ -432,7 +430,7 @@ public class DiskHashTable<K,T> implements Serializable {
 						byte[] bucketbytes;
 						bucketbytes = directMemory.get(pos.intValue(), memoryType);
 						
-						fileBucket = (HashBucket<K,T>)kryoContext.deserialze(
+						fileBucket = (HashBucket<K>)kryoContext.deserialze(
 								HashBucket.class, bucketbytes);
 						fileBucket.setContext(this);
 						//input.close();
@@ -457,7 +455,7 @@ public class DiskHashTable<K,T> implements Serializable {
 						
 						reader.read(bucketByteArray);
 						
-						fileBucket = (HashBucket<K,T>)kryoContext.deserialze(
+						fileBucket = (HashBucket<K>)kryoContext.deserialze(
 								HashBucket.class, bucketByteArray);
 						
 						//input.close();
@@ -495,7 +493,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 */
 	public void putOffset( K key, byte[] appendOffset) {
 		// 先拿到相应的桶
-		HashBucket<K,T> bucket = null;
+		HashBucket<K> bucket = null;
 		int bucketIndex = getBucketIndex( key);
 		if (bucketIndex < bucketNum) {
 			bucket = readBucket((int) bucketIndex);
@@ -505,9 +503,8 @@ public class DiskHashTable<K,T> implements Serializable {
 		}
 		// 拿完桶了
 		if (bucket != null) {
-			List<byte[]> offsets = bucket.getAddress(getBucketStringIndex( key), key);
-			for( byte[] offset : offsets) {
-				// 根据offset得到在直接内存里的地址  如果没有 则新创建一个直接内存地址  并加入appendOffset进去
+			byte[] offset = bucket.getAddress(getBucketStringIndex( key), key);
+			if( offset != null) {
 				boolean isNeedDump = false;
 				ByteBuffer byteBuffer = ByteBuffer.wrap(offset);
 				if( byteBuffer.get() == RaceConfig.byte_has_direct_memory_pos) {
@@ -524,7 +521,6 @@ public class DiskHashTable<K,T> implements Serializable {
 					// 下面将appendOffset加入byte[]数组里 并压缩存储
 					buffer.put(originByte);
 					buffer.put(appendOffset);
-					// 排序
 					byte[] compressBytes = buffer.array();
 					
 					if( compressBytes.length > (memoryType == DirectMemoryType.BuyerIdSegment ?
@@ -537,7 +533,7 @@ public class DiskHashTable<K,T> implements Serializable {
 							byteBuffer.position(offset.length - RaceConfig.compressed_min_bytes_length
 									+ RaceConfig.byte_size);
 							byteBuffer.putInt(newPos);
-							bucket.replaceAddress(getBucketStringIndex( key), key,(T)byteBuffer.array());
+							bucket.replaceAddress(getBucketStringIndex( key), key,byteBuffer.array());
 						}
 						else {
 							// 说明空间不够了 需要dump
@@ -564,7 +560,7 @@ public class DiskHashTable<K,T> implements Serializable {
 						byteBuffer = ByteBuffer.allocate(offset.length + 
 								RaceConfig.byte_size + RaceConfig.int_size).
 							put(offset).put(sign).putInt(pos);
-						bucket.replaceAddress(getBucketStringIndex(key), key, (T)byteBuffer.array());
+						bucket.replaceAddress(getBucketStringIndex(key), key, byteBuffer.array());
 					}
 					else {
 						// 说明direct memory内存不够了  将direct memory dump到文件里去 但写完后还要调用一次putoffset
@@ -629,7 +625,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			 }
 			
 			// 写完之后  要将所有值的标志位置0 代表其在直接内存里没有值了
-			for( HashBucket<K,T> bucket : bucketList.values()) {
+			for( HashBucket<K> bucket : bucketList.values()) {
 				bucket.resetAllValuesSigns();
 			}
 			
@@ -645,9 +641,9 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param key
 	 * @return
 	 */
-	public List<byte[]> get(K key) {
+	public byte[] get(K key) {
 
-		HashBucket<K,T> bucket = null;
+		HashBucket<K> bucket = null;
 		int bucketIndex = getBucketIndex( key);
 		if (bucketIndex < bucketNum) {
 			bucket = readBucket((int) bucketIndex);
@@ -673,7 +669,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 */
 	public boolean put(K key, byte[] value) {
 
-		HashBucket<K,T> bucket = null;
+		HashBucket<K> bucket = null;
 		int bucketIndex = getBucketIndex(key);
 		if (bucketIndex < bucketNum) {
 			bucket = readBucket((int) bucketIndex);
@@ -684,9 +680,9 @@ public class DiskHashTable<K,T> implements Serializable {
 		}
 
 		if (bucket != null) {			
-			byte sign = 0;
 			if( memoryType != DirectMemoryType.NoWrite) {
 				// 对于buyer和good表的索引  需要写入一个标志位
+				byte sign = 0;
 				ByteBuffer signedBuffer = ByteBuffer.allocate(
 						RaceConfig.byte_size + value.length).put(sign).put(value);
 				bucket.putAddress(getBucketStringIndex(key), key, signedBuffer.array());
@@ -699,7 +695,7 @@ public class DiskHashTable<K,T> implements Serializable {
 			memRecordNum ++;
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶
-				HashBucket<K,T> newBucket = new HashBucket<K,T>(this, bucketNum, classType);
+				HashBucket<K> newBucket = new HashBucket<K>(this, bucketNum);
 				// 注册桶
 				//bucketWriterWhenBuilding.addBucket(newBucket);
 				bucketNum++;
@@ -710,30 +706,22 @@ public class DiskHashTable<K,T> implements Serializable {
 				}
 
 				int newBucketIndex = bucketNum - 1;
-				HashBucket<K,T> modifyBucket = readBucket(
+				HashBucket<K> modifyBucket = readBucket(
 						(int) (newBucketIndex % Math.pow(10, usedBits - 1)));
 
-				List<Map<K, T>> temp = 
+				Map<K, byte[]> temp = 
 						modifyBucket.getAllValues(String.valueOf(newBucketIndex));
-				for (Map<K, T> tempMap : temp) {
-
-					for (Iterator<Map.Entry<K, T>> it = tempMap
-							.entrySet().iterator(); it.hasNext();) {
-						Map.Entry<K, T> entry = it.next();
-						if (getBucketIndex(entry.getKey()) == newBucketIndex) {
-							newBucket.putAddress(getBucketStringIndex(entry.getKey()),entry.getKey(),
-									entry.getValue());
-							if( entry.getValue().getClass() == List.class) {
-								modifyBucket.minusRecordNum( ((List<Long>)entry.getValue()).size());
-							}
-							else {
-								modifyBucket.minusRecordNum(1);
-							}
-
-							it.remove();
-						}
+				for (Iterator<Map.Entry<K, byte[]>> it = temp
+						.entrySet().iterator(); it.hasNext(); ) {
+					Map.Entry<K, byte[]> entry = it.next();
+					if (getBucketIndex(entry.getKey()) == newBucketIndex) {
+						newBucket.putAddress(getBucketStringIndex(entry.getKey()),entry.getKey(),
+								entry.getValue());
+						modifyBucket.minusRecordNum(1);
+						it.remove();
 					}
 				}
+
 
 			}
 			return true;

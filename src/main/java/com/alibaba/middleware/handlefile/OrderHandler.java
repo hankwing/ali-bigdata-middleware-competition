@@ -15,6 +15,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
@@ -48,12 +49,12 @@ public class OrderHandler {
 	LinkedBlockingQueue<IndexItem> orderIndexQueue;
 	LinkedBlockingQueue<IndexItem> orderBuyerIndexQueue;
 	LinkedBlockingQueue<IndexItem> orderGoodIndexQueue;
-	ConcurrentHashMap<Integer, DiskHashTable<Long, byte[]>> orderIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<Long>> orderIdIndexList = null;
 	//ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
 	//ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
 	// 两个小表的引用
-	ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> buyerIdIndexList = null;
-	ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> goodIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> buyerIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> goodIdIndexList = null;
 	//ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
 	//DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
 	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
@@ -217,10 +218,9 @@ public class OrderHandler {
 									String diskFileName = RaceConfig.storeFolders[threadIndex]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									System.out.println("create order index:" + diskFileName);
-									idHashTable = new DiskHashTable<Long, byte[]>(system,
+									idHashTable = new DiskHashTable<Long>(system,
 											diskFileName
-											+ RaceConfig.orderIndexFileSuffix
-											, byte[].class, DirectMemoryType.NoWrite);
+											+ RaceConfig.orderIndexFileSuffix,DirectMemoryType.NoWrite);
 									break;
 								case OrderBuyerId:
 									/*String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
@@ -250,9 +250,9 @@ public class OrderHandler {
 									String diskFileName = RaceConfig.storeFolders[threadIndex]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									System.out.println("create order index:" + diskFileName);
-									idHashTable = new DiskHashTable<Long, byte[]>(system,
+									idHashTable = new DiskHashTable<Long>(system,
 											diskFileName
-											+ RaceConfig.orderIndexFileSuffix,byte[].class,
+											+ RaceConfig.orderIndexFileSuffix,
 											DirectMemoryType.NoWrite);
 									break;
 								case OrderBuyerId:

@@ -18,26 +18,26 @@ import com.alibaba.middleware.conf.RaceConfig;
  * @param <K>
  * @param <T>
  */
-public class HashBucket<K,T> implements Serializable{
+public class HashBucket<K> implements Serializable{
 
 	private static final long serialVersionUID = 3610182543890121796L;
 	private int bucketKey = 0;	// 缓冲区管理需要根据这个值调用context.writeBucket将桶写出去
 	private int capacity  = 0;
 	public int recordNum = 0;
-	private Map< String, Map<K, T>> keyToAddress = null;		// need to write to disk
-	private HashBucket<K,T> nextBucket = null;
-	private transient DiskHashTable<K,T> context = null; 
-	private Class<?> classType = null;
+	private Map< String, Map<K, byte[]>> keyToAddress = null;		// need to write to disk
+	private HashBucket<K> nextBucket = null;
+	private transient DiskHashTable<K> context = null; 
+	//private Class<?> classType = null;
 	
 	public HashBucket() { }			// 弄个无参构造函数序列化比较快
 
-	public HashBucket( DiskHashTable<K,T> context, int bucketKey, Class<?> classType ) {
+	public HashBucket( DiskHashTable<K> context, int bucketKey ) {
 		this.context = context;
-		this.classType = classType;
+		//this.classType = classType;
 		capacity = RaceConfig.hash_index_block_capacity;
 		this.bucketKey = bucketKey;
 		recordNum = 0;
-		keyToAddress = new TreeMap<String, Map<K,T>>(
+		keyToAddress = new TreeMap<String, Map<K,byte[]>>(
 				new ComparableKeys(String.valueOf(bucketKey).length() + 1));
 	}
 	
@@ -46,10 +46,10 @@ public class HashBucket<K,T> implements Serializable{
 	 */
 	public void resetAllValuesSigns() {
 		try{
-			for( Map<K,T> map : keyToAddress.values()) {
-				for( T bytes : map.values()) {
+			for( Map<K,byte[]> map : keyToAddress.values()) {
+				for( byte[] bytes : map.values()) {
 					// 标志位置0
-					((byte[]) bytes)[0] = 0;
+					bytes[0] = 0;
 				}
 			}
 			if( nextBucket != null) {
@@ -61,20 +61,20 @@ public class HashBucket<K,T> implements Serializable{
 		
 	}
 	
-	public List<Map<K, T>> getAllValues(String newBucketKey) {
+	public Map<K, byte[]> getAllValues(String newBucketKey) {
 		
-		List<Map< K, T>> allValues = new ArrayList<Map<K, T>>();
-		Map<K, T> addMap = keyToAddress.get(newBucketKey);
+		Map< K, byte[]> allValues = new HashMap<K, byte[]>();
+		Map<K, byte[]> addMap = keyToAddress.get(newBucketKey);
 		if( addMap != null) {
-			allValues.add(addMap);
+			allValues.putAll(addMap);
 		}
 		if( nextBucket != null ) {
-			allValues.addAll(nextBucket.getAllValues( newBucketKey));
+			allValues.putAll(nextBucket.getAllValues( newBucketKey));
 		}
 		return allValues;
 	}
 	
-	public HashBucket<K,T> getNextBucket() {
+	public HashBucket<K> getNextBucket() {
 		return nextBucket;
 	}
 	
@@ -82,11 +82,11 @@ public class HashBucket<K,T> implements Serializable{
 		recordNum -= number ;
 	}
 	
-	public DiskHashTable<K,T> getContext() {
+	public DiskHashTable<K> getContext() {
 		return context;
 	}
 	
-	public void setContext( DiskHashTable<K,T> context) {
+	public void setContext( DiskHashTable<K> context) {
 		this.context = context;
 	}
 	
@@ -99,22 +99,22 @@ public class HashBucket<K,T> implements Serializable{
 		context.writeBucketWhenBuilding(bucketKey);
 	}
 	
-	public List<byte[]> getAddress(  String bucketIndex, K key) {
-		List<byte[]> results = new ArrayList<byte[]>();
-		Map<K, T> partialResult = keyToAddress.get(bucketIndex);
-		if( partialResult != null  && partialResult.get(key) != null ) {
-			if( classType == byte[].class) {
-				results.add( (byte[]) partialResult.get(key));
-			}
-			else {
-				results.addAll((Collection<? extends byte[]>) partialResult.get(key));
-			}
+	/**
+	 * 无则返回null
+	 * @param bucketIndex
+	 * @param key
+	 * @return
+	 */
+	public byte[] getAddress(  String bucketIndex, K key) {
+
+		Map<K, byte[]> partialResult = keyToAddress.get(bucketIndex);
+		if( partialResult != null && partialResult.get(key) != null) {
+			return partialResult.get(key);
 		}
-		
-		if( nextBucket != null) {
-			results.addAll(nextBucket.getAddress(bucketIndex, key));
+		else if( nextBucket != null ){
+			return nextBucket.getAddress(bucketIndex, key);
 		}
-		return results;
+		return null;
 		
 	}
 	
@@ -124,9 +124,9 @@ public class HashBucket<K,T> implements Serializable{
 	 * @param key
 	 * @param value
 	 */
-	public void replaceAddress( String bucketIndex, K key, T newvalue) {
+	public void replaceAddress( String bucketIndex, K key, byte[] newvalue) {
 
-		Map<K,T> values = keyToAddress.get(bucketIndex);
+		Map<K,byte[]> values = keyToAddress.get(bucketIndex);
 		if( values != null && values.get(key) != null) {
 			values.put(key, newvalue);
 		}
@@ -140,37 +140,25 @@ public class HashBucket<K,T> implements Serializable{
 
 		if( recordNum + 1 > capacity) {
 			if( nextBucket == null) {
-				nextBucket = new HashBucket<K,T>( context, 0, classType);	// 溢出桶无需管理
+				nextBucket = new HashBucket<K>( context, 0);	// 溢出桶无需管理
 			}
 			
 			nextBucket.putAddress( bucketIndex, key, value);
 		}
 		else {
 			recordNum ++;
-			Map<K,T> values = keyToAddress.get(bucketIndex);
+			Map<K,byte[]> values = keyToAddress.get(bucketIndex);
 			if(values == null) {
-				values = new HashMap<K,T>();
+				values = new HashMap<K,byte[]>();
 				keyToAddress.put(bucketIndex, values);
 				
 			}
-			
-			if( classType == List.class) {
-				List<byte[]> valueList = (List<byte[]>) values.get(key);
-				if(valueList == null) {
-					valueList = new ArrayList();
-					values.put(key, (T) valueList);
-				}
-				valueList.add(value);
-			}
-			else {
-				values.put(key, (T) value);
-			}
-			
+			values.put(key, value);
 		}
 		
 	}
 	
-	public void putAddress( String bucketIndex, K key, T value) {
+	/*public void putAddress( String bucketIndex, K key, T value) {
 
 		if( classType == byte[].class) {
 			putAddress( bucketIndex, key, (byte[])value);
@@ -199,7 +187,7 @@ public class HashBucket<K,T> implements Serializable{
 			valueList.addAll(((List<byte[]>) value));
 		}
 		
-	}
+	}*/
 
 	public int getBucketKey() {
 		return this.bucketKey;

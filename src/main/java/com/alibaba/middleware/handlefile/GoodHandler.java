@@ -51,7 +51,7 @@ public class GoodHandler{
 	LinkedBlockingQueue<IndexItem> indexQueue;
 
 	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
-	ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> goodIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> goodIdIndexList = null;
 	HashSet<String> goodAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
@@ -163,7 +163,7 @@ public class GoodHandler{
 		
 		int fileIndex = 0;
 		String indexFileName = null;
-		DiskHashTable<BytesKey, byte[]> goodIdHashTable = null;
+		DiskHashTable<BytesKey> goodIdHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
 		//long surrKey = 1;
@@ -191,8 +191,8 @@ public class GoodHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							System.out.println("create good index:" + diskFileName);
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
-							goodIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
-									diskFileName + RaceConfig.goodIndexFileSuffix, byte[].class,
+							goodIdHashTable = new DiskHashTable<BytesKey>(system,
+									diskFileName + RaceConfig.goodIndexFileSuffix,
 									DirectMemoryType.GoodIdSegment);
 
 						}
@@ -207,8 +207,8 @@ public class GoodHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							System.out.println("create good index:" + diskFileName);
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
-							goodIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
-									diskFileName + RaceConfig.goodIndexFileSuffix, byte[].class,
+							goodIdHashTable = new DiskHashTable<BytesKey>(system,
+									diskFileName + RaceConfig.goodIndexFileSuffix,
 									DirectMemoryType.GoodIdSegment);
 
 

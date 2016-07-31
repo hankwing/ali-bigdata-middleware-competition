@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
@@ -48,7 +49,7 @@ public class BuyerHandler{
 	//阻塞队列用于存索引
 	LinkedBlockingQueue<IndexItem> indexQueue;
 	//DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
-	ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> buyerIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> buyerIdIndexList = null;
 	HashSet<String> buyerAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
@@ -166,7 +167,7 @@ public class BuyerHandler{
 	public class BuyerIndexConstructor implements Runnable {
 
 		String indexFileName = null;
-		DiskHashTable<BytesKey, byte[]> buyerIdHashTable = null;
+		DiskHashTable<BytesKey> buyerIdHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
 		int fileIndex = 0;
@@ -179,69 +180,74 @@ public class BuyerHandler{
 		public void run() {
 
 			while( true) {
-				IndexItem record = indexQueue.poll();
+				try{
+					IndexItem record = indexQueue.poll();
+					
+					if( record != null ) {
+						if( record.getRecordsData() == null) {
+							isEnd = true;
+							continue;
+						}
+
+						if( !record.getIndexFileName().equals(indexFileName)) {
+							if( indexFileName == null) {
+								// 第一次建立索引文件
+								indexFileName = record.getIndexFileName();
+								String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
+										+ indexFileName.replace("/", "_").replace("//", "_");
+								fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
+								System.out.println("create buyer index:" + diskFileName);
+								buyerIdHashTable = new DiskHashTable<BytesKey>(system,
+										diskFileName + RaceConfig.buyerIndexFileSuffix,
+										DirectMemoryType.BuyerIdSegment);
+
+							}
+							else {
+								// 保存当前buyerId的索引  并写入索引List
+								//buyerIdHashTable.writeAllBuckets();
+								//smallFile.setBuyerIdIndex(0);
+								buyerIdIndexList.put(fileIndex, buyerIdHashTable);
+								indexFileName = record.getIndexFileName();
+								String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
+										+ indexFileName.replace("/", "_").replace("//", "_");
+								fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
+								System.out.println("create buyer index:" + diskFileName);
+								buyerIdHashTable = new DiskHashTable<BytesKey>(system,
+										diskFileName + RaceConfig.buyerIndexFileSuffix,
+										DirectMemoryType.BuyerIdSegment);
+
+							}
+						}
+
+						//tempAttrList.addAll(rowData.keySet());			// 添加属性
+						//String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
+						//Integer buyerIdHashCode = buyerid.hashCode();
+						// 放入缓冲区中
+						//rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
+						//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
+						buyerIdHashTable.put(new BytesKey(RecordsUtils.getValueFromLineWithKeyList(
+								record.getRecordsData(),RaceConfig.buyerId, tempAttrList).getBytes()) ,
+								record.getOffset());
+					}
+					else if(isEnd ) {
+						// 说明队列为空
+						// 将代理键索引写出去  并保存相应数据   将buyerid索引写出去  并保存相应数据
+						//buyerIdSurrKeyFile.setFilePath(RaceConfig.buyerSurrFileName);
+						//buyerIdSurrKeyFile.setSurrogateIndex(buyerIdSurrKeyIndex.writeAllBuckets());
+						synchronized (buyerAttrList) {
+							buyerAttrList.addAll(tempAttrList);
+						}
+						BucketCachePool.getInstance().removeAllBucket();
+						// 先不把小表索引写出去了   留在内存里  等order索引建完后再写到直接内存里
+						//buyerIdHashTable.writeAllBuckets();
+						buyerIdIndexList.put(fileIndex, buyerIdHashTable);
+						latch.countDown();
+						break;
+					}
+				} catch( Exception e) {
+					e.printStackTrace();
+				}
 				
-				if( record != null ) {
-					if( record.getRecordsData() == null) {
-						isEnd = true;
-						continue;
-					}
-
-					if( !record.getIndexFileName().equals(indexFileName)) {
-						if( indexFileName == null) {
-							// 第一次建立索引文件
-							indexFileName = record.getIndexFileName();
-							String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
-									+ indexFileName.replace("/", "_").replace("//", "_");
-							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
-							System.out.println("create buyer index:" + diskFileName);
-							buyerIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
-									diskFileName + RaceConfig.buyerIndexFileSuffix, byte[].class,
-									DirectMemoryType.BuyerIdSegment);
-
-						}
-						else {
-							// 保存当前buyerId的索引  并写入索引List
-							//buyerIdHashTable.writeAllBuckets();
-							//smallFile.setBuyerIdIndex(0);
-							buyerIdIndexList.put(fileIndex, buyerIdHashTable);
-							indexFileName = record.getIndexFileName();
-							String diskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
-									+ indexFileName.replace("/", "_").replace("//", "_");
-							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
-							System.out.println("create buyer index:" + diskFileName);
-							buyerIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
-									diskFileName + RaceConfig.buyerIndexFileSuffix, byte[].class,
-									DirectMemoryType.BuyerIdSegment);
-
-						}
-					}
-
-					//tempAttrList.addAll(rowData.keySet());			// 添加属性
-					//String buyerid = rowData.getKV(RaceConfig.buyerId).valueAsString();
-					//Integer buyerIdHashCode = buyerid.hashCode();
-					// 放入缓冲区中
-					//rowCache.putInCache(buyerIdHashCode, record.getRecordsData(), TableName.BuyerTable);
-					//buyerIdSurrKeyIndex.put(buyerid, surrKey);					// 建立代理键索引
-					buyerIdHashTable.put(new BytesKey(RecordsUtils.getValueFromLineWithKeyList(
-							record.getRecordsData(),RaceConfig.buyerId, tempAttrList).getBytes()) ,
-							record.getOffset());
-				}
-				else if(isEnd ) {
-					// 说明队列为空
-					// 将代理键索引写出去  并保存相应数据   将buyerid索引写出去  并保存相应数据
-					//buyerIdSurrKeyFile.setFilePath(RaceConfig.buyerSurrFileName);
-					//buyerIdSurrKeyFile.setSurrogateIndex(buyerIdSurrKeyIndex.writeAllBuckets());
-					synchronized (buyerAttrList) {
-						buyerAttrList.addAll(tempAttrList);
-					}
-					BucketCachePool.getInstance().removeAllBucket();
-					// 先不把小表索引写出去了   留在内存里  等order索引建完后再写到直接内存里
-					//buyerIdHashTable.writeAllBuckets();
-					buyerIdIndexList.put(fileIndex, buyerIdHashTable);
-					latch.countDown();
-					break;
-				}
 
 			}
 		}

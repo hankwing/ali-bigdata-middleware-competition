@@ -30,7 +30,7 @@ public class FIFOCacheTest {
         DiskHashTable diskHashTable = new DiskHashTable();
 
         for (int i = 0; i < 10; i++) {
-            cache1.addBucket(new HashBucket(diskHashTable, i, String.class));
+            cache1.addBucket(new HashBucket(diskHashTable, i));
             System.out.println("Size: " + cache1.getSize());
          }
 

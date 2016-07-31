@@ -47,7 +47,7 @@ import com.alibaba.middleware.tools.RecordsUtils;
 public class OrderSystemImpl implements OrderSystem {
 
 	// 存订单表里的orderId索引<索引文件的下标,内存里缓存的索引DiskHashTable>
-	public ConcurrentHashMap<Integer, DiskHashTable<Long, byte[]>> orderIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<Long>> orderIdIndexList = null;
 	// 订单表里的buyerId代理键索引
 	//public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
 	// 订单表里的goodId代理键索引
@@ -55,9 +55,9 @@ public class OrderSystemImpl implements OrderSystem {
 	// 订单表里的可计算字段索引Map
 	//public ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
 	// buyerId里的buyerId代理键索引
-	public ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> buyerIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> buyerIdIndexList = null;
 	// goodId里的goodId代理键索引
-	public ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> goodIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> goodIdIndexList = null;
 	// 文件句柄池<数据文件的下标，文件句柄队列>
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> orderHandlersList = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList = null;
@@ -139,16 +139,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-					buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");
-//					buyerfiles.add("benchmark/buyer_records_1.txt");
+//					buyerfiles.add("prerun_data/buyer.0.0");
+//					buyerfiles.add("prerun_data/buyer.1.1");
+					buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-					goodfiles.add("prerun_data/good.0.0");
-					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");
-//					goodfiles.add("benchmark/good_records_1.txt");
+//					goodfiles.add("prerun_data/good.0.0");
+//					goodfiles.add("prerun_data/good.1.1");
+//					goodfiles.add("prerun_data/good.2.2");
+					goodfiles.add("benchmark/good_records_1.txt");
 //					goodfiles.add("benchmark/good_records_2.txt");
 //					goodfiles.add("benchmark/good_records_3.txt");
 //					goodfiles.add("benchmark/good_records_4.txt");
@@ -171,16 +171,16 @@ public class OrderSystemImpl implements OrderSystem {
 					orderfiles.add("benchmark/order_records_5.txt");
 					orderfiles.add("benchmark/order_records_6.txt");
 					orderfiles.add("benchmark/order_records_9.txt");
-//					orderfiles.add("benchmark/order_records_12.txt");
-//					orderfiles.add("benchmark/order_records_18.txt");
-//					orderfiles.add("benchmark/order_records_19.txt");
-//					orderfiles.add("benchmark/order_records_20.txt");
-//					orderfiles.add("benchmark/order_records_23.txt");
-//					orderfiles.add("benchmark/order_records_24.txt");
-//					orderfiles.add("benchmark/order_records_26.txt");
-//					orderfiles.add("benchmark/order_records_27.txt");
-//					orderfiles.add("benchmark/order_records_28.txt");
-//					orderfiles.add("benchmark/order_records_29.txt");
+					orderfiles.add("benchmark/order_records_12.txt");
+					orderfiles.add("benchmark/order_records_18.txt");
+					orderfiles.add("benchmark/order_records_19.txt");
+					orderfiles.add("benchmark/order_records_20.txt");
+					orderfiles.add("benchmark/order_records_23.txt");
+					orderfiles.add("benchmark/order_records_24.txt");
+					orderfiles.add("benchmark/order_records_26.txt");
+					orderfiles.add("benchmark/order_records_27.txt");
+					orderfiles.add("benchmark/order_records_28.txt");
+					orderfiles.add("benchmark/order_records_29.txt");
 //	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
@@ -426,7 +426,7 @@ public class OrderSystemImpl implements OrderSystem {
 		// 初始化操作
 
 		// 存订单表里的orderId索引<文件名（尽量短名）,内存里缓存的索引DiskHashTable>
-		orderIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Long, byte[]>>();
+		orderIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Long>>();
 		// 订单表里的buyerId代理键索引
 		//orderBuyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
 		// 订单表里的goodId代理键索引
@@ -434,9 +434,9 @@ public class OrderSystemImpl implements OrderSystem {
 		// 订单表里的可计算字段索引Map
 		//orderCountableIndexList = new ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>>();
 		// buyerId里的buyerId代理键索引
-		buyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>>();
+		buyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey>>();
 		// goodId里的goodId代理键索引
-		goodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>>();
+		goodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey>>();
 		orderHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
 		buyerHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
 		goodHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
@@ -572,24 +572,24 @@ public class OrderSystemImpl implements OrderSystem {
 	public boolean isRecordExist(long orderid) throws TypeException {
 		
 		for (int filePathIndex : orderIndexMapping.getAllFileIndexs()) {
-			DiskHashTable<Long, byte[]> hashTable = orderIdIndexList.get(filePathIndex);
-			List<byte[]> results = hashTable.get(orderid);
+			DiskHashTable<Long> hashTable = orderIdIndexList.get(filePathIndex);
+			byte[] results = hashTable.get(orderid);
 			
-			if (results.size() != 0) {
+			if (results != null) {
 				// find the records offset
-				for( byte[] encodedOffset : results) {
-					// 解码获得long型的offset
-					FileIndexWithOffset fileInfo= RecordsUtils.decodeIndex(encodedOffset);
-					long offset = fileInfo.offset;
-					int dataFileIndex = fileInfo.fileIndex;
-						// 从文件里读数据
-						String diskValue = RecordsUtils.getStringFromFile(
-								orderHandlersList.get(dataFileIndex), offset, TableName.OrderTable);
-						if( Long.parseLong(
-								RecordsUtils.getValueFromLine(diskValue, RaceConfig.orderId))  == orderid) {
-							return true;
-						}
-				}
+
+				// 解码获得long型的offset
+				FileIndexWithOffset fileInfo= RecordsUtils.decodeIndex(results);
+				long offset = fileInfo.offset;
+				int dataFileIndex = fileInfo.fileIndex;
+					// 从文件里读数据
+					String diskValue = RecordsUtils.getStringFromFile(
+							orderHandlersList.get(dataFileIndex), offset, TableName.OrderTable);
+					if( Long.parseLong(
+							RecordsUtils.getValueFromLine(diskValue, RaceConfig.orderId))  == orderid) {
+						return true;
+					}
+
 				break;
 			}
 		}
@@ -610,23 +610,21 @@ public class OrderSystemImpl implements OrderSystem {
 		case OrderTable:
 			for (int fileIndex : orderIndexMapping.getAllFileIndexs()) {
 				long orderid = Long.valueOf(idString);
-				DiskHashTable<Long, byte[]> hashTable = orderIdIndexList.get(fileIndex);
-				List<byte[]> results = hashTable.get(orderid);
-				
-				if (results.size() != 0) {
+				DiskHashTable<Long> hashTable = orderIdIndexList.get(fileIndex);
+				byte[] results = hashTable.get(orderid);
+				if (results != null) {
 					// find the records offset
-					for( byte[] encodedOffset : results) {
 						//解码byte数组
-						ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-						int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
-						long offset = ByteUtils.getLongOffset(buffer.getInt());
-						String diskValue = RecordsUtils.getStringFromFile(
-								orderHandlersList.get(dataFileIndex),offset, tableName);
-						if( RecordsUtils.getValueFromLine(diskValue, RaceConfig.orderId).equals(idString)) {
-							// 确认主键相同
-							return diskValue;
-						}
+					ByteBuffer buffer = ByteBuffer.wrap(results);
+					int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+					long offset = ByteUtils.getLongOffset(buffer.getInt());
+					String diskValue = RecordsUtils.getStringFromFile(
+							orderHandlersList.get(dataFileIndex),offset, tableName);
+					if( RecordsUtils.getValueFromLine(diskValue, RaceConfig.orderId).equals(idString)) {
+						// 确认主键相同
+						return diskValue;
 					}
+
 				}
 			}	
 			break;
@@ -641,27 +639,25 @@ public class OrderSystemImpl implements OrderSystem {
 			else {
 				// 在索引里找
 				for (int filePathIndex : buyerIndexMapping.getAllFileIndexs()) {
-					DiskHashTable<BytesKey, byte[]> hashTable = buyerIdIndexList
+					DiskHashTable<BytesKey> hashTable = buyerIdIndexList
 							.get(filePathIndex);
-					List<byte[]> results = hashTable.get(key);
-					if (results.size() != 0) {
-						for( byte[] encodedOffset : results) {
-							// 这里要解压出第一个offset出来
-							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-							// 跳过标志位
-							buffer.position(RaceConfig.byte_size);
-							// 从byte解析出int
-							int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
-							long offset = ByteUtils.getLongOffset(buffer.getInt());
-							String records = RecordsUtils.getStringFromFile(
-									buyerHandlersList.get(dataFileIndex), offset, tableName);
-							try{
-								// 放入缓冲区
-								rowCache.putInCache(key, records, TableName.BuyerTable);
-								return records;
-							} catch(StringIndexOutOfBoundsException e){
-								continue;
-							}
+					byte[] results = hashTable.get(key);
+					if (results != null) {
+						// 这里要解压出第一个offset出来
+						ByteBuffer buffer = ByteBuffer.wrap(results);
+						// 跳过标志位
+						buffer.position(RaceConfig.byte_size);
+						// 从byte解析出int
+						int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+						long offset = ByteUtils.getLongOffset(buffer.getInt());
+						String records = RecordsUtils.getStringFromFile(
+								buyerHandlersList.get(dataFileIndex), offset, tableName);
+						try{
+							// 放入缓冲区
+							rowCache.putInCache(key, records, TableName.BuyerTable);
+							return records;
+						} catch(StringIndexOutOfBoundsException e){
+							continue;
 						}
 					}
 
@@ -677,29 +673,26 @@ public class OrderSystemImpl implements OrderSystem {
 			}
 			else {
 				for (int filePathIndex : goodIndexMapping.getAllFileIndexs()) {
-					DiskHashTable<BytesKey, byte[]> hashTable = goodIdIndexList.get(filePathIndex);
-					List<byte[]> results = hashTable.get(goodKey);
-					if (results.size() != 0) {
-						
-						for( byte[] encodedOffset : results) {
-							
-							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-							// 跳过标志位
-							buffer.position(RaceConfig.byte_size);
-							// 从byte解析出int
-							int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
-							long offset = ByteUtils.getLongOffset(buffer.getInt());
-							String records = RecordsUtils.getStringFromFile(
-									goodHandlersList.get(dataFileIndex), offset, tableName);
-							try{
-								// 确认主键相同
-								rowCache.putInCache(goodKey, records, TableName.GoodTable);
-								return records;
-							} catch(StringIndexOutOfBoundsException e){
-								continue;
-							}
+					DiskHashTable<BytesKey> hashTable = goodIdIndexList.get(filePathIndex);
+					byte[] results = hashTable.get(goodKey);
+				if (results != null) {
+
+						ByteBuffer buffer = ByteBuffer.wrap(results);
+						// 跳过标志位
+						buffer.position(RaceConfig.byte_size);
+						// 从byte解析出int
+						int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+						long offset = ByteUtils.getLongOffset(buffer.getInt());
+						String records = RecordsUtils.getStringFromFile(
+								goodHandlersList.get(dataFileIndex), offset, tableName);
+						try{
+							// 确认主键相同
+							rowCache.putInCache(goodKey, records, TableName.GoodTable);
+							return records;
+						} catch(StringIndexOutOfBoundsException e){
+							continue;
 						}
-					}
+				}
 
 				}
 			}

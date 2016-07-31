@@ -138,14 +138,14 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 			// 没找到则在索引里找offsetlist
 		List<byte[]> offsetList = new ArrayList<byte[]>();
 		for( int filePathIndex : system.buyerIndexMapping.getAllFileIndexs()) {
-			DiskHashTable<BytesKey, byte[]> hashTable = 
+			DiskHashTable<BytesKey> hashTable = 
 					system.buyerIdIndexList.get(filePathIndex);
 			// 一次性解析所有offset
-			List<byte[]> offsets = hashTable.get(surrId);
-			if( offsets.size() != 0) {
+			byte[] offsets = hashTable.get(surrId);
+			if( offsets != null) {
 				// 解析出offset列表
 				
-				ByteBuffer tempBuffer = ByteBuffer.wrap(offsets.get(0));
+				ByteBuffer tempBuffer = ByteBuffer.wrap(offsets);
 				tempBuffer.position(RaceConfig.byte_size + RaceConfig.compressed_min_bytes_length);
 				// 得到所有的byte+offset对
 				List<byte[]> byteAndInts = ByteUtils.splitByteBuffer(tempBuffer);
