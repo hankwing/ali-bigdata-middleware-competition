@@ -5,12 +5,22 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
+import com.alibaba.middleware.disruptor.BuyerEventConsumer;
+import com.alibaba.middleware.disruptor.IndexItemFactory;
+import com.alibaba.middleware.disruptor.RecordsProducer;
 import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.threads.ConsutrctionTimerThread;
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.YieldingWaitStrategy;
+import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.dsl.ProducerType;
 
 /**
  * 读三种类型的文件 写入小文件 并由单独线程处理数据
@@ -125,7 +135,30 @@ public class ConstructSystem {
 		
 		try {
 			lastCountDownLatch = new CountDownLatch(threadNum * 3);
-			// 处理buyer表
+			
+			// 下面开始处理buyer表
+			EventFactory<IndexItem> eventFactory = new IndexItemFactory();
+			// 这里只要单生产者单消费者就可以了
+			ExecutorService executor = Executors.newSingleThreadExecutor();
+			int ringBufferSize = 1024 * 1024; // RingBuffer 大小
+			        
+			@SuppressWarnings("deprecation")
+			Disruptor<IndexItem> disruptor = new Disruptor<IndexItem>(eventFactory,
+			                ringBufferSize, executor, ProducerType.SINGLE,
+			                new YieldingWaitStrategy());
+			// 先定义消费者
+			EventHandler<IndexItem> eventHandler = new BuyerEventConsumer();
+			disruptor.handleEventsWith(eventHandler);
+			disruptor.start();
+			
+			// 启动生产者
+			RecordsProducer buyerTableProducer = new RecordsProducer( disruptor.getRingBuffer());
+			buyerTableProducer.handeBuyerFiles(buyerfiles, buyerHandlersList, buyerFileMapping);
+			
+			
+			
+			
+			
 			countDownLatch = new CountDownLatch(threadNum);
 			for (int i = 0; i < threadNum; i++) {
 				List<String> files = getGroupFiles(buyerfiles, i, threadNum);
@@ -135,8 +168,6 @@ public class ConstructSystem {
 			System.out.println("buyer time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
 			
-			System.out.println("the first cache remaining:" + 
-					ByteDirectMemory.getInstance().getPosition(DirectMemoryType.BuyerIdSegment));
 
 			// 处理good表
 			countDownLatch = new CountDownLatch(threadNum);
@@ -145,8 +176,6 @@ public class ConstructSystem {
 				new Thread(new GoodRun(countDownLatch, files, i)).start();
 			}
 			countDownLatch.await();
-			System.out.println("the first cache remaining:" + 
-					ByteDirectMemory.getInstance().getPosition(DirectMemoryType.GoodIdSegment));
 			
 			// 处理order表  要传前面两个小表索引的引用进去
 
