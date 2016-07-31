@@ -118,7 +118,7 @@ public class ConstructSystem {
 		long startTime = System.currentTimeMillis();
 		ConsutrctionTimerThread timerThread = new ConsutrctionTimerThread();
 		Timer timer = new Timer(true);
-		timer.schedule(timerThread, 10 * 1000);
+		timer.schedule(timerThread, 3550 * 1000);
 
 		// 规定时间不返回  就强制返回  然后后台
 		CountDownLatch countDownLatch;
