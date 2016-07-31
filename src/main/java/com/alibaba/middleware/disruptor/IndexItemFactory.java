@@ -7,11 +7,11 @@ import com.alibaba.middleware.handlefile.IndexItem;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.lmax.disruptor.EventFactory;
 
-public class IndexItemFactory implements EventFactory<IndexItem>{
+public class IndexItemFactory implements EventFactory<RecordsEvent>{
 	@Override
-	public IndexItem newInstance() {
+	public RecordsEvent newInstance() {
 		// TODO Auto-generated method stub
-		return new IndexItem();
+		return new RecordsEvent();
 	}
 
 }

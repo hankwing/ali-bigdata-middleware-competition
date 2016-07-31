@@ -1,19 +1,20 @@
-package com.alibaba.middleware.handlefile;
+package com.alibaba.middleware.disruptor;
 
-import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.tools.RecordsUtils;
 
-public class IndexItem {
+public class RecordsEvent {
 
 	//这里dataFileName+offset=Value
 	int dataSerialNumber;
-	String indexFileName;
 	String recordsData = null;
 	//Row rowData = null;
 	byte[] encodedOffset = null;
+	
+	public RecordsEvent() {
+		
+	}
 
-	public IndexItem(String indexFileName, int dataSerialNumber ,String recordsData, long offset) {
-		this.indexFileName = indexFileName;
+	public void setData(String recordsData, int dataSerialNumber , long offset) {
 		this.dataSerialNumber = dataSerialNumber;
 		this.recordsData = recordsData;
 		encodedOffset = RecordsUtils.encodeIndex(dataSerialNumber, offset);
@@ -29,10 +30,6 @@ public class IndexItem {
 
 	public String getRecordsData() {
 		return recordsData;
-	}
-	
-	public String getIndexFileName(){
-		return indexFileName;
 	}
 
 }

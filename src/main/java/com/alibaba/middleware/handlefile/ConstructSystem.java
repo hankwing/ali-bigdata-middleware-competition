@@ -10,8 +10,12 @@ import java.util.concurrent.Executors;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
+import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.disruptor.BuyerEventConsumer;
+import com.alibaba.middleware.disruptor.EventGCHandler;
 import com.alibaba.middleware.disruptor.IndexItemFactory;
+import com.alibaba.middleware.disruptor.OrderEventHandler;
+import com.alibaba.middleware.disruptor.RecordsEvent;
 import com.alibaba.middleware.disruptor.RecordsProducer;
 import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.race.OrderSystemImpl;
@@ -136,29 +140,6 @@ public class ConstructSystem {
 		try {
 			lastCountDownLatch = new CountDownLatch(threadNum * 3);
 			
-			// 下面开始处理buyer表
-			EventFactory<IndexItem> eventFactory = new IndexItemFactory();
-			// 这里只要单生产者单消费者就可以了
-			ExecutorService executor = Executors.newSingleThreadExecutor();
-			int ringBufferSize = 1024 * 1024; // RingBuffer 大小
-			        
-			@SuppressWarnings("deprecation")
-			Disruptor<IndexItem> disruptor = new Disruptor<IndexItem>(eventFactory,
-			                ringBufferSize, executor, ProducerType.SINGLE,
-			                new YieldingWaitStrategy());
-			// 先定义消费者
-			EventHandler<IndexItem> eventHandler = new BuyerEventConsumer();
-			disruptor.handleEventsWith(eventHandler);
-			disruptor.start();
-			
-			// 启动生产者
-			RecordsProducer buyerTableProducer = new RecordsProducer( disruptor.getRingBuffer());
-			buyerTableProducer.handeBuyerFiles(buyerfiles, buyerHandlersList, buyerFileMapping);
-			
-			
-			
-			
-			
 			countDownLatch = new CountDownLatch(threadNum);
 			for (int i = 0; i < threadNum; i++) {
 				List<String> files = getGroupFiles(buyerfiles, i, threadNum);
@@ -168,6 +149,8 @@ public class ConstructSystem {
 			System.out.println("buyer time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
 			
+			System.out.println("the first cache remaining:" + 
+					ByteDirectMemory.getInstance().getPosition(DirectMemoryType.BuyerIdSegment));
 
 			// 处理good表
 			countDownLatch = new CountDownLatch(threadNum);
@@ -177,19 +160,45 @@ public class ConstructSystem {
 			}
 			countDownLatch.await();
 			
-			// 处理order表  要传前面两个小表索引的引用进去
-
-			System.out.println("good time:"
-					+ (System.currentTimeMillis() - startTime) / 1000);
 			
-			for (int i = 0; i < threadNum; i++) {
+			//　下面开始使用disroptor处理order表  三个生产者三个消费者
+			EventFactory<RecordsEvent> eventFactory = new IndexItemFactory();
+			ExecutorService executor = Executors.newCachedThreadPool();
+			int ringBufferSize = 1024 * 1024; // RingBuffer 大小
+			        
+			@SuppressWarnings("deprecation")
+			Disruptor<RecordsEvent> disruptor = new Disruptor<RecordsEvent>(eventFactory,
+			                ringBufferSize, executor, ProducerType.SINGLE,
+			                new YieldingWaitStrategy());
+			// 先定义消费者
+			EventHandler<RecordsEvent> orderIdEventHandler = new OrderEventHandler(
+					systemImpl, IndexType.OrderId, lastCountDownLatch);
+			// buyerid处理的消费者
+			EventHandler<RecordsEvent> buyerIdEventHandler = new OrderEventHandler(
+					systemImpl, IndexType.OrderBuyerId, lastCountDownLatch);
+			// goodid处理的消费者
+			EventHandler<RecordsEvent> goodIdEventHandler = new OrderEventHandler(
+					systemImpl, IndexType.OrderGoodId, lastCountDownLatch);
+			
+			disruptor.handleEventsWith(orderIdEventHandler, buyerIdEventHandler, goodIdEventHandler).
+			then(new EventGCHandler());
+			
+			disruptor.start();
+			
+			// 启动生产者  先试试单生产者吧
+			RecordsProducer recordsProducer = new RecordsProducer(disruptor.getRingBuffer());
+			recordsProducer.handeFiles(orderfiles, systemImpl.orderHandlersList, 
+					systemImpl.orderFileMapping);
+			
+			/*for (int i = 0; i < RaceConfig.orderTableThreadNum; i++) {
 				List<String> files = getGroupFiles(orderfiles, i, threadNum);
 				new Thread(new OrderRun(lastCountDownLatch, files, i)).start();
-			}
+			}*/
+			
+			// 等待消费者消费完
 			lastCountDownLatch.await();
-
-			System.out.println("order time:"
-					+ (System.currentTimeMillis() - startTime) / 1000);
+			
+			// 处理order表  要传前面两个小表索引的引用进去
 			timer.cancel();
 			// 下面开始往direct memory里orderid的索引数据 加快查询
 			/*ByteDirectMemory directMemory = ByteDirectMemory.getInstance();

@@ -1,6 +1,7 @@
 package com.alibaba.middleware.disruptor;
 
 import java.util.HashSet;
+import java.util.concurrent.CountDownLatch;
 
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.conf.RaceConfig;
@@ -11,20 +12,20 @@ import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
 import com.lmax.disruptor.EventHandler;
 
-public class BuyerEventConsumer implements EventHandler<IndexItem> {
+public class BuyerEventConsumer{
 
 	// buyer表的建索引线程 需要建的索引包括：代理键索引和buyerId的索引
 
-	String indexFileName = null;
-	DiskHashTable<BytesKey> buyerIdHashTable = null;
-	boolean isEnd = false;
-	HashSet<String> tempAttrList = new HashSet<String>();
-	int fileIndex = 0;
+	/*private String indexFileName = null;
+	private DiskHashTable<BytesKey> buyerIdHashTable = null;
+	private boolean isEnd = false;
+	private HashSet<String> tempAttrList = new HashSet<String>();
+	private int fileIndex = 0;
+	private CountDownLatch countDownLatch = null;
 
 	// long surrKey = 1;
-
-	public BuyerEventConsumer() {
-
+	public BuyerEventConsumer( CountDownLatch countDownLatch) {
+		this.countDownLatch = countDownLatch;
 	}
 
 	@Override
@@ -100,8 +101,8 @@ public class BuyerEventConsumer implements EventHandler<IndexItem> {
 			// 先不把小表索引写出去了 留在内存里 等order索引建完后再写到直接内存里
 			// buyerIdHashTable.writeAllBuckets();
 			buyerIdIndexList.put(fileIndex, buyerIdHashTable);
-			latch.countDown();
+			countDownLatch.countDown();
 			break;
-		}
-	}
+		}*/
+	//}
 }

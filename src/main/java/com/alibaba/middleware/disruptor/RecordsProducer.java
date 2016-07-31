@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
 import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
@@ -45,10 +47,10 @@ public class RecordsProducer{
 	private long offset = 0;
 	private BufferedReader reader;
 	private int threadIndex = 0;
-	private RingBuffer<IndexItem> ringBuffer = null;
+	private RingBuffer<RecordsEvent> ringBuffer = null;
 	private int nextLineByteLength = "\n".getBytes().length;
 	
-	public RecordsProducer( RingBuffer<IndexItem> ringBuffer) {
+	public RecordsProducer( RingBuffer<RecordsEvent> ringBuffer) {
 		this.ringBuffer = ringBuffer;
 	}
 
@@ -56,22 +58,22 @@ public class RecordsProducer{
 	 * 处理每一行数据
 	 * @param files
 	 */
-	public void handeBuyerFiles(List<String> files, 
-			ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList,
-			DataFileMapping buyerFileMapping) {
-		System.out.println("start buyer handling!");
+	public void handeFiles(Collection<String> files, 
+			ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> handlersList,
+			DataFileMapping fileMapping) {
+		System.out.println("start order handling!");
 
 		for (String file : files) {
 			try {
-				System.out.println("buyer file:" + file);
+				System.out.println("order file:" + file);
 				File bf = new File(file);
-				dataFileSerialNumber = buyerFileMapping.addDataFileName(file);
+				dataFileSerialNumber = fileMapping.addDataFileName(file);
 				// 建立文件句柄
 				LinkedBlockingQueue<RandomAccessFile> handlersQueue = 
-						buyerHandlersList.get(dataFileSerialNumber);
+						handlersList.get(dataFileSerialNumber);
 				if( handlersQueue == null) {
 					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
-					buyerHandlersList.put(dataFileSerialNumber, handlersQueue);
+					handlersList.put(dataFileSerialNumber, handlersQueue);
 				}
 				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
 					handlersQueue.add(new RandomAccessFile(file, "r"));
@@ -87,7 +89,7 @@ public class RecordsProducer{
 						long sequence = ringBuffer.next();  // Grab the next sequence
 				        try
 				        {
-				            IndexItem event = ringBuffer.get(sequence); // Get the entry in the Disruptor
+				            RecordsEvent event = ringBuffer.get(sequence); // Get the entry in the Disruptor
 				            // for the sequence
 				            event.setData(record, dataFileSerialNumber, offset);
 				        }
@@ -98,6 +100,8 @@ public class RecordsProducer{
 				        }
 						record = reader.readLine();
 					}
+					// 新文件 offset要置0
+					offset = 0;
 					reader.close();
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -108,7 +112,22 @@ public class RecordsProducer{
 			}
 		}
 		
-		System.out.println("end buyer handling!");
+		// 继续发送多个结束标识
+		for( int i = 0; i < 1; i++) {
+			long sequence = ringBuffer.next();
+			try
+	        {
+	            RecordsEvent event = ringBuffer.get(sequence); // Get the entry in the Disruptor
+	            // for the sequence
+	            event.setData(null, dataFileSerialNumber, offset);
+	        }
+	        finally
+	        {
+	            ringBuffer.publish(sequence);
+	        }
+		}
+		
+		System.out.println("end order reading!");
 	}
 
 	
