@@ -21,6 +21,9 @@ public class ByteDirectMemory {
 	private boolean orderBuyerSegIsFull = false;
 	private boolean orderGoodSegIsFull = false;
 	
+	public int orderBuyerPreserveSpace = 0;
+	public int orderGoodPreserveSpace = 0;
+	
 	// 记录队列最后的位置
 	//private int mainSegOffset = 0;
 	private int orderBuyerSegOffset = 0;
@@ -36,6 +39,8 @@ public class ByteDirectMemory {
 	public ByteDirectMemory(int size) {
 		// TODO Auto-generated constructor stub
 		//orderIdBuffer = ByteBuffer.allocateDirect(size);
+		orderBuyerPreserveSpace = RaceConfig.buyer_remaining_bytes_length;
+		orderGoodPreserveSpace = RaceConfig.good_remaining_bytes_length;
 		orderBuyerBuffer = ByteBuffer.allocateDirect(size);
 		orderGoodBuffer = ByteBuffer.allocateDirect(size);
 	}
@@ -139,8 +144,9 @@ public class ByteDirectMemory {
 			
 			orderBuyerBuffer.position(orderBuyerSegOffset);
 			if( orderBuyerBuffer.remaining() < byteArray.length + RaceConfig.int_size +
-					RaceConfig.compressed_remaining_bytes_length) {
-				// 说明空间不够了
+					orderBuyerPreserveSpace) {
+				// 说明空间不够了 下次初始化时  每个offset的预留空间减半  
+				orderBuyerPreserveSpace /= 2;
 				System.out.println("orderBuyerBuffer direct memory have no space!");
 				orderBuyerSegIsFull = true;
 			}
@@ -149,7 +155,7 @@ public class ByteDirectMemory {
 				newPos = orderBuyerSegOffset;
 				orderBuyerBuffer.putInt(byteArray.length);
 				orderBuyerBuffer.put(byteArray);
-				orderBuyerBuffer.put(new byte[RaceConfig.compressed_remaining_bytes_length]);
+				orderBuyerBuffer.put(new byte[orderBuyerPreserveSpace]);
 				orderBuyerSegOffset = orderBuyerBuffer.position();
 			}
 			orderBuyerSegLock.writeLock().unlock();
@@ -158,8 +164,9 @@ public class ByteDirectMemory {
 			orderGoodSegLock.writeLock().lock();
 			orderGoodBuffer.position(orderGoodSegOffset);
 			if( orderGoodBuffer.remaining() < byteArray.length + RaceConfig.int_size +
-					RaceConfig.compressed_remaining_bytes_length) {
+					orderGoodPreserveSpace) {
 				// 说明空间不够了
+				orderGoodPreserveSpace /= 2;
 				System.out.println("orderGoodBuffer direct memory have no space!");
 				orderGoodSegIsFull = true;
 			}
@@ -167,7 +174,7 @@ public class ByteDirectMemory {
 				newPos = orderGoodSegOffset;
 				orderGoodBuffer.putInt(byteArray.length);
 				orderGoodBuffer.put(byteArray);
-				orderGoodBuffer.put(new byte[RaceConfig.compressed_remaining_bytes_length]);
+				orderGoodBuffer.put(new byte[orderGoodPreserveSpace]);
 				orderGoodSegOffset = orderGoodBuffer.position();
 			}
 			
@@ -210,6 +217,7 @@ public class ByteDirectMemory {
 			orderBuyerBuffer.position(orderBuyerSegOffset);
 			if( orderBuyerBuffer.remaining() < byteArray.length) {
 				// 说明空间不够了
+				orderBuyerPreserveSpace /= 2;
 				orderBuyerSegIsFull = true;
 			}
 			else {
@@ -226,6 +234,7 @@ public class ByteDirectMemory {
 			orderGoodBuffer.position(orderGoodSegOffset);
 			if( orderGoodBuffer.remaining() < byteArray.length) {
 				// 说明空间不够了
+				orderGoodPreserveSpace /= 2;
 				orderGoodSegIsFull = true;
 			}
 			else {
