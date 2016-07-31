@@ -14,11 +14,11 @@ import java.util.List;
 public class ConcurrentCache {
 	// 先不保存order表里的字段了  因为命中率较低
     //private ConcurrentLinkedHashMap<BytesKey, String> orderCacheMap;
-    private ConcurrentLinkedHashMap<Integer, String> buyerCacheMap;
-    private ConcurrentLinkedHashMap<Integer, String> goodCacheMap;
+    private ConcurrentLinkedHashMap<BytesKey, String> buyerCacheMap;
+    private ConcurrentLinkedHashMap<BytesKey, String> goodCacheMap;
 
-    private ConcurrentLinkedHashMap<Integer, List<byte[]>> buyerToOrderIdCacheMap;
-    private ConcurrentLinkedHashMap<Integer, List<byte[]>> goodToOrderIdCacheMap;
+    private ConcurrentLinkedHashMap<BytesKey, List<byte[]>> buyerToOrderIdCacheMap;
+    private ConcurrentLinkedHashMap<BytesKey, List<byte[]>> goodToOrderIdCacheMap;
 
     private int initCapacity = RaceConfig.cacheInitCapacity;
     private int maxCapacity = RaceConfig.cacheMaxCapacity;
@@ -37,23 +37,23 @@ public class ConcurrentCache {
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
                 .build();*/
-        buyerCacheMap = new ConcurrentLinkedHashMap.Builder<Integer, String>()
+        buyerCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, String>()
                 .maximumWeightedCapacity(maxCapacity)
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
                 .build();
-        goodCacheMap = new ConcurrentLinkedHashMap.Builder<Integer, String>()
+        goodCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, String>()
                 .maximumWeightedCapacity(maxCapacity)
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
                 .build();
 
-        buyerToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<Integer, List<byte[]>>()
+        buyerToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, List<byte[]>>()
                 .maximumWeightedCapacity(maxCapacity)
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
                 .build();
-        goodToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<Integer, List<byte[]>>()
+        goodToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, List<byte[]>>()
                 .maximumWeightedCapacity(maxCapacity)
                 .concurrencyLevel(16)
                 .initialCapacity(initCapacity)
@@ -76,15 +76,15 @@ public class ConcurrentCache {
                 //orderCacheMap.put((BytesKey) key,  value);
                 break;
             case BuyerTable:
-                buyerCacheMap.put((Integer) key, value);
+                buyerCacheMap.put( (BytesKey) key, value);
                 break;
             case GoodTable:
-                goodCacheMap.put((Integer) key, value);
+                goodCacheMap.put( (BytesKey) key, value);
                 break;
         }
     }
 
-    public void putInIdCache(Integer key, List<byte[]> value, RaceConfig.IdIndexType indexType) {
+    public void putInIdCache(BytesKey key, List<byte[]> value, RaceConfig.IdIndexType indexType) {
         switch (indexType) {
             case BuyerIdToOrderOffsets:
                 if (!buyerToOrderIdCacheMap.containsKey(key))
@@ -113,7 +113,7 @@ public class ConcurrentCache {
         return null;
     }
 
-    public List<byte[]> getFromIdCache(Integer key, RaceConfig.IdIndexType indexType) {
+    public List<byte[]> getFromIdCache(BytesKey key, RaceConfig.IdIndexType indexType) {
         List<byte[]> cache = null;
         switch (indexType) {
             case BuyerIdToOrderOffsets:

@@ -25,6 +25,8 @@ import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.ByteUtils;
+import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
 
@@ -49,17 +51,19 @@ public class GoodHandler{
 	LinkedBlockingQueue<IndexItem> indexQueue;
 
 	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
-	ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> goodIdIndexList = null;
+	ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> goodIdIndexList = null;
 	HashSet<String> goodAttrList = null;
 	int threadIndex = 0;
 	CountDownLatch latch = null;
 	private ConcurrentCache rowCache = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
+	private OrderSystemImpl system = null;
 
 	public double MEG = Math.pow(1024, 2);
 	List<String> smallFiles = new ArrayList<String>();
 
 	public GoodHandler(OrderSystemImpl systemImpl ,int threadIndex,CountDownLatch latch) {
+		this.system = systemImpl;
 		rowCache = ConcurrentCache.getInstance();
 		this.latch = latch;
 		this.goodAttrList = systemImpl.goodAttrList;
@@ -82,11 +86,11 @@ public class GoodHandler{
 		for (String file : files) {
 			System.out.println("good file:" + file);
 			File bf = new File(file);
-			if (bf.length() < RaceConfig.smallFileSizeThreshold) {
+			/*if (bf.length() < RaceConfig.smallFileSizeThreshold) {
 				System.out.println("small good file:" + file);
 				smallFiles.add(file);
 
-			}else{
+			}else{*/
 				try {
 					// 属于大文件
 					dataFileSerialNumber = goodFileMapping.addDataFileName(file);
@@ -106,7 +110,7 @@ public class GoodHandler{
 					String record = reader.readLine();
 					while (record != null) {
 						//Utils.getAttrsFromRecords(goodAttrList, record);
-						goodfile.writeLine(dataFileSerialNumber, record, TableName.GoodTable);
+						goodfile.writeLine(dataFileSerialNumber, record);
 						record = reader.readLine();
 					}
 					reader.close();
@@ -118,7 +122,7 @@ public class GoodHandler{
 					e.printStackTrace();
 				}
 
-			}
+			//}
 		}
 
 		smallFileWriter = new SmallFileWriter(
@@ -136,7 +140,7 @@ public class GoodHandler{
 				String record = reader.readLine();
 				while (record != null) {
 					//Utils.getAttrsFromRecords(buyerAttrList, record);
-					smallFileWriter.writeLine(record, TableName.GoodTable);
+					smallFileWriter.writeLine(record);
 					record = reader.readLine();
 				}
 				reader.close();
@@ -148,7 +152,7 @@ public class GoodHandler{
 				e.printStackTrace();
 			}
 		}
-		smallFileWriter.writeLine(null, TableName.GoodTable);
+		smallFileWriter.writeLine(null);
 		smallFileWriter.closeFile();
 		
 		System.out.println("end good handling!");
@@ -159,7 +163,7 @@ public class GoodHandler{
 		
 		int fileIndex = 0;
 		String indexFileName = null;
-		DiskHashTable<Integer, List<byte[]>> goodIdHashTable = null;
+		DiskHashTable<BytesKey, byte[]> goodIdHashTable = null;
 		boolean isEnd = false;
 		HashSet<String> tempAttrList = new HashSet<String>();
 		//long surrKey = 1;
@@ -187,13 +191,14 @@ public class GoodHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							System.out.println("create good index:" + diskFileName);
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
-							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.NoWrite);
+							goodIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
+									diskFileName + RaceConfig.goodIndexFileSuffix, byte[].class,
+									DirectMemoryType.GoodIdSegment);
+
 						}
 						else {
 							// 保存当前goodId的索引  并写入索引List
-							goodIdHashTable.writeAllBuckets();
+							//goodIdHashTable.writeAllBuckets();
 							//smallFile.setGoodIdIndex(0);
 							goodIdIndexList.put(fileIndex, goodIdHashTable);	
 							indexFileName = record.getIndexFileName();
@@ -202,9 +207,10 @@ public class GoodHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							System.out.println("create good index:" + diskFileName);
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
-							goodIdHashTable = new DiskHashTable<Integer,List<byte[]>>(
-									diskFileName + RaceConfig.goodIndexFileSuffix, List.class,
-									DirectMemoryType.NoWrite);
+							goodIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
+									diskFileName + RaceConfig.goodIndexFileSuffix, byte[].class,
+									DirectMemoryType.GoodIdSegment);
+
 
 						}
 					}
@@ -214,8 +220,9 @@ public class GoodHandler{
 					//Integer goodIdHashCode = goodid.hashCode();
 					// 放入缓冲区
 					//rowCache.putInCache(goodIdHashCode, record.getRecordsData(), TableName.GoodTable);
-					goodIdHashTable.put(RecordsUtils.getValueFromLineWithKeyList(
-							record.getRecordsData(),RaceConfig.goodId, tempAttrList), record.getOffset());
+					goodIdHashTable.put(new BytesKey(RecordsUtils.getValueFromLineWithKeyList(
+							record.getRecordsData(),RaceConfig.goodId, tempAttrList).getBytes()), 
+							record.getOffset());
 					//surrKey ++;
 				}
 				else if(isEnd ) {
@@ -226,7 +233,7 @@ public class GoodHandler{
 					synchronized (goodAttrList) {
 						goodAttrList.addAll(tempAttrList);
 					}
-					goodIdHashTable.writeAllBuckets();
+					//goodIdHashTable.writeAllBuckets();
 
 					//smallFile.setGoodIdIndex(0);
 					BucketCachePool.getInstance().removeAllBucket();

@@ -7,10 +7,12 @@ import java.util.List;
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
 import com.alibaba.middleware.conf.RaceConfig.IdName;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
+import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.KeyValueImpl;
 import com.alibaba.middleware.race.OrderSystem.TypeException;
@@ -18,6 +20,7 @@ import com.alibaba.middleware.race.ResultImpl;
 import com.alibaba.middleware.race.Row;
 import com.alibaba.middleware.race.OrderSystem.KeyValue;
 import com.alibaba.middleware.race.OrderSystemImpl;
+import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
@@ -31,9 +34,11 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 	private String key;
 	private OrderSystemImpl system = null;
 	private ConcurrentCache rowCache = null;
+	private ByteDirectMemory directMemory = null;
 
 	public SumOrdersByGoodThread(OrderSystemImpl system, String goodid,
 			String key) {
+		directMemory = ByteDirectMemory.getInstance();
 		rowCache = ConcurrentCache.getInstance();
 		this.system = system;
 		this.goodid = goodid;
@@ -79,150 +84,152 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			}
 		}
 
-		Integer surrId = goodid.hashCode();
+		BytesKey surrId = new BytesKey(goodid.getBytes());
 		boolean isCached = false;
-		if (surrId == 0) {
-			return null;
-		} else {
-			// 先在缓冲区里找
-			List<byte[]> offsetList = rowCache.getFromIdCache(surrId,
-					IdIndexType.GoodIdToOrderOffsets);
-			if( offsetList != null) {
-				ByteBuffer buffer = ByteBuffer.wrap(offsetList.get(0));
-				int fileIndex = buffer.getInt();
-				long offset = buffer.getLong();
-				String diskData = RecordsUtils.getStringFromFile(
-						system.orderHandlersList.get(fileIndex), offset,
-						TableName.OrderTable);
-				if (RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)
-						.equals(goodid)) {
-					// 说明缓冲区里找到了
-					isCached = true;
-				}
-			}
-			if (!isCached) {
-				// 说明没有找到 则在索引里找offsets
-				offsetList = new ArrayList<byte[]>();
-				for (int filePathIndex : system.orderIndexMapping
-						.getAllFileIndexs()) {
-					DiskHashTable<Integer, List<byte[]>> hashTable = system.orderGoodIdIndexList
-							.get(filePathIndex);
-					List<byte[]> semiList = hashTable.get(surrId);
-					if (semiList != null) {
-						offsetList.addAll(semiList);
-					}
 
-				}
-
-				// 放入缓冲区
-				rowCache.putInIdCache(surrId, offsetList,
-						IdIndexType.GoodIdToOrderOffsets);
-			}
-
-			for (byte[] encodedOffset : offsetList) {
-
-				boolean isGoodKey = false;
-				boolean isLong = true;
-				long longValue = 0;
-				double doubleValue = 0;
-
-				// Row row = rowCache.getFromCache(new BytesKey(encodedOffset),
-				// TableName.OrderTable);
-				ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-				int fileIndex = buffer.getInt();
-				long offset = buffer.getLong();
-
-				// if(row != null) {
-				// row =
-				// row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
-				// row : RecordsUtils.createKVMapFromLine(
-				// RecordsUtils.getStringFromFile(system.orderHandlersList.get(fileIndex),
-				// offset, TableName.OrderTable));
-				// }
-				// else {
-				String diskData = RecordsUtils.getStringFromFile(
-						system.orderHandlersList.get(fileIndex), offset,
-						TableName.OrderTable);
-				if (RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)
-						.equals(goodid)) {
-					// 确认goodid相同
-					StringBuilder resultBuilder = new StringBuilder();
-					resultBuilder.append(diskData);
-					if (!buyerKeys.isEmpty()) {
-						// need query buyerTable
-						resultBuilder.append("\t");
-						resultBuilder.append(system.getRowStringById(TableName.BuyerTable, 
-								RecordsUtils.getValueFromLine(diskData, RaceConfig.buyerId)));
-					}
-					if (!goodKeys.isEmpty()) {
-						// 到good表里找相应的key	
-						resultBuilder.append("\t");
-						resultBuilder.append(system.getRowStringById(TableName.GoodTable, 
-								RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)));
-						Row row = RecordsUtils.createKVMapFromLine(resultBuilder.toString());
-						try {
-							KeyValueImpl keyValue = row.getKV(key);
-							if (keyValue != null) {
-								isGoodKey = true;
-								isFound = true;
-								longSum = row.getKV(key).valueAsLong()
-										* getCorrectSize(offsetList);
-								break;
-							} else {
-								// 不存在这个key 直接退出
-								return null;
-							}
-
-						} catch (TypeException e) {
-							// TODO Auto-generated catch block
-							// 不是long型的
-							try {
-								isLong = false;
-								doubleSum = row.getKV(key).valueAsDouble()
-										* getCorrectSize(offsetList);
-								break;
-							} catch (TypeException e2) {
-								// TODO Auto-generated catch block
-								// 不是Double型的 返回Null
-								return null;
-							}
-						}
+		// 先在缓冲区里找
+//		List<byte[]> offsetList = rowCache.getFromIdCache(surrId,
+//				IdIndexType.GoodIdToOrderOffsets);
+//		if( offsetList != null) {
+//			
+//			// 说明缓冲区里找到了
+//			isCached = true;
+//		}
+//		if (!isCached) {
+			// 说明没有找到 则在索引里找offsets
+		List<byte[]> offsetList = new ArrayList<byte[]>();
+			for( int filePathIndex : system.goodIndexMapping.getAllFileIndexs()) {
+				DiskHashTable<BytesKey, byte[]> hashTable = 
+						system.goodIdIndexList.get(filePathIndex);
+				// 一次性解析所有offset
+				List<byte[]> encodedOffsets = hashTable.get(surrId);
+				if( encodedOffsets.size() != 0) {
+					// 找到了
+					ByteBuffer tempBuffer = ByteBuffer.wrap(encodedOffsets.get(0));
+					tempBuffer.position(RaceConfig.byte_size + RaceConfig.compressed_min_bytes_length);
+					// 得到所有的byte+offset对
+					List<byte[]> byteAndInts = ByteUtils.splitByteBuffer(tempBuffer);
+					for( byte[] byteAndOffset : byteAndInts) {
+						// 从orderid列表中取出相应的数据
+						ByteBuffer buffer = ByteBuffer.wrap(byteAndOffset);
+						// 从byte解析出int			
+						int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+						long offset = buffer.getInt();
+						
+						// 从文件里读出内容
+						offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
+								system.goodOrderIdListHandlersList.get(fileIndex), offset));
 					}
 					
+				}
+			}
+			// 放入缓冲区
+//			rowCache.putInIdCache(surrId, offsetList,
+//					IdIndexType.GoodIdToOrderOffsets);
+		//}
+
+		for (byte[] encodedOffset : offsetList) {
+
+			boolean isGoodKey = false;
+			boolean isLong = true;
+			long longValue = 0;
+			double doubleValue = 0;
+
+			// Row row = rowCache.getFromCache(new BytesKey(encodedOffset),
+			// TableName.OrderTable);
+			ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
+			int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+			long offset = ByteUtils.getLongOffset(buffer.getInt());
+
+			// if(row != null) {
+			// row =
+			// row.getKV(RaceConfig.goodId).valueAsString().equals(goodid) ?
+			// row : RecordsUtils.createKVMapFromLine(
+			// RecordsUtils.getStringFromFile(system.orderHandlersList.get(fileIndex),
+			// offset, TableName.OrderTable));
+			// }
+			// else {
+			String diskData = RecordsUtils.getStringFromFile(
+					system.orderHandlersList.get(fileIndex), offset,
+					TableName.OrderTable);
+//			if (RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)
+//					.equals(goodid)) {
+				// 确认goodid相同
+				StringBuilder resultBuilder = new StringBuilder();
+				resultBuilder.append(diskData);
+				if (!buyerKeys.isEmpty()) {
+					// need query buyerTable
+					resultBuilder.append("\t");
+					resultBuilder.append(system.getRowStringById(TableName.BuyerTable, 
+							RecordsUtils.getValueFromLine(diskData, RaceConfig.buyerId)));
+				}
+				if (!goodKeys.isEmpty()) {
+					// 到good表里找相应的key	
+					resultBuilder.append("\t");
+					resultBuilder.append(system.getRowStringById(TableName.GoodTable, 
+							RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)));
 					Row row = RecordsUtils.createKVMapFromLine(resultBuilder.toString());
-					KeyValueImpl keyValue = row.getKV(key);
-					if (keyValue == null) {
-						// // 该条记录不存在这个key
-						continue;
-					} else {
-						// 该记录存在该key
-						try {
+					try {
+						KeyValueImpl keyValue = row.getKV(key);
+						if (keyValue != null) {
+							isGoodKey = true;
 							isFound = true;
-							longValue = row.getKV(key).valueAsLong();
-						} catch (TypeException e) {
+							longSum = row.getKV(key).valueAsLong()
+									* offsetList.size();
+							break;
+						} else {
+							// 不存在这个key 直接退出
+							return null;
+						}
+
+					} catch (TypeException e) {
+						// TODO Auto-generated catch block
+						// 不是long型的
+						try {
+							isLong = false;
+							doubleSum = row.getKV(key).valueAsDouble()
+									* offsetList.size();
+							break;
+						} catch (TypeException e2) {
 							// TODO Auto-generated catch block
-							// 不是long型的
-							try {
-								isLong = false;
-								doubleValue = row.getKV(key).valueAsDouble();
-							} catch (TypeException e2) {
-								// TODO Auto-generated catch block
-								// 不是Double型的 返回Null
-								return null;
-							}
+							// 不是Double型的 返回Null
+							return null;
 						}
 					}
-
-					if (isLong) {
-						longSum += longValue;
-					} else {
-						doubleSum += doubleValue;
+				}
+				
+				Row row = RecordsUtils.createKVMapFromLine(resultBuilder.toString());
+				KeyValueImpl keyValue = row.getKV(key);
+				if (keyValue == null) {
+					// // 该条记录不存在这个key
+					continue;
+				} else {
+					// 该记录存在该key
+					try {
+						isFound = true;
+						longValue = row.getKV(key).valueAsLong();
+					} catch (TypeException e) {
+						// TODO Auto-generated catch block
+						// 不是long型的
+						try {
+							isLong = false;
+							doubleValue = row.getKV(key).valueAsDouble();
+						} catch (TypeException e2) {
+							// TODO Auto-generated catch block
+							// 不是Double型的 返回Null
+							return null;
+						}
 					}
 				}
 
+				if (isLong) {
+					longSum += longValue;
+				} else {
+					doubleSum += doubleValue;
+				}
 			}
 
-		}
+		//}
 
 		if (longSum == 0 && doubleSum == 0 && !isFound) {
 			return null;
@@ -240,7 +247,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 	 * @param offsetList
 	 * @return
 	 */
-	public int getCorrectSize( List<byte[]> offsetList) {
+	/*public int getCorrectSize( List<byte[]> offsetList) {
 		int count = 0;
 		for (byte[] encodedOffset : offsetList) {
 			ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
@@ -256,5 +263,5 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			}
 		}
 		return count;
-	}
+	}*/
 }

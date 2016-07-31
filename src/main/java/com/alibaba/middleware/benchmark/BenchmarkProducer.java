@@ -23,17 +23,17 @@ import com.alibaba.middleware.conf.RaceConfig;
  */
 public class BenchmarkProducer {
 
-	public static String buyerTableFileName = "benchmark/buyer_records_0.txt";
+	public static String buyerTableFileName = "benchmark/buyer_records_1.txt";
 	public static String buyerTableDatabaseFileName = "buyer_records_database.txt";
 	
-	public static String goodTableFileName = "benchmark/good_records_0.txt";
+	public static String goodTableFileName = "benchmark/good_records_1.txt";
 	public static String goodTableDatabaseFileName = "good_records_database.txt";
 	
 	public static String orderTableFileName = "benchmark/order_records_0.txt";
 	public static String orderTableDatabaseFileName = "order_records_database.txt";
 	
-	public static long buyerTableRecordsNum = 6000000;
-	public static long goodTableRecordsNum = 6000000;
+	public static long buyerTableRecordsNum = 8000000;
+	public static long goodTableRecordsNum = 4000000;
 	public static long orderTableRecordsNum = 10000;
 
 	public static String buyerTableReAttr[] = {"buyerid","contactphone","recieveaddress"};
@@ -59,10 +59,10 @@ public class BenchmarkProducer {
 					goodTableRecordsNum, goodTableReAttr, goodTableOpAttr);
 			
 			Random random = new Random();
-			for( int i =5 ; i < 10; i++) {
+			for( int i =1 ; i < 30; i++) {
 				// then produce order table
 				orderTableProducer("benchmark/order_records_"+ i + ".txt", orderTableDatabaseFileName,
-						random.nextInt(500000), orderTableReAttr, orderTableOpAttr);
+						random.nextInt(20000000), orderTableReAttr, orderTableOpAttr);
 			}
 			
 			

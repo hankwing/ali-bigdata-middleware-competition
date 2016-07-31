@@ -1,10 +1,14 @@
 package com.alibaba.middleware.tools;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,8 +20,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.cache.SimpleCache;
 import com.alibaba.middleware.conf.RaceConfig;
+import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
+import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.race.KeyValueImpl;
 import com.alibaba.middleware.race.Row;
 
@@ -147,16 +153,48 @@ public class RecordsUtils {
 	}
 	
 	/**
+	 * 从文件里取出相应的orderid列表byte[]
+	 * @param fileName
+	 * @param offset
+	 * @return
+	 */
+	public static List<byte[]> getOrderIdListsFromFile(LinkedBlockingQueue<RandomAccessFile> file
+			, long offset){
+		List<byte[]> results = null;
+		
+		try {
+			RandomAccessFile fileReader = file.take();
+			fileReader.seek(offset);
+			
+			byte[] content = new byte[fileReader.readInt()];
+			fileReader.read(content);
+			results = ByteUtils.splitBytes(content);
+			
+			// 放回文件句柄队列中
+			file.add(fileReader);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		return results;
+		
+		
+	}
+	
+	/**
 	 * 将文件地址下标+offset编码为byte数组
 	 * @param dataSerialNumber
 	 * @param offset
 	 * @return
 	 */
 	public static byte[] encodeIndex(int dataSerialNumber, long offset){
-		ByteBuffer buffer = ByteBuffer.allocate(12);
+		ByteBuffer buffer = ByteBuffer.allocate(RaceConfig.compressed_min_bytes_length);
 		//放入源数据文件编号
-		buffer.putInt(dataSerialNumber);
-		buffer.putLong(offset);
+		buffer.put(ByteUtils.getByteFromInt(dataSerialNumber));
+		buffer.putInt(ByteUtils.getUnsignedInt(offset));
 		//buffer.clear();
 		return buffer.array();
 	}
@@ -168,7 +206,7 @@ public class RecordsUtils {
 	 */
 	public static FileIndexWithOffset decodeIndex(byte[] indexBytes){
 		ByteBuffer buffer = ByteBuffer.wrap(indexBytes);
-		return new FileIndexWithOffset( buffer.getInt(), buffer.getLong());
+		return new FileIndexWithOffset( buffer.get(), ByteUtils.getLongOffset(buffer.getInt()));
 	}
 	
 	/**
@@ -176,10 +214,11 @@ public class RecordsUtils {
 	 * @param line
 	 * @return
 	 */
-	public static Integer getValueFromLineWithKeyList(
+	public static String getValueFromLineWithKeyList(
 			String line, String targetKey, HashSet<String> keyList) {
+		String result = null;
 		if( line != null) {
-			int keyHashCode = 0;
+			//int keyHashCode = 0;
 			//Row kvMap = new Row();
 			String[] kvs = line.split("\t");
 			for (String rawkv : kvs) {
@@ -189,14 +228,15 @@ public class RecordsUtils {
 				keyList.add(key);
 				if( key.equals(targetKey)) {
 					// 找到了所需的key
-					keyHashCode = value.hashCode();
+					result = value;
+					//keyHashCode = value.hashCode();
 				}
 				/*if (key.length() == 0 || value.length() == 0) {
 					throw new RuntimeException("Bad data:" + line);
 				}*/
 				
 			}
-			return keyHashCode;
+			return result;
 		}
 		else {
 			return null;
@@ -293,13 +333,40 @@ public class RecordsUtils {
 		return kvs[1];
 	}*/
 	
-	public static List<byte[]> splitBytes(byte[] line){
-		List<byte[]> list = new ArrayList<>();
-		int interval = 12;
-		for (int i = 0; i < line.length; i=i+interval) {
-			list.add(Arrays.copyOfRange(line, i, i+interval));
+	/**
+	 * 将对应的direct memory dump到文件里去
+	 * @param fileName
+	 * @param directMemory
+	 * @param type
+	 */
+	public static void writeToFile(String fileName, ByteDirectMemory directMemory, DirectMemoryType type) {
+		 File file = new File(fileName);
+		 FileChannel wChannel;
+		try {
+			wChannel = new FileOutputStream(file).getChannel();
+			switch( type) {
+			 case BuyerIdSegment:
+				 directMemory.orderBuyerBuffer.position(0);
+				 wChannel.write(directMemory.orderBuyerBuffer);
+				 directMemory.clearOneSegment(type);
+				 break;
+			 case GoodIdSegment:
+				 directMemory.orderGoodBuffer.position(0);
+				 wChannel.write(directMemory.orderGoodBuffer);
+				 directMemory.clearOneSegment(type);
+				 break;
+			 default:
+				 break;
+			 }
+			 wChannel.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		return list;
+		 
 	}
 	
 }

@@ -9,6 +9,7 @@ import java.io.ObjectInputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -21,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.alibaba.middleware.cache.ConcurrentCache;
@@ -36,6 +38,8 @@ import com.alibaba.middleware.threads.QueryOrderThread;
 import com.alibaba.middleware.threads.QueryOrdersBySalerThread;
 import com.alibaba.middleware.threads.SumOrdersByGoodThread;
 import com.alibaba.middleware.threads.ThreadPool;
+import com.alibaba.middleware.tools.ByteUtils;
+import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
 
 /**
@@ -49,19 +53,25 @@ public class OrderSystemImpl implements OrderSystem {
 	// 存订单表里的orderId索引<索引文件的下标,内存里缓存的索引DiskHashTable>
 	public ConcurrentHashMap<Integer, DiskHashTable<Long, byte[]>> orderIdIndexList = null;
 	// 订单表里的buyerId代理键索引
-	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
+	//public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
 	// 订单表里的goodId代理键索引
-	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
+	//public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
 	// 订单表里的可计算字段索引Map
 	//public ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>> orderCountableIndexList = null;
 	// buyerId里的buyerId代理键索引
-	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> buyerIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> buyerIdIndexList = null;
 	// goodId里的goodId代理键索引
-	public ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> goodIdIndexList = null;
+	public ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>> goodIdIndexList = null;
 	// 文件句柄池<数据文件的下标，文件句柄队列>
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> orderHandlersList = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
+	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	buyerOrderIdListHandlersList = null;
+	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	goodOrderIdListHandlersList = null;
 
 	//public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; 
 	//public CopyOnWriteArrayList<FilePathWithIndex> buyerFileList = null; 
@@ -71,6 +81,8 @@ public class OrderSystemImpl implements OrderSystem {
 	public DataFileMapping buyerFileMapping = null;						// 保存buyer表所有文件的名字
 	public DataFileMapping goodFileMapping = null;						// 保存good表所有文件的名字
 	
+	public DataFileMapping buyerOrderIdListMapping = null;						// 保存orderid列表的所有文件的名字
+	public DataFileMapping goodOrderIdListMapping = null;						// 保存orderid列表的所有文件的名字
 	public DataFileMapping orderIndexMapping = null;						// 保存order表所有文件的名字
 	public DataFileMapping buyerIndexMapping = null;						// 保存buyer表所有文件的名字
 	public DataFileMapping goodIndexMapping = null;						// 保存good表所有文件的名字
@@ -98,14 +110,13 @@ public class OrderSystemImpl implements OrderSystem {
     private AtomicLong q2Counter = new AtomicLong(0L);
     private AtomicLong q3Counter = new AtomicLong(0L);
     private AtomicLong q4Counter = new AtomicLong(0L);
+	private AtomicBoolean waitForConstruct = new AtomicBoolean(true);
 
 	static List<String> buyerfiles = null;
 	static List<String> goodfiles = null;
 	static List<String> orderfiles = null;
 	static OrderSystemImpl orderSystem = null;
 
-	//直接内存
-	ByteDirectMemory directMemory = new ByteDirectMemory(1024*1024*128);
 	/**
 	 * 测试类 construct测试construct方法
 	 * @param args
@@ -131,16 +142,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-					/*buyerfiles.add("prerun_data/buyer.0.0");
-					buyerfiles.add("prerun_data/buyer.1.1");*/
-					buyerfiles.add("benchmark/buyer_records_1.txt");
+					buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");
+//					buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-					/*goodfiles.add("prerun_data/good.0.0");
+					goodfiles.add("prerun_data/good.0.0");
 					goodfiles.add("prerun_data/good.1.1");
-					goodfiles.add("prerun_data/good.2.2");*/
-					goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.2.2");
+//					goodfiles.add("benchmark/good_records_1.txt");
 					//goodfiles.add("benchmark/good_records_2.txt");
 					//goodfiles.add("benchmark/good_records_3.txt");
 					//goodfiles.add("benchmark/good_records_4.txt");
@@ -149,28 +160,32 @@ public class OrderSystemImpl implements OrderSystem {
 	
 					orderfiles = new ArrayList<String>();
 
-					/*orderfiles.add("disk1/orders/order.0.0");
+					orderfiles.add("disk1/orders/order.0.0");
 					orderfiles.add("disk2/orders/order.0.3");
 					orderfiles.add("disk3/orders/order.1.1");
-					orderfiles.add("disk1/orders/order.2.2");*/
+					orderfiles.add("disk1/orders/order.2.2");
+
+//					for( int i = 0; i <30; i++) {
+//						orderfiles.add("benchmark/order_records_"+ i + ".txt");
+//					}
 					
-					orderfiles.add("benchmark/order_records_1.txt");
-					orderfiles.add("benchmark/order_records_2.txt");
-					orderfiles.add("benchmark/order_records_4.txt");
-					orderfiles.add("benchmark/order_records_+5.txt");
-					orderfiles.add("benchmark/order_records_+6.txt");
-					orderfiles.add("benchmark/order_records_+7.txt");
-					orderfiles.add("benchmark/order_records_+8.txt");
-					orderfiles.add("benchmark/order_records_+9.txt");
-					orderfiles.add("benchmark/order_records_+10.txt");
-					orderfiles.add("benchmark/order_records_+11.txt");
-					orderfiles.add("benchmark/order_records_+12.txt");
-					orderfiles.add("benchmark/order_records_+13.txt");
-					orderfiles.add("benchmark/order_records_+14.txt");
-					orderfiles.add("benchmark/order_records_+15.txt");
-					orderfiles.add("benchmark/order_records_+16.txt");
-					orderfiles.add("benchmark/order_records_+17.txt");
-	
+//					orderfiles.add("benchmark/order_records_1.txt");
+//					orderfiles.add("benchmark/order_records_2.txt");
+//					orderfiles.add("benchmark/order_records_4.txt");
+//					orderfiles.add("benchmark/order_records_+5.txt");
+//					orderfiles.add("benchmark/order_records_+6.txt");
+//					orderfiles.add("benchmark/order_records_+7.txt");
+//					orderfiles.add("benchmark/order_records_+8.txt");
+//					orderfiles.add("benchmark/order_records_+9.txt");
+//					orderfiles.add("benchmark/order_records_+10.txt");
+//					orderfiles.add("benchmark/order_records_+11.txt");
+//					orderfiles.add("benchmark/order_records_+12.txt");
+//					orderfiles.add("benchmark/order_records_+13.txt");
+//					orderfiles.add("benchmark/order_records_+14.txt");
+//					orderfiles.add("benchmark/order_records_+15.txt");
+//					orderfiles.add("benchmark/order_records_+16.txt");
+//					orderfiles.add("benchmark/order_records_+17.txt");
+//	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
 					storeFolders.add("disk1/");
@@ -192,57 +207,57 @@ public class OrderSystemImpl implements OrderSystem {
 				} else if (command.startsWith("lookup1")) {
 	
 					// lookup:xxx 查找某个key值的value
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
 	                    System.out.println(rawCommand[i]);
 						keys.add(rawCommand[i]);
 					}
 					System.out.println("values:" + 
-					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));*/
-					for( int i = 0; i < 8; i++) {
-						// 启动八个线程同时查询
-						Thread query = new Thread(new Runnable() {  
-						    @Override  
-						    public void run() {  
-						    	List<String> keys = new ArrayList<String>();
-								keys.add("orderid");
-								int count = 0;
-								for( int i = 0; i < orderfiles.size() ; i++) {
-									FileInputStream fis;
-									try {
-										fis = new FileInputStream(orderfiles.get(i));
-										BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-									    String line = br.readLine();
-									    
-									    while( line != null) {
-									    	long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
-									    			line, RaceConfig.orderId));
-									    	if(orderSystem.queryOrder( orderid, keys) == null) {
-									    		// error
-									    		count ++;
-									    		System.out.println("cannot find orderid:" + orderid);
-									    	}
-									    	line = br.readLine();
-									    }
-									    br.close();
-									} catch (IOException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
-								    
-								   
-								}
-								System.out.println("error count:" + count);                
-						    };  
-						});  
-						
-						query.start();
-					}
+					orderSystem.queryOrder( Long.valueOf(rawCommand[0]), null));
+//					for( int i = 0; i < 8; i++) {
+//						// 启动八个线程同时查询
+//						Thread query = new Thread(new Runnable() {  
+//						    @Override  
+//						    public void run() {  
+//						    	List<String> keys = new ArrayList<String>();
+//								keys.add("orderid");
+//								int count = 0;
+//								for( int i = 0; i < orderfiles.size() ; i++) {
+//									FileInputStream fis;
+//									try {
+//										fis = new FileInputStream(orderfiles.get(i));
+//										BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+//									    String line = br.readLine();
+//									    
+//									    while( line != null) {
+//									    	long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
+//									    			line, RaceConfig.orderId));
+//									    	if(orderSystem.queryOrder( orderid, keys) == null) {
+//									    		// error
+//									    		count ++;
+//									    		System.out.println("cannot find orderid:" + orderid);
+//									    	}
+//									    	line = br.readLine();
+//									    }
+//									    br.close();
+//									} catch (IOException e) {
+//										// TODO Auto-generated catch block
+//										e.printStackTrace();
+//									}
+//								    
+//								   
+//								}
+//								System.out.println("error count:" + count);                
+//						    };  
+//						});  
+//						
+//						query.start();
+//					}
 					
 				}  else if (command.startsWith("lookup2")) {
 					// lookup:xxx 查找某个key值的value
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String buyerId = rawCommand[0];
 					long startTime = Long.valueOf(rawCommand[1]);
 					long endTime = Long.valueOf(rawCommand[2]);
@@ -251,92 +266,92 @@ public class OrderSystemImpl implements OrderSystem {
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
 					}
-					System.out.println("start query2" );*/
-					for( int i = 0; i < 8; i++) {
-						// 启动八个线程同时查询
-						Thread query = new Thread(new Runnable() {  
-						    @Override  
-						    public void run() {  
-						    	Random random = new Random();
-								FileInputStream fis;
-								try {
-									fis = new FileInputStream(buyerfiles.get(
-											random.nextInt(buyerfiles.size())));
-									 BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-										for( int i = 0; i< 2000; i++) {
-											String buyerId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.buyerId);
-											buyerId = buyerId == null? UUID.randomUUID().toString():buyerId;
-											long startTime = random.nextLong();
-											long endTime = random.nextLong();
-											
-											Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
-											System.out.println("query2");
-											while(results.hasNext()) {
-												System.out.println("values:" + results.next());
-											}
-										}
-										System.out.println("end query2");
-										br.close();
-								} catch (IOException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							                  
-						    };  
-						});  
-						
-						query.start();
-					}
+					System.out.println("start query2" );
+//					for( int i = 0; i < 8; i++) {
+//						// 启动八个线程同时查询
+//						Thread query = new Thread(new Runnable() {  
+//						    @Override  
+//						    public void run() {  
+//						    	Random random = new Random();
+//								FileInputStream fis;
+//								try {
+//									fis = new FileInputStream(buyerfiles.get(
+//											random.nextInt(buyerfiles.size())));
+//									 BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+//										for( int i = 0; i< 2000; i++) {
+//											String buyerId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.buyerId);
+//											buyerId = buyerId == null? UUID.randomUUID().toString():buyerId;
+//											long startTime = random.nextLong();
+//											long endTime = random.nextLong();
+//											
+//											Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
+//											System.out.println("query2");
+//											while(results.hasNext()) {
+//												System.out.println("values:" + results.next());
+//											}
+//										}
+//										System.out.println("end query2");
+//										br.close();
+//								} catch (IOException e) {
+//									// TODO Auto-generated catch block
+//									e.printStackTrace();
+//								}
+//							                  
+//						    };  
+//						});  
+//						
+//						query.start();
+//					}
 					
 				} else if (command.startsWith("lookup3")) {
 					// lookup:xxx 查找某个key值的value
 					
-					for( int i = 0; i < 8; i++) {
-						// 启动八个线程同时查询
-						Thread query = new Thread(new Runnable() {  
-						    @Override  
-						    public void run() {  
-						    	Random random = new Random();
-								try {
-									System.out.println("start query3" );
-									List<String> keys = new ArrayList<String>();
-									keys.add("orderid");
-									int count = 0;
-									for( int i = 0; i < orderfiles.size() ; i++) {
-										FileInputStream fis = new FileInputStream(orderfiles.get(i));
-									    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-									    String line = br.readLine();
-									    
-									    while( line != null) {
-									    	String goodid = RecordsUtils.getValueFromLine(
-									    			line, RaceConfig.goodId);
-									    	Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodid, keys);
-											//System.out.println("query3");
-											if(results.hasNext()) {
-												System.out.println(ConcurrentCache.getInstance().getSize());
-											}
-											else {
-												count ++;
-												
-												System.out.println("error");
-											}
-									    	line = br.readLine();
-									    }
-									    br.close();
-									   
-									}
-									
-									System.out.println("error count:" + count);
-								} catch (IOException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-							                  
-						    };  
-						});  
-						
-						query.start();
-					}
+//					for( int i = 0; i < 8; i++) {
+//						// 启动八个线程同时查询
+//						Thread query = new Thread(new Runnable() {  
+//						    @Override  
+//						    public void run() {  
+//						    	Random random = new Random();
+//								try {
+//									System.out.println("start query3" );
+//									List<String> keys = new ArrayList<String>();
+//									keys.add("orderid");
+//									int count = 0;
+//									for( int i = 0; i < orderfiles.size() ; i++) {
+//										FileInputStream fis = new FileInputStream(orderfiles.get(i));
+//									    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+//									    String line = br.readLine();
+//									    
+//									    while( line != null) {
+//									    	String goodid = RecordsUtils.getValueFromLine(
+//									    			line, RaceConfig.goodId);
+//									    	Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodid, keys);
+//											//System.out.println("query3");
+//											if(results.hasNext()) {
+//												System.out.println(ConcurrentCache.getInstance().getSize());
+//											}
+//											else {
+//												count ++;
+//												
+//												System.out.println("error");
+//											}
+//									    	line = br.readLine();
+//									    }
+//									    br.close();
+//									   
+//									}
+//									
+//									System.out.println("error count:" + count);
+//								} catch (IOException e) {
+//									// TODO Auto-generated catch block
+//									e.printStackTrace();
+//								}
+//							                  
+//						    };  
+//						});  
+//						
+//						query.start();
+//					}
 					/*Random random = new Random();
 					FileInputStream fis = new FileInputStream(orderfiles.get(random.nextInt(
 							orderfiles.size())));
@@ -356,7 +371,7 @@ public class OrderSystemImpl implements OrderSystem {
 					}
 					System.out.println("stop query3" );*/
 					//br.close();
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					List<String> keys = new ArrayList<String>();
 					for( int i = 1; i < rawCommand.length; i++ ) {
@@ -369,31 +384,31 @@ public class OrderSystemImpl implements OrderSystem {
 						//results.next();
 						System.out.println("values:" + results.next());
 					}
-					System.out.println("count:" + count);*/
+					System.out.println("count:" + count);
 					
 				} else if (command.startsWith("lookup4")) {
 					// lookup:xxx 查找某个key值的value
 					// lookup:xxx 查找某个key值的value
 					
-					/*String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
+					String[] rawCommand = command.substring(command.indexOf(":") + 1).split(",");
 					String goodId = rawCommand[0];
 					String key = rawCommand[1];
-					System.out.println(orderSystem.sumOrdersByGood(goodId, key));*/
-					Random random = new Random();
-					System.out.println("start query4" );
-					FileInputStream fis = new FileInputStream(goodfiles.get(
-							random.nextInt(goodfiles.size())));
-				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-					String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
-					for( int i = 0; i< 2000; i++) {
-						
-						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
-						goodId = goodId == null? UUID.randomUUID().toString(): goodId;
-						//System.out.println("query4");
-						System.out.println(orderSystem.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
-					}		
-					br.close();
-					System.out.println("end query4" );
+					System.out.println(orderSystem.sumOrdersByGood(goodId, key));
+//					Random random = new Random();
+//					System.out.println("start query4" );
+//					FileInputStream fis = new FileInputStream(goodfiles.get(
+//							random.nextInt(goodfiles.size())));
+//				    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+//					String[] keys = orderSystem.buyerAttrList.toArray(new String[0]);
+//					for( int i = 0; i< 2000; i++) {
+//						
+//						String goodId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.goodId);
+//						goodId = goodId == null? UUID.randomUUID().toString(): goodId;
+//						//System.out.println("query4");
+//						System.out.println(orderSystem.sumOrdersByGood(goodId, keys[random.nextInt(keys.length -1)]));
+//					}		
+//					br.close();
+//					System.out.println("end query4" );
 					
 				} else if (command.equals("quit")) {
 					// 索引使用完毕 退出
@@ -417,23 +432,29 @@ public class OrderSystemImpl implements OrderSystem {
 		// 存订单表里的orderId索引<文件名（尽量短名）,内存里缓存的索引DiskHashTable>
 		orderIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Long, byte[]>>();
 		// 订单表里的buyerId代理键索引
-		orderBuyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
+		//orderBuyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
 		// 订单表里的goodId代理键索引
-		orderGoodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
+		//orderGoodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
 		// 订单表里的可计算字段索引Map
 		//orderCountableIndexList = new ConcurrentHashMap<Integer, List<DiskHashTable<Integer, List<byte[]>>>>();
 		// buyerId里的buyerId代理键索引
-		buyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
+		buyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>>();
 		// goodId里的goodId代理键索引
-		goodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>>();
+		goodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey, byte[]>>();
 		orderHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
 		buyerHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
 		goodHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+		buyerOrderIdListHandlersList = new 
+				ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+		goodOrderIdListHandlersList = new 
+				ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
 		
 		orderFileMapping = new DataFileMapping();
 		buyerFileMapping = new DataFileMapping();
 		goodFileMapping = new DataFileMapping();
 		
+		buyerOrderIdListMapping = new DataFileMapping();
+		goodOrderIdListMapping = new DataFileMapping();
 		orderIndexMapping = new DataFileMapping();
 		buyerIndexMapping = new DataFileMapping();
 		goodIndexMapping = new DataFileMapping();
@@ -471,6 +492,7 @@ public class OrderSystemImpl implements OrderSystem {
 		long endTime = System.currentTimeMillis();
 		rowCache = ConcurrentCache.getInstance();	// 这时候再开启rowCache
 		System.out.println("construct time:" + (endTime - startTime) / 1000);
+		waitForConstruct.set(false);
 	}
 
 	/**
@@ -601,8 +623,8 @@ public class OrderSystemImpl implements OrderSystem {
 					for( byte[] encodedOffset : results) {
 						//解码byte数组
 						ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-						int dataFileIndex = buffer.getInt();
-						long offset = buffer.getLong();
+						int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+						long offset = ByteUtils.getLongOffset(buffer.getInt());
 						String diskValue = RecordsUtils.getStringFromFile(
 								orderHandlersList.get(dataFileIndex),offset, tableName);
 						if( RecordsUtils.getValueFromLine(diskValue, RaceConfig.orderId).equals(idString)) {
@@ -614,37 +636,34 @@ public class OrderSystemImpl implements OrderSystem {
 			}	
 			break;
 		case BuyerTable:
-			// 将事实键转为代理键
-			Integer surrId = String.valueOf(id).hashCode();
 			// 先在缓冲区里找
-			String result = rowCache.getFromCache(surrId, TableName.BuyerTable);
-			if( result != null && RecordsUtils.getValueFromLine(
-					result, RaceConfig.buyerId).equals(idString)) {
+			BytesKey key = new BytesKey(String.valueOf(id).getBytes());
+			String result = rowCache.getFromCache(key, TableName.BuyerTable);
+			if( result != null) {
 				// 在缓冲区找到了
 				return result;
 			}
 			else {
 				// 在索引里找
 				for (int filePathIndex : buyerIndexMapping.getAllFileIndexs()) {
-					DiskHashTable<Integer, List<byte[]>> hashTable = buyerIdIndexList
+					DiskHashTable<BytesKey, byte[]> hashTable = buyerIdIndexList
 							.get(filePathIndex);
-					List<byte[]> results = hashTable.get(surrId);
+					List<byte[]> results = hashTable.get(key);
 					if (results.size() != 0) {
 						for( byte[] encodedOffset : results) {
+							// 这里要解压出第一个offset出来
 							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-							
-							int dataFileIndex = buffer.getInt();
-							long offset = buffer.getLong();
+							// 跳过标志位
+							buffer.position(RaceConfig.byte_size);
+							// 从byte解析出int
+							int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+							long offset = ByteUtils.getLongOffset(buffer.getInt());
 							String records = RecordsUtils.getStringFromFile(
 									buyerHandlersList.get(dataFileIndex), offset, tableName);
 							try{
-								if( RecordsUtils.getValueFromLine(
-										records, RaceConfig.buyerId).equals(idString)) {
-									// 确认主键相同
-									// 放入缓冲区
-									rowCache.putInCache(surrId, records, TableName.BuyerTable);
-									return records;
-								}
+								// 放入缓冲区
+								rowCache.putInCache(key, records, TableName.BuyerTable);
+								return records;
 							} catch(StringIndexOutOfBoundsException e){
 								continue;
 							}
@@ -655,34 +674,32 @@ public class OrderSystemImpl implements OrderSystem {
 			}
 			break;
 		case GoodTable:
-			Integer goodSurrId = String.valueOf(id).hashCode();
+			BytesKey goodKey = new BytesKey(String.valueOf(id).getBytes());
 			// 先在缓冲区里找
-			String goodResult = rowCache.getFromCache(goodSurrId, tableName);
-			if( goodResult != null && RecordsUtils.getValueFromLine(
-					goodResult, RaceConfig.goodId).equals(idString)) {
+			String goodResult = rowCache.getFromCache(goodKey, tableName);
+			if( goodResult != null) {
 				return goodResult;
 			}
 			else {
 				for (int filePathIndex : goodIndexMapping.getAllFileIndexs()) {
-					DiskHashTable<Integer, List<byte[]>> hashTable = goodIdIndexList.get(filePathIndex);
-					List<byte[]> results = hashTable.get(goodSurrId);
+					DiskHashTable<BytesKey, byte[]> hashTable = goodIdIndexList.get(filePathIndex);
+					List<byte[]> results = hashTable.get(goodKey);
 					if (results.size() != 0) {
 						
 						for( byte[] encodedOffset : results) {
 							
 							ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-							
-							int dataFileIndex = buffer.getInt();
-							long offset = buffer.getLong();
+							// 跳过标志位
+							buffer.position(RaceConfig.byte_size);
+							// 从byte解析出int
+							int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+							long offset = ByteUtils.getLongOffset(buffer.getInt());
 							String records = RecordsUtils.getStringFromFile(
 									goodHandlersList.get(dataFileIndex), offset, tableName);
 							try{
-								if( RecordsUtils.getValueFromLine(
-										records, RaceConfig.goodId).equals(idString)) {
-									// 确认主键相同
-									rowCache.putInCache(goodSurrId, records, TableName.GoodTable);
-									return records;
-								}
+								// 确认主键相同
+								rowCache.putInCache(goodKey, records, TableName.GoodTable);
+								return records;
 							} catch(StringIndexOutOfBoundsException e){
 								continue;
 							}
@@ -715,6 +732,10 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             QueryOrderThread t = new QueryOrderThread(this,orderId, keys);
+			while (waitForConstruct.get()) {
+				// DO NOTHING. WAIT FOR CONSTRUCTION
+				System.out.println("Q1 Waiting for construction");
+			}
             Future<ResultImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
@@ -751,6 +772,10 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             QueryOrderByBuyerThread t = new QueryOrderByBuyerThread(this, startTime, endTime, buyerid);
+			while (waitForConstruct.get()) {
+				// DO NOTHING. WAIT FOR CONSTRUCTION
+				System.out.println("Q2 Waiting for construction");
+			}
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
@@ -788,6 +813,10 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             QueryOrdersBySalerThread t = new QueryOrdersBySalerThread(this,salerid, goodid, keys);
+			while (waitForConstruct.get()) {
+				// DO NOTHING. WAIT FOR CONSTRUCTION
+				System.out.println("Q3 Waiting for construction");
+			}
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
@@ -825,6 +854,10 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             SumOrdersByGoodThread t = new SumOrdersByGoodThread(this,goodid, key);
+			while (waitForConstruct.get()) {
+				// DO NOTHING. WAIT FOR CONSTRUCTION
+				System.out.println("Q4 Waiting for construction");
+			}
             Future<KeyValueImpl> future = queryExe.submit(t);
             try {
                 result = future.get();

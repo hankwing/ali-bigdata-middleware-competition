@@ -4,6 +4,8 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.alibaba.middleware.tools.ByteUtils;
+
 public class DataFileMapping {
 	ConcurrentHashMap<Integer, String> dataFileMapping;
 	AtomicInteger dataFileSerialNumber;

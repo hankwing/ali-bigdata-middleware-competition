@@ -2,6 +2,7 @@ package com.alibaba.middleware.index;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +39,26 @@ public class HashBucket<K,T> implements Serializable{
 		recordNum = 0;
 		keyToAddress = new TreeMap<String, Map<K,T>>(
 				new ComparableKeys(String.valueOf(bucketKey).length() + 1));
+	}
+	
+	/**
+	 * 将buyer和good表的所有索引值的标志位置0
+	 */
+	public void resetAllValuesSigns() {
+		try{
+			for( Map<K,T> map : keyToAddress.values()) {
+				for( T bytes : map.values()) {
+					// 标志位置0
+					((byte[]) bytes)[0] = 0;
+				}
+			}
+			if( nextBucket != null) {
+				nextBucket.resetAllValuesSigns();
+			}
+		} catch( Exception e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 	public List<Map<K, T>> getAllValues(String newBucketKey) {
@@ -88,13 +109,30 @@ public class HashBucket<K,T> implements Serializable{
 			else {
 				results.addAll((Collection<? extends byte[]>) partialResult.get(key));
 			}
-			
 		}
 		
 		if( nextBucket != null) {
 			results.addAll(nextBucket.getAddress(bucketIndex, key));
 		}
 		return results;
+		
+	}
+	
+	/**
+	 * 直接替换相应key里的byte数组
+	 * @param bucketIndex
+	 * @param key
+	 * @param value
+	 */
+	public void replaceAddress( String bucketIndex, K key, T newvalue) {
+
+		Map<K,T> values = keyToAddress.get(bucketIndex);
+		if( values != null && values.get(key) != null) {
+			values.put(key, newvalue);
+		}
+		else {
+			nextBucket.replaceAddress(bucketIndex, key, newvalue);
+		}
 		
 	}
 	
