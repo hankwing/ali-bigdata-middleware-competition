@@ -15,7 +15,7 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreshold = (long) (200* Math.pow(1024, 2));
 	
-	public static int directMemorySize = (int) (1700* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
+	public static int directMemorySize = (int) (10* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
 	
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int waitNum = 3;							// 读写线程数
@@ -56,8 +56,8 @@ public class RaceConfig implements Serializable{
 	
 	//public static int compressed_max_bytes_lenth = 1024;		// 商品表和买家表索引对应的orderid列表压缩后最大空间
 	public static int compressed_min_bytes_length = 5;		// orderid索引对应的orderid列表压缩后最大空间
-	public static int buyer_remaining_bytes_length = 300;
-	public static int good_remaining_bytes_length = 150;
+	public static int buyer_remaining_bytes_length = 200;
+	public static int good_remaining_bytes_length = 100;
 	
 	//public static int advanced_remaining_bytes_length = 500;
 
@@ -90,7 +90,6 @@ public class RaceConfig implements Serializable{
 	public static String goodId = "goodid";
 	public static String createTime = "createtime";
 	public static String salerId = "salerid";
-
 
 	/***
 	 * handle file config
