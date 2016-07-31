@@ -36,12 +36,12 @@ public class OrderSystemImpleTest {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-        System.out.println("Done query2");
-        try {
-            query3();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        System.out.println("Done query2");
+//        try {
+//            query3();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }

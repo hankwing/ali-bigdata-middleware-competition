@@ -33,11 +33,7 @@ import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
-import com.alibaba.middleware.threads.QueryOrderByBuyerThread;
-import com.alibaba.middleware.threads.QueryOrderThread;
-import com.alibaba.middleware.threads.QueryOrdersBySalerThread;
-import com.alibaba.middleware.threads.SumOrdersByGoodThread;
-import com.alibaba.middleware.threads.ThreadPool;
+import com.alibaba.middleware.threads.*;
 import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
@@ -110,8 +106,9 @@ public class OrderSystemImpl implements OrderSystem {
     private AtomicLong q2Counter = new AtomicLong(0L);
     private AtomicLong q3Counter = new AtomicLong(0L);
     private AtomicLong q4Counter = new AtomicLong(0L);
-	private AtomicBoolean waitForConstruct = new AtomicBoolean(true);
 
+//    public static AtomicBoolean waitForConstruct = new AtomicBoolean(true);
+    public static AtomicLong waitForConstruct = new AtomicLong(0L);
 	static List<String> buyerfiles = null;
 	static List<String> goodfiles = null;
 	static List<String> orderfiles = null;
@@ -492,7 +489,6 @@ public class OrderSystemImpl implements OrderSystem {
 		long endTime = System.currentTimeMillis();
 		rowCache = ConcurrentCache.getInstance();	// 这时候再开启rowCache
 		System.out.println("construct time:" + (endTime - startTime) / 1000);
-		waitForConstruct.set(false);
 	}
 
 	/**
@@ -732,10 +728,19 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             QueryOrderThread t = new QueryOrderThread(this,orderId, keys);
-			while (waitForConstruct.get()) {
-				// DO NOTHING. WAIT FOR CONSTRUCTION
-				System.out.println("Q1 Waiting for construction");
-			}
+            while (true) {
+                if (waitForConstruct.get() < RaceConfig.handleThreadNumber) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    break;
+                }
+                // DO NOTHING. WAIT FOR CONSTRUCTION
+//				System.out.println("Q4 Waiting for construction");
+            }
             Future<ResultImpl> future = queryExe.submit(t);
             try {
                 result = future.get();
@@ -743,7 +748,7 @@ public class OrderSystemImpl implements OrderSystem {
                 q1Counter.getAndIncrement();
                 long costTime = System.currentTimeMillis() - before;
                 q1Sum.addAndGet(costTime);
-                System.out.println("Done query1: " + queryCounter.get() + ", Cost: " + costTime + "ms");
+//                System.out.println("Done query1: " + queryCounter.get() + ", Cost: " + costTime + "ms");
                 System.out.println("Until now, done query1 " + q1Counter.get() + " average cost time: " + q1Sum.get() / q1Counter.get());
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -772,10 +777,20 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             QueryOrderByBuyerThread t = new QueryOrderByBuyerThread(this, startTime, endTime, buyerid);
-			while (waitForConstruct.get()) {
-				// DO NOTHING. WAIT FOR CONSTRUCTION
-				System.out.println("Q2 Waiting for construction");
-			}
+            while (true) {
+                if (waitForConstruct.get() < RaceConfig.handleThreadNumber) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    System.out.println("Begin execution");
+                    break;
+                }
+                // DO NOTHING. WAIT FOR CONSTRUCTION
+//				System.out.println("Q4 Waiting for construction");
+            }
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
@@ -813,10 +828,19 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             QueryOrdersBySalerThread t = new QueryOrdersBySalerThread(this,salerid, goodid, keys);
-			while (waitForConstruct.get()) {
-				// DO NOTHING. WAIT FOR CONSTRUCTION
-				System.out.println("Q3 Waiting for construction");
-			}
+            while (true) {
+                if (waitForConstruct.get() < RaceConfig.handleThreadNumber) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    break;
+                }
+                // DO NOTHING. WAIT FOR CONSTRUCTION
+//				System.out.println("Q4 Waiting for construction");
+            }
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
@@ -854,9 +878,18 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             SumOrdersByGoodThread t = new SumOrdersByGoodThread(this,goodid, key);
-			while (waitForConstruct.get()) {
+			while (true) {
+                if (waitForConstruct.get() < RaceConfig.handleThreadNumber) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    break;
+                }
 				// DO NOTHING. WAIT FOR CONSTRUCTION
-				System.out.println("Q4 Waiting for construction");
+//				System.out.println("Q4 Waiting for construction");
 			}
             Future<KeyValueImpl> future = queryExe.submit(t);
             try {

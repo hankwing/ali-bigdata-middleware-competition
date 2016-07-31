@@ -1,11 +1,7 @@
 package com.alibaba.middleware.handlefile;
 
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -16,6 +12,7 @@ import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
+import com.alibaba.middleware.threads.ConsutrctionTimerThread;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 
 /**
@@ -26,9 +23,9 @@ import com.alibaba.middleware.tools.FilePathWithIndex;
  */
 public class ConstructSystem {
 
-	
+	public static CountDownLatch lastCountDownLatch;
 	private OrderSystemImpl systemImpl = null;
-	
+
 	class BuyerRun implements Runnable {
 		CountDownLatch countDownLatch;
 		List<String> files;
@@ -94,12 +91,13 @@ public class ConstructSystem {
 			if( !files.isEmpty()) {
 				OrderHandler orderHandler = new OrderHandler(systemImpl, threadIndex, countDownLatch);
 				orderHandler.HandleOrderFiles(files);
+				OrderSystemImpl.waitForConstruct.getAndIncrement();
 			}
 			else {
 				for( int i = 0; i< 3; i++) {
 					countDownLatch.countDown();
 				}
-				
+				OrderSystemImpl.waitForConstruct.getAndIncrement();
 			}
 			//countDownLatch.countDown();
 		}
@@ -122,6 +120,9 @@ public class ConstructSystem {
 			Collection<String> goodfiles, Collection<String> orderfiles,
 			Collection<String> storeFolders, int threadNum) {
 		long startTime = System.currentTimeMillis();
+		ConsutrctionTimerThread timerThread = new ConsutrctionTimerThread();
+		Timer timer = new Timer(true);
+		timer.schedule(timerThread, 3500L * 1000L);
 
 		CountDownLatch countDownLatch;
 		try {
@@ -152,16 +153,15 @@ public class ConstructSystem {
 
 			System.out.println("good time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
-			countDownLatch = new CountDownLatch(threadNum * 3);
+			lastCountDownLatch = new CountDownLatch(threadNum * 3);
 			for (int i = 0; i < threadNum; i++) {
 				List<String> files = getGroupFiles(orderfiles, i, threadNum);
-				new Thread(new OrderRun(countDownLatch, files, i)).start();
+				new Thread(new OrderRun(lastCountDownLatch, files, i)).start();
 			}
-			countDownLatch.await();
+			lastCountDownLatch.await();
 
 			System.out.println("order time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
-
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
