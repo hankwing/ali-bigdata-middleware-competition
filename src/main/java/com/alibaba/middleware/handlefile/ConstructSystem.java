@@ -125,7 +125,9 @@ public class ConstructSystem {
 			Collection<String> storeFolders, int threadNum) {
 		long startTime = System.currentTimeMillis();
 
+		// 规定时间不返回  就强制返回  然后后台
 		CountDownLatch countDownLatch;
+		
 		try {
 			// 处理buyer表
 			countDownLatch = new CountDownLatch(threadNum);
