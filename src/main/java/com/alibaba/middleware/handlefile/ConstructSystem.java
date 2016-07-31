@@ -137,6 +137,7 @@ public class ConstructSystem {
 			
 			System.out.println("the first cache remaining:" + 
 					ByteDirectMemory.getInstance().getPosition(DirectMemoryType.BuyerIdSegment));
+
 			// 处理good表
 			countDownLatch = new CountDownLatch(threadNum);
 			for (int i = 0; i < threadNum; i++) {
@@ -144,11 +145,11 @@ public class ConstructSystem {
 				new Thread(new GoodRun(countDownLatch, files, i)).start();
 			}
 			countDownLatch.await();
-
 			System.out.println("the first cache remaining:" + 
 					ByteDirectMemory.getInstance().getPosition(DirectMemoryType.GoodIdSegment));
 			
 			// 处理order表  要传前面两个小表索引的引用进去
+
 			System.out.println("good time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
 			countDownLatch = new CountDownLatch(threadNum * 3);

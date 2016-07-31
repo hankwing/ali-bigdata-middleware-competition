@@ -25,10 +25,10 @@ import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
-import com.ning.compress.lzf.LZFEncoder;
 
 /***
  * 商品信息表处理：
@@ -57,11 +57,13 @@ public class GoodHandler{
 	CountDownLatch latch = null;
 	private ConcurrentCache rowCache = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
+	private OrderSystemImpl system = null;
 
 	public double MEG = Math.pow(1024, 2);
 	List<String> smallFiles = new ArrayList<String>();
 
 	public GoodHandler(OrderSystemImpl systemImpl ,int threadIndex,CountDownLatch latch) {
+		this.system = systemImpl;
 		rowCache = ConcurrentCache.getInstance();
 		this.latch = latch;
 		this.goodAttrList = systemImpl.goodAttrList;
@@ -189,9 +191,10 @@ public class GoodHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							System.out.println("create good index:" + diskFileName);
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
-							goodIdHashTable = new DiskHashTable<BytesKey,byte[]>(
+							goodIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
 									diskFileName + RaceConfig.goodIndexFileSuffix, byte[].class,
 									DirectMemoryType.GoodIdSegment);
+
 						}
 						else {
 							// 保存当前goodId的索引  并写入索引List
@@ -204,9 +207,10 @@ public class GoodHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							System.out.println("create good index:" + diskFileName);
 							fileIndex = goodIndexMapping.addDataFileName(indexFileName);
-							goodIdHashTable = new DiskHashTable<BytesKey,byte[]>(
+							goodIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
 									diskFileName + RaceConfig.goodIndexFileSuffix, byte[].class,
 									DirectMemoryType.GoodIdSegment);
+
 
 						}
 					}

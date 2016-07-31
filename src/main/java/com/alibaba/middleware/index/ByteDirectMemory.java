@@ -9,8 +9,8 @@ import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 public class ByteDirectMemory {
 
 	//private ByteBuffer orderIdBuffer;
-	private ByteBuffer orderBuyerBuffer;
-	private ByteBuffer orderGoodBuffer;
+	public ByteBuffer orderBuyerBuffer;
+	public ByteBuffer orderGoodBuffer;
 	//private ReentrantReadWriteLock mainSegLock = new ReentrantReadWriteLock();
 	private ReentrantReadWriteLock orderBuyerSegLock = new ReentrantReadWriteLock();
 	private ReentrantReadWriteLock orderGoodSegLock = new ReentrantReadWriteLock();
@@ -138,7 +138,7 @@ public class ByteDirectMemory {
 			orderBuyerSegLock.writeLock().lock();
 			
 			orderBuyerBuffer.position(orderBuyerSegOffset);
-			if( orderBuyerBuffer.remaining() < byteArray.length + 
+			if( orderBuyerBuffer.remaining() < byteArray.length + RaceConfig.int_size +
 					RaceConfig.compressed_remaining_bytes_length) {
 				// 说明空间不够了
 				System.out.println("orderBuyerBuffer direct memory have no space!");
@@ -157,7 +157,7 @@ public class ByteDirectMemory {
 		case GoodIdSegment:
 			orderGoodSegLock.writeLock().lock();
 			orderGoodBuffer.position(orderGoodSegOffset);
-			if( orderGoodBuffer.remaining() < byteArray.length + 
+			if( orderGoodBuffer.remaining() < byteArray.length + RaceConfig.int_size +
 					RaceConfig.compressed_remaining_bytes_length) {
 				// 说明空间不够了
 				System.out.println("orderGoodBuffer direct memory have no space!");
@@ -262,7 +262,11 @@ public class ByteDirectMemory {
 		case GoodIdSegment:
 			orderGoodSegLock.writeLock().lock();
 			orderGoodBuffer.position( position);
-			content = new byte[orderGoodBuffer.getInt()];
+			int a = orderGoodBuffer.getInt();
+			if( a < 0) {
+				System.out.println("negative");
+			}
+			content = new byte[a];
 			orderGoodBuffer.get(content);
 			orderGoodSegLock.writeLock().unlock();
 			break;
@@ -304,5 +308,25 @@ public class ByteDirectMemory {
 		//orderIdBuffer.clear();
 		orderGoodBuffer.clear();
 		orderBuyerBuffer.clear();
+	}
+	
+	public void clearOneSegment(DirectMemoryType memoryType) {
+		switch( memoryType) {
+		case BuyerIdSegment:
+			orderBuyerSegLock.writeLock().lock();
+			orderBuyerBuffer.clear();
+			orderBuyerSegIsFull = false;
+			orderBuyerSegOffset = 0;
+			orderBuyerSegLock.writeLock().unlock();
+			break;
+		case GoodIdSegment:
+			orderGoodSegLock.writeLock().lock();
+			orderGoodBuffer.clear();
+			orderGoodSegIsFull = false;
+			orderGoodSegOffset = 0;
+			orderGoodSegLock.writeLock().unlock();
+			break;
+			
+		}
 	}
 }

@@ -41,6 +41,26 @@ public class HashBucket<K,T> implements Serializable{
 				new ComparableKeys(String.valueOf(bucketKey).length() + 1));
 	}
 	
+	/**
+	 * 将buyer和good表的所有索引值的标志位置0
+	 */
+	public void resetAllValuesSigns() {
+		try{
+			for( Map<K,T> map : keyToAddress.values()) {
+				for( T bytes : map.values()) {
+					// 标志位置0
+					((byte[]) bytes)[0] = 0;
+				}
+			}
+			if( nextBucket != null) {
+				nextBucket.resetAllValuesSigns();
+			}
+		} catch( Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
 	public List<Map<K, T>> getAllValues(String newBucketKey) {
 		
 		List<Map< K, T>> allValues = new ArrayList<Map<K, T>>();

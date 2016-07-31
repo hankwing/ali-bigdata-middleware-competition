@@ -33,14 +33,10 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.GZIPOutputStream;
-
-import org.xerial.snappy.Snappy;
-
 import com.alibaba.middleware.cache.ConcurrentCache;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.IdIndexType;
-import com.alibaba.middleware.conf.RaceConfig.IndexType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.ComparableKeys;
 import com.alibaba.middleware.index.DiskHashTable;
@@ -59,7 +55,18 @@ import com.alibaba.middleware.tools.RecordsUtils;
 public class Test {
 
 	public static void main(String[] args) {
-
+		
+		
+		int a = 255;
+		
+		byte b = ByteUtils.getByteFromInt(a);
+		
+		int c = ByteUtils.getIntFromByte(b);
+		
+		System.out.println(b);
+		
+		System.out.println(c);
+		
 		/*
 		 * String line = "orderid:xxxxx\tbuyerid:1234567"; int location =
 		 * line.indexOf("buyerid"); int endLocation = line.indexOf("\t",
@@ -139,7 +146,101 @@ public class Test {
 		 * startTime)); } catch (FileNotFoundException e) { // TODO
 		 * Auto-generated catch block e.printStackTrace(); }
 		 */
-
+		/*String line = "orderid:xxxxx\tbuyerid:1234567";
+		int location = line.indexOf("buyerid");
+		int endLocation = line.indexOf("\t", location);
+		String subLine = line.substring(location + "buyerid".length() + 1,endLocation != -1? endLocation:line.length() );
+		System.out.println(subLine);*/
+		/*ByteBuffer buffer = ByteBuffer.allocate(12);
+		buffer.putInt(0);
+		buffer.putLong(201238912);
+		
+		ByteBuffer decodedBuffer = ByteBuffer.wrap(buffer.array());
+		System.out.println("int:" + decodedBuffer.getInt()+ " long:" + decodedBuffer.getLong());
+		
+		ConcurrentCache cache = ConcurrentCache.getInstance();
+		
+		cache.putInCache(buffer.array(), "hehe:hehe", TableName.OrderTable);
+		
+		ByteBuffer buffer2 = ByteBuffer.allocate(12);
+		buffer2.putInt(0);
+		buffer2.putLong(201238912);
+		
+		Row row = cache.getFromCache(buffer2.array(), TableName.OrderTable);
+		
+		System.out.println(row);*/
+		
+		
+		/*List<Map<Integer, byte[]>> bucketAddressList = new ArrayList<Map<Integer, byte[]>>(); // 桶对应的物理地址
+		for(int i = 0; i< 500; i++) {
+			ConcurrentHashMap<Integer,byte[]>  bucketList= new ConcurrentHashMap<Integer, byte[]>();
+			for( int j = 0; j < 1000000; j++) {
+				ByteBuffer longValue = ByteBuffer.allocate(12);
+				longValue.putInt(j);
+				longValue.putLong(new Long(j));
+				bucketList.put(i, longValue.array());
+			}
+			bucketAddressList.add(bucketList);
+			
+		}
+		
+		int a = 0;*/
+		
+		/*List<RandomAccessFile> files = new ArrayList<RandomAccessFile>();
+		 String line = null;
+		 long offset = 0;
+		 long mStartTime = System.currentTimeMillis();
+		 DiskHashTable<Integer, List<Long>> buyerIdHashTable = new DiskHashTable<Integer,List<Long>>(
+					"temp" + RaceConfig.buyerIndexFileSuffix ,"temp", Long.class);
+		 DiskHashTable<Integer, List<Long>> dHashTable = new DiskHashTable<Integer,List<Long>>(
+					"temp" + RaceConfig.buyerIndexFileSuffix ,"temp", Long.class);
+		 HashMap<Integer,Long> map = new HashMap<Integer,Long>();
+		 HashMap<Integer,Long> map2 = new HashMap<Integer,Long>();
+		 HashMap<Integer,Long> map3 = new HashMap<Integer,Long>();
+		try {
+			
+			
+			offset = 0;
+			while( offset < 10000) {
+				RandomAccessFile reader = new RandomAccessFile("benchmark/order_records.txt","r");
+				files.add(reader);
+				offset ++;
+				long id = 0;
+				
+			}
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		long mEndTime = System.currentTimeMillis();
+		//long offset2 = map.get(0);
+		System.out.println("test2:" + (mEndTime - mStartTime) );*/
+		
+		
+		
+		
+		
+		/* long startTime = System.currentTimeMillis();
+		 RandomAccessFile file;
+		try {
+			file = new RandomAccessFile("folder1/buyer_0","r");
+			offset = 0;
+			 line = RecordsUtils.getStringFromFile(file, offset);
+			 while( line != null ) {
+				 offset = 8000000;
+				 line = RecordsUtils.getStringFromFile(file, offset);
+			 }
+			 long endTime = System.currentTimeMillis();
+			 System.out.println("test1:" + (endTime - startTime));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+		
 		/*
 		 * TreeMap<String, HashMap<String, Long>> treeMap = new TreeMap<String,
 		 * HashMap<String,Long>>(new ComparableKeys(2));

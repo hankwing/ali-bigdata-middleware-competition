@@ -22,9 +22,9 @@ import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
-import com.ning.compress.lzf.LZFEncoder;
 
 /***
  * 卖家信息处理
@@ -55,8 +55,10 @@ public class BuyerHandler{
 	ConcurrentCache rowCache = null;
 	ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList = null;
 	List<String> smallFiles = new ArrayList<String>();
+	private OrderSystemImpl system = null;
 	
 	public BuyerHandler( OrderSystemImpl systemImpl, int threadIndex, CountDownLatch latch) {
+		this.system = systemImpl;
 		rowCache = ConcurrentCache.getInstance();
 		this.latch = latch;
 		this.buyerAttrList = systemImpl.buyerAttrList;
@@ -193,7 +195,7 @@ public class BuyerHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							System.out.println("create buyer index:" + diskFileName);
-							buyerIdHashTable = new DiskHashTable<BytesKey,byte[]>(
+							buyerIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
 									diskFileName + RaceConfig.buyerIndexFileSuffix, byte[].class,
 									DirectMemoryType.BuyerIdSegment);
 
@@ -208,10 +210,9 @@ public class BuyerHandler{
 									+ indexFileName.replace("/", "_").replace("//", "_");
 							fileIndex = buyerIndexMapping.addDataFileName(indexFileName);
 							System.out.println("create buyer index:" + diskFileName);
-							buyerIdHashTable = new DiskHashTable<BytesKey,byte[]>(
+							buyerIdHashTable = new DiskHashTable<BytesKey,byte[]>(system,
 									diskFileName + RaceConfig.buyerIndexFileSuffix, byte[].class,
 									DirectMemoryType.BuyerIdSegment);
-
 
 						}
 					}

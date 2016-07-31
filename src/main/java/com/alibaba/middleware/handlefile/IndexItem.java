@@ -12,7 +12,7 @@ public class IndexItem {
 	//Row rowData = null;
 	byte[] encodedOffset = null;
 
-	public IndexItem(String indexFileName,int dataSerialNumber ,String recordsData, long offset) {
+	public IndexItem(String indexFileName, int dataSerialNumber ,String recordsData, long offset) {
 		this.indexFileName = indexFileName;
 		this.dataSerialNumber = dataSerialNumber;
 		this.recordsData = recordsData;

@@ -22,13 +22,12 @@ import com.alibaba.middleware.cache.BucketCachePool;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
+import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.race.OrderSystemImpl;
+import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.RecordsUtils;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
-import com.ning.compress.lzf.LZFDecoder;
-import com.ning.compress.lzf.LZFEncoder;
-import com.ning.compress.lzf.LZFException;
 
 /**
  * 索引元信息 保存桶数、记录数、使用的位数、桶对应的物理地址等信息 缓冲区管理调用的writeBucket是线程安全的
@@ -74,10 +73,21 @@ public class DiskHashTable<K,T> implements Serializable {
 	public boolean isbuilding = false;						// 先不测这个
 	private DirectMemoryType memoryType = null;
 	private KryoContext kryoContext = null;
+	
+	public DataFileMapping buyerOrderIdListMapping = null;						// 保存orderid列表的所有文件的名字
+	public DataFileMapping goodOrderIdListMapping = null;						// 保存orderid列表的所有文件的名字
+	
+	public int orderListFileSeriNum = 0;								// 根据这个创建不同的orderidlist文件
+	public String orderListFilePrex = null;
+	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerOrderIdListHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodOrderIdListHandlersList = null;
 	//private FIFOCache bucketWriterWhenBuilding = null;
 
 	//private transient LinkedBlockingQueue<HashBucket<K,T>> bucketQueue = null;
 	//private transient Timer timer  = null;
+	
+	
 
 	public DiskHashTable() {
 
@@ -90,7 +100,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	 * @param dataFilePath
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public DiskHashTable( String bucketFilePath, 
+	public DiskHashTable( OrderSystemImpl system, String bucketFilePath, 
 			Class<?> classType, DirectMemoryType memoryType){
 		this.memoryType = memoryType;
 		usedBits = 1;
@@ -111,6 +121,17 @@ public class DiskHashTable<K,T> implements Serializable {
 		// 注册将桶写到direct memory的监控线程
 		//bucketWriterWhenBuilding = new FIFOCache(this);
 		//FIFOCacheMonitorThread.getInstance().registerFIFIOCache(bucketWriterWhenBuilding);
+		this.buyerOrderIdListMapping = system.buyerOrderIdListMapping;
+		this.goodOrderIdListMapping = system.goodOrderIdListMapping;
+		this.buyerOrderIdListHandlersList = system.buyerOrderIdListHandlersList;
+		this.goodOrderIdListHandlersList = system.goodOrderIdListHandlersList;
+		// 保存orderid列表的文件名前缀
+		if( memoryType == DirectMemoryType.BuyerIdSegment ) {
+			orderListFilePrex = RaceConfig.storeFolders[1] + RaceConfig.buyerOrderListFileNamePrex;
+		}
+		else if( memoryType == DirectMemoryType.GoodIdSegment ) {
+			orderListFilePrex = RaceConfig.storeFolders[2] + RaceConfig.goodOrderListFileNamePrex;
+		}
 		
 		kryoContext = KryoContext.newKryoContextFactory(new KryoClassRegistrator(){
 		    @Override
@@ -171,7 +192,6 @@ public class DiskHashTable<K,T> implements Serializable {
 					lastOffset += objectByte.length;
 					lastObjectSize = objectByte.length;		// 存最后一个桶的size
 					bufferedFout.write(objectByte);
-					bucketList.remove(key);					// 及时移走
 				}
 				
 			}
@@ -415,6 +435,7 @@ public class DiskHashTable<K,T> implements Serializable {
 	
 	/**
 	 * 将小表商品id和买家id的索引的key值对应的byte列表加上offset值
+	 * 每个offset的形式为：byte 代表当前是否有内容在直接内存 + byte 代表本身的文件索引号 + int 文件里的偏移地址 + byte + offset +...
 	 * @param key
 	 * @param offset
 	 */
@@ -433,33 +454,37 @@ public class DiskHashTable<K,T> implements Serializable {
 			List<byte[]> offsets = bucket.getAddress(getBucketStringIndex( key), key);
 			for( byte[] offset : offsets) {
 				// 根据offset得到在直接内存里的地址  如果没有 则新创建一个直接内存地址  并加入appendOffset进去
+				boolean isNeedDump = false;
 				ByteBuffer byteBuffer = ByteBuffer.wrap(offset);
-				if( offset.length > RaceConfig.compressed_min_bytes_length) {
-					// 说明已经有直接内存地址了
-					byteBuffer.position(RaceConfig.compressed_min_bytes_length);
-					int pos = byteBuffer.getInt();				// 得到直接内存地址
-					byte[] originByte = null;
-					try {
-						originByte = LZFDecoder.decode(directMemory.get(pos, memoryType));
-					} catch (LZFException e) {
-						// TODO Auto-generated catch block
-						originByte = offset;
-					}
+				if( byteBuffer.get() == RaceConfig.byte_has_direct_memory_pos) {
+					// 说明后面已经带有地址信息了  拿到最后一个地址信息 代表直接内存的pos
+					byte[] byteAndOffset = ByteUtils.splitBytesAndGetLast(offset);
+					ByteBuffer byteAndPosBuffer = ByteBuffer.wrap(byteAndOffset);
+					byteAndPosBuffer.position(RaceConfig.byte_size);
+
+					int pos = byteAndPosBuffer.getInt();				// 得到直接内存地址
+					byte[] originByte = directMemory.get(pos, memoryType);
+
 					ByteBuffer buffer = ByteBuffer.allocate(originByte.length + 
 							RaceConfig.compressed_min_bytes_length);
 					// 下面将appendOffset加入byte[]数组里 并压缩存储
 					buffer.put(originByte);
 					buffer.put(appendOffset);
 					// 排序
-					byte[] compressBytes = LZFEncoder.encode(buffer.array());
+					byte[] compressBytes = buffer.array();
 					if( compressBytes.length > RaceConfig.compressed_remaining_bytes_length) {
 						// 说明超过了最大预留空间  需要写到尾部去
 						int newPos = directMemory.putAndAppendRemaining(compressBytes, memoryType);
 						if( newPos != -1) {
 							// 重新写入成功
-							byteBuffer.position(RaceConfig.compressed_min_bytes_length);
+							byteBuffer.position(offset.length - RaceConfig.compressed_min_bytes_length
+									+ RaceConfig.byte_size);
 							byteBuffer.putInt(newPos);
 							bucket.replaceAddress(getBucketStringIndex( key), key,(T)byteBuffer.array());
+						}
+						else {
+							// 说明空间不够了 需要dump
+							isNeedDump = true;
 						}
 					}
 					else {
@@ -471,24 +496,90 @@ public class DiskHashTable<K,T> implements Serializable {
 				else {
 					// 说明还没有创建直接内存地址  给它创建一个
 					ByteBuffer newBuffer = ByteBuffer.allocate(appendOffset.length);
-					// 第一个放进去的无所谓压不压缩了
+					//
+					//newBuffer.put(sign);
 					newBuffer.put(appendOffset);
-					int pos = directMemory.putAndAppendRemaining(
-							LZFEncoder.encode(newBuffer.array()), memoryType);
+					int pos = directMemory.putAndAppendRemaining(newBuffer.array(), memoryType);
 					if( pos != -1) {
 						// 说明写成功了  将地址放到offset的后面
-						byteBuffer = ByteBuffer.allocate(RaceConfig.compressed_min_bytes_length + 4).
-							put(offset).putInt(pos);
+						offset[0] = 1;				// 这里代表的是这个offset在直接内存里存在值了
+						byte sign = ByteUtils.getByteFromInt(orderListFileSeriNum); //  sign代表文件下标
+						byteBuffer = ByteBuffer.allocate(offset.length + 
+								RaceConfig.byte_size + RaceConfig.int_size).
+							put(offset).put(sign).putInt(pos);
 						bucket.replaceAddress(getBucketStringIndex(key), key, (T)byteBuffer.array());
 					}
+					else {
+						// 说明direct memory内存不够了  将direct memory dump到文件里去 但写完后还要调用一次putoffset
+						isNeedDump = true;
+					}
 				}
-				
+				if( isNeedDump ) {
+					dumpDirectMemory();
+					// 写完文件后  还要再调用一次putoffset  将本次没有添加进去的内容添加到新的directmemory中
+					putOffset(key, appendOffset);
+				}
 			}
 			
 		} else {
 			// need to read from file
 			System.out.println("read error!");
 		}
+	}
+	
+	/**
+	 * 将direct memory里的内容全部dump到文件里去
+	 */
+	public void dumpDirectMemory() {
+		// 需要将direct memory dump到文件
+		String orderListFileName = orderListFilePrex + orderListFileSeriNum;
+		// 添加入orderListMapping
+		try{
+			// 写入文件里去
+			RecordsUtils.writeToFile(orderListFileName, directMemory, memoryType );
+			// 加入文件句柄
+			switch( memoryType) {
+			 case BuyerIdSegment:
+				 orderListFileSeriNum = buyerOrderIdListMapping.addDataFileName(orderListFileName);
+				 // 建立文件句柄
+				LinkedBlockingQueue<RandomAccessFile> handlersQueue = 
+						buyerOrderIdListHandlersList.get(orderListFileSeriNum);
+				if( handlersQueue == null) {
+					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+					buyerOrderIdListHandlersList.put(orderListFileSeriNum, handlersQueue);
+				}
+				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+					handlersQueue.add(new RandomAccessFile(orderListFileName, "r"));
+				}
+				orderListFileSeriNum ++;
+				 break;
+			 case GoodIdSegment:
+				 orderListFileSeriNum = goodOrderIdListMapping.addDataFileName(orderListFileName);
+				// 建立文件句柄
+				LinkedBlockingQueue<RandomAccessFile> goodHandlersQueue = 
+						goodOrderIdListHandlersList.get(orderListFileSeriNum);
+				if( goodHandlersQueue == null) {
+					goodHandlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+					goodOrderIdListHandlersList.put(orderListFileSeriNum, goodHandlersQueue);
+				}
+				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+					goodHandlersQueue.add(new RandomAccessFile(orderListFileName, "r"));
+				}
+				orderListFileSeriNum ++;
+				break;
+			 default:
+				 break;
+			 }
+			
+			// 写完之后  要将所有值的标志位置0 代表其在直接内存里没有值了
+			for( HashBucket<K,T> bucket : bucketList.values()) {
+				bucket.resetAllValuesSigns();
+			}
+			
+		} catch( Exception e) {
+			e.printStackTrace();
+		}
+
 	}
 
 	/**
@@ -536,7 +627,18 @@ public class DiskHashTable<K,T> implements Serializable {
 		}
 
 		if (bucket != null) {			
-			bucket.putAddress(getBucketStringIndex(key), key, value);
+			byte sign = 0;
+			if( memoryType != DirectMemoryType.NoWrite) {
+				// 对于buyer和good表的索引  需要写入一个标志位
+				ByteBuffer signedBuffer = ByteBuffer.allocate(
+						RaceConfig.byte_size + value.length).put(sign).put(value);
+				bucket.putAddress(getBucketStringIndex(key), key, signedBuffer.array());
+			}
+			else {
+				// order表索引就直接写就可以了
+				bucket.putAddress(getBucketStringIndex(key), key, value);
+			}
+			
 			memRecordNum ++;
 			if (++recordNum / bucketNum > RaceConfig.hash_index_block_capacity * 0.8) {
 				// 增加新桶

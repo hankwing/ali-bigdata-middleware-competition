@@ -20,8 +20,6 @@ import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
-import com.ning.compress.lzf.LZFDecoder;
-import com.ning.compress.lzf.LZFEncoder;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -67,13 +65,12 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 				// 如果要找的key包括了good的key，则不用每次都join 直接将相关字符串加到结果的后面就行
 				goodString = system.getRowStringById(TableName.GoodTable, goodid);
 			}
-			
 			for (byte[] encodedOffset : offsets) {
 				// 放入缓冲区
 				// 这里要将offset解析成文件下标+offset的形式才能用
 				ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-				int fileIndex = buffer.getShort();
-				long offset = buffer.getLong();
+				int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+				long offset = ByteUtils.getLongOffset(buffer.getInt());
 
 				String diskData = RecordsUtils.getStringFromFile(
 					system.orderHandlersList.get(fileIndex), offset,
@@ -159,7 +156,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 		}
 		if(!isCached){*/
 			// 在索引里找offsetlist
-			List<byte[]> offsets = null;
+			List<byte[]> offsets = new ArrayList<byte[]>();
 			for( int filePathIndex : system.goodIndexMapping.getAllFileIndexs()) {
 				DiskHashTable<BytesKey, byte[]> hashTable = 
 						system.goodIdIndexList.get(filePathIndex);
@@ -168,10 +165,20 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 				if( encodedOffsets.size() != 0) {
 					// 找到了
 					ByteBuffer tempBuffer = ByteBuffer.wrap(encodedOffsets.get(0));
-					tempBuffer.position(RaceConfig.compressed_min_bytes_length);
-					byte[] offsetsEncoded = directMemory.get(tempBuffer.getInt(), 
-							DirectMemoryType.GoodIdSegment);
-					offsets = ByteUtils.splitBytes(LZFDecoder.decode(offsetsEncoded));
+					tempBuffer.position(RaceConfig.byte_size + RaceConfig.compressed_min_bytes_length);
+					// 得到所有的byte+offset对
+					List<byte[]> byteAndInts = ByteUtils.splitByteBuffer(tempBuffer);
+					for( byte[] byteAndOffset : byteAndInts) {
+						// 从orderid列表中取出相应的数据
+						ByteBuffer buffer = ByteBuffer.wrap(byteAndOffset);
+						// 从byte解析出int			
+						int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+						long offset = buffer.getInt();
+						
+						// 从文件里读出内容
+						offsets.addAll(RecordsUtils.getOrderIdListsFromFile(
+								system.goodOrderIdListHandlersList.get(fileIndex), offset));
+					}
 			
 				}
 			}

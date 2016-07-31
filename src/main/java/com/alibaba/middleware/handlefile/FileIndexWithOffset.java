@@ -7,10 +7,10 @@ package com.alibaba.middleware.handlefile;
  */
 public class FileIndexWithOffset {
 
-	public short fileIndex = 0;
+	public byte fileIndex = 0;
 	public long offset = 0;
 	
-	public FileIndexWithOffset( short fileIndex, long offset) {
+	public FileIndexWithOffset( byte fileIndex, long offset) {
 		this.fileIndex = fileIndex;
 		this.offset = offset;
 	}

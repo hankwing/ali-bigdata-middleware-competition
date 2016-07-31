@@ -28,6 +28,7 @@ import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
+import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
@@ -216,26 +217,26 @@ public class OrderHandler {
 									String diskFileName = RaceConfig.storeFolders[threadIndex]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									System.out.println("create order index:" + diskFileName);
-									idHashTable = new DiskHashTable<Long, byte[]>(
+									idHashTable = new DiskHashTable<Long, byte[]>(system,
 											diskFileName
 											+ RaceConfig.orderIndexFileSuffix
 											, byte[].class, DirectMemoryType.NoWrite);
 									break;
 								case OrderBuyerId:
-									String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
+									/*String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
 											+ indexFileName.replace("/", "_").replace("//", "_");
-									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
+									idHashTable = new DiskHashTable<Integer, List<byte[]>>(system,
 											orderBuyerDiskFileName
 											+ RaceConfig.orderBuyerIdIndexFileSuffix, List.class
-											,DirectMemoryType.BuyerIdSegment);
+											,DirectMemoryType.BuyerIdSegment);*/
 									break;
 								case OrderGoodId:
-									String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
+									/*String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
 											+ indexFileName.replace("/", "_").replace("//", "_");
-									idHashTable = new DiskHashTable<Integer, List<byte[]>>(
+									idHashTable = new DiskHashTable<Integer, List<byte[]>>(system,
 											orderGoodDiskFileName
 											+ RaceConfig.orderGoodIdIndexFileSuffix, List.class,
-											DirectMemoryType.GoodIdSegment);
+											DirectMemoryType.GoodIdSegment);*/
 									break;
 								}
 
@@ -249,7 +250,7 @@ public class OrderHandler {
 									String diskFileName = RaceConfig.storeFolders[threadIndex]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									System.out.println("create order index:" + diskFileName);
-									idHashTable = new DiskHashTable<Long, byte[]>(
+									idHashTable = new DiskHashTable<Long, byte[]>(system,
 											diskFileName
 											+ RaceConfig.orderIndexFileSuffix,byte[].class,
 											DirectMemoryType.NoWrite);
@@ -319,10 +320,17 @@ public class OrderHandler {
 							break;
 						case OrderBuyerId:
 							// 这里可以选择把两个小表索引写到直接内存里面去
+							// 把direct memory剩余的内容dump到文件里去
+							for( DiskHashTable modifyTable : buyerIdIndexList.values()) {
+								modifyTable.dumpDirectMemory();
+							}
 							//idHashTable.writeAllBuckets();
 							//orderBuyerIdIndexList.put(fileIndex, idHashTable);
 							break;
 						case OrderGoodId:
+							for( DiskHashTable modifyTable : goodIdIndexList.values()) {
+								modifyTable.dumpDirectMemory();
+							}
 //							idHashTable.writeAllBuckets();
 //							orderGoodIdIndexList.put(fileIndex,idHashTable);
 							break;

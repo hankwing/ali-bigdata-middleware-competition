@@ -12,6 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
+import com.alibaba.middleware.tools.ByteUtils;
 
 /***
  * 融合小文件，生成一定数目记录的文件，根据合并后的文件创建索引

@@ -24,9 +24,6 @@ import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
 import com.alibaba.middleware.tools.RecordsUtils;
-import com.ning.compress.lzf.LZFDecoder;
-import com.ning.compress.lzf.LZFEncoder;
-import com.ning.compress.lzf.LZFException;
 
 /**
  * @author Jelly
@@ -100,7 +97,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 //		}
 //		if (!isCached) {
 			// 说明没有找到 则在索引里找offsets
-		List<byte[]> offsetList = null;
+		List<byte[]> offsetList = new ArrayList<byte[]>();
 			for( int filePathIndex : system.goodIndexMapping.getAllFileIndexs()) {
 				DiskHashTable<BytesKey, byte[]> hashTable = 
 						system.goodIdIndexList.get(filePathIndex);
@@ -108,18 +105,21 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 				List<byte[]> encodedOffsets = hashTable.get(surrId);
 				if( encodedOffsets.size() != 0) {
 					// 找到了
-					try {
-						ByteBuffer tempBuffer = ByteBuffer.wrap(encodedOffsets.get(0));
-						tempBuffer.position(RaceConfig.compressed_min_bytes_length);
-						byte[] offsetsEncoded = directMemory.get(tempBuffer.getInt(), 
-								DirectMemoryType.GoodIdSegment);
-						offsetList = ByteUtils.splitBytes(LZFDecoder.decode(offsetsEncoded));
-
-					} catch (LZFException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+					ByteBuffer tempBuffer = ByteBuffer.wrap(encodedOffsets.get(0));
+					tempBuffer.position(RaceConfig.byte_size + RaceConfig.compressed_min_bytes_length);
+					// 得到所有的byte+offset对
+					List<byte[]> byteAndInts = ByteUtils.splitByteBuffer(tempBuffer);
+					for( byte[] byteAndOffset : byteAndInts) {
+						// 从orderid列表中取出相应的数据
+						ByteBuffer buffer = ByteBuffer.wrap(byteAndOffset);
+						// 从byte解析出int			
+						int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+						long offset = buffer.getInt();
+						
+						// 从文件里读出内容
+						offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
+								system.goodOrderIdListHandlersList.get(fileIndex), offset));
 					}
-					// 解析出offset列表
 					
 				}
 			}
@@ -138,8 +138,8 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 			// Row row = rowCache.getFromCache(new BytesKey(encodedOffset),
 			// TableName.OrderTable);
 			ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-			int fileIndex = buffer.getShort();
-			long offset = buffer.getLong();
+			int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+			long offset = ByteUtils.getLongOffset(buffer.getInt());
 
 			// if(row != null) {
 			// row =
