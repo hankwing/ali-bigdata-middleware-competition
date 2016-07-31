@@ -18,6 +18,7 @@ public class RaceConfig implements Serializable{
 	public static int directMemorySize = (int) (1700* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
 	
 	public static int handleThreadNumber = 1;				// 读写线程数
+	public static int waitNum = 3;							// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
 	public static int fileHandleNumber = 5;				// 每个文件预先打开的句柄数
 	
@@ -55,8 +56,8 @@ public class RaceConfig implements Serializable{
 	
 	//public static int compressed_max_bytes_lenth = 1024;		// 商品表和买家表索引对应的orderid列表压缩后最大空间
 	public static int compressed_min_bytes_length = 5;		// orderid索引对应的orderid列表压缩后最大空间
-	public static int buyer_remaining_bytes_length = 500;
-	public static int good_remaining_bytes_length = 250;
+	public static int buyer_remaining_bytes_length = 300;
+	public static int good_remaining_bytes_length = 150;
 	
 	//public static int advanced_remaining_bytes_length = 500;
 

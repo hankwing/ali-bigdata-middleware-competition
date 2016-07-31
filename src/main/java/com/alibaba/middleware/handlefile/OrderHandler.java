@@ -336,7 +336,7 @@ public class OrderHandler {
 							break;
 						}
 						BucketCachePool.getInstance().removeAllBucket();
-
+						system.waitForConstruct.getAndIncrement();
 						countDownLatch.countDown();
 						break;
 

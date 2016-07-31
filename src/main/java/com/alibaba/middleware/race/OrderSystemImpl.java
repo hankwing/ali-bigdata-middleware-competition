@@ -108,7 +108,7 @@ public class OrderSystemImpl implements OrderSystem {
     private AtomicLong q4Counter = new AtomicLong(0L);
 
 //    public static AtomicBoolean waitForConstruct = new AtomicBoolean(true);
-    public static AtomicLong waitForConstruct = new AtomicLong(0L);
+    public AtomicLong waitForConstruct = new AtomicLong(0L);
 	static List<String> buyerfiles = null;
 	static List<String> goodfiles = null;
 	static List<String> orderfiles = null;
@@ -139,9 +139,9 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-//					buyerfiles.add("prerun_data/buyer.0.0");
-//					buyerfiles.add("prerun_data/buyer.1.1");
-					buyerfiles.add("benchmark/buyer_records_1.txt");
+					buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");
+//					buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
@@ -157,20 +157,20 @@ public class OrderSystemImpl implements OrderSystem {
 	
 					orderfiles = new ArrayList<String>();
 
-					orderfiles.add("disk1/orders/order.0.0");
-					orderfiles.add("disk2/orders/order.0.3");
-					orderfiles.add("disk3/orders/order.1.1");
-					orderfiles.add("disk1/orders/order.2.2");
+//					orderfiles.add("disk1/orders/order.0.0");
+//					orderfiles.add("disk2/orders/order.0.3");
+//					orderfiles.add("disk3/orders/order.1.1");
+//					orderfiles.add("disk1/orders/order.2.2");
 
 //					for( int i = 0; i <30; i++) {
 //						orderfiles.add("benchmark/order_records_"+ i + ".txt");
 //					}
 					
-//					orderfiles.add("benchmark/order_records_2.txt");
-//					orderfiles.add("benchmark/order_records_4.txt");
-//					orderfiles.add("benchmark/order_records_5.txt");
-//					orderfiles.add("benchmark/order_records_6.txt");
-//					orderfiles.add("benchmark/order_records_9.txt");
+					orderfiles.add("benchmark/order_records_2.txt");
+					orderfiles.add("benchmark/order_records_4.txt");
+					orderfiles.add("benchmark/order_records_5.txt");
+					orderfiles.add("benchmark/order_records_6.txt");
+					orderfiles.add("benchmark/order_records_9.txt");
 //					orderfiles.add("benchmark/order_records_12.txt");
 //					orderfiles.add("benchmark/order_records_18.txt");
 //					orderfiles.add("benchmark/order_records_19.txt");
@@ -728,7 +728,7 @@ public class OrderSystemImpl implements OrderSystem {
             long before = System.currentTimeMillis();
             QueryOrderThread t = new QueryOrderThread(this,orderId, keys);
             while (true) {
-                if (waitForConstruct.get() < RaceConfig.handleThreadNumber) {
+                if (waitForConstruct.get() < RaceConfig.waitNum) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
@@ -777,7 +777,7 @@ public class OrderSystemImpl implements OrderSystem {
             long before = System.currentTimeMillis();
             QueryOrderByBuyerThread t = new QueryOrderByBuyerThread(this, startTime, endTime, buyerid);
             while (true) {
-                if (waitForConstruct.get() < RaceConfig.handleThreadNumber) {
+                if (waitForConstruct.get() < RaceConfig.waitNum) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
@@ -828,7 +828,7 @@ public class OrderSystemImpl implements OrderSystem {
             long before = System.currentTimeMillis();
             QueryOrdersBySalerThread t = new QueryOrdersBySalerThread(this,salerid, goodid, keys);
             while (true) {
-                if (waitForConstruct.get() < RaceConfig.handleThreadNumber) {
+                if (waitForConstruct.get() < RaceConfig.waitNum) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
@@ -878,7 +878,7 @@ public class OrderSystemImpl implements OrderSystem {
             long before = System.currentTimeMillis();
             SumOrdersByGoodThread t = new SumOrdersByGoodThread(this,goodid, key);
 			while (true) {
-                if (waitForConstruct.get() < RaceConfig.handleThreadNumber) {
+                if (waitForConstruct.get() < RaceConfig.waitNum) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {

@@ -88,14 +88,13 @@ public class ConstructSystem {
 			if( !files.isEmpty()) {
 				OrderHandler orderHandler = new OrderHandler(systemImpl, threadIndex, countDownLatch);
 				orderHandler.HandleOrderFiles(files);
-				OrderSystemImpl.waitForConstruct.getAndIncrement();
 			}
 			else {
 				for( int i = 0; i< 3; i++) {
 					countDownLatch.countDown();
 				}
-				OrderSystemImpl.waitForConstruct.getAndIncrement();
 			}
+			
 			//countDownLatch.countDown();
 		}
 	}
@@ -119,7 +118,7 @@ public class ConstructSystem {
 		long startTime = System.currentTimeMillis();
 		ConsutrctionTimerThread timerThread = new ConsutrctionTimerThread();
 		Timer timer = new Timer(true);
-		timer.schedule(timerThread, 3500 * 1000);
+		timer.schedule(timerThread, 10 * 1000);
 
 		// 规定时间不返回  就强制返回  然后后台
 		CountDownLatch countDownLatch;
