@@ -145,10 +145,10 @@ public class OrderSystemImpl implements OrderSystem {
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-//					goodfiles.add("prerun_data/good.0.0");
-//					goodfiles.add("prerun_data/good.1.1");
-//					goodfiles.add("prerun_data/good.2.2");
-					goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.0.0");
+					goodfiles.add("prerun_data/good.1.1");
+					goodfiles.add("prerun_data/good.2.2");
+//					goodfiles.add("benchmark/good_records_1.txt");
 //					goodfiles.add("benchmark/good_records_2.txt");
 //					goodfiles.add("benchmark/good_records_3.txt");
 //					goodfiles.add("benchmark/good_records_4.txt");
@@ -157,30 +157,30 @@ public class OrderSystemImpl implements OrderSystem {
 	
 					orderfiles = new ArrayList<String>();
 
-//					orderfiles.add("disk1/orders/order.0.0");
-//					orderfiles.add("disk2/orders/order.0.3");
-//					orderfiles.add("disk3/orders/order.1.1");
-//					orderfiles.add("disk1/orders/order.2.2");
+					orderfiles.add("disk1/orders/order.0.0");
+					orderfiles.add("disk2/orders/order.0.3");
+					orderfiles.add("disk3/orders/order.1.1");
+					orderfiles.add("disk1/orders/order.2.2");
 
 //					for( int i = 0; i <30; i++) {
 //						orderfiles.add("benchmark/order_records_"+ i + ".txt");
 //					}
 					
-					orderfiles.add("benchmark/order_records_2.txt");
-					orderfiles.add("benchmark/order_records_4.txt");
-					orderfiles.add("benchmark/order_records_5.txt");
-					orderfiles.add("benchmark/order_records_6.txt");
-					orderfiles.add("benchmark/order_records_9.txt");
-					orderfiles.add("benchmark/order_records_12.txt");
-					orderfiles.add("benchmark/order_records_18.txt");
-					orderfiles.add("benchmark/order_records_19.txt");
-					orderfiles.add("benchmark/order_records_20.txt");
-					orderfiles.add("benchmark/order_records_23.txt");
-					orderfiles.add("benchmark/order_records_24.txt");
-					orderfiles.add("benchmark/order_records_26.txt");
-					orderfiles.add("benchmark/order_records_27.txt");
-					orderfiles.add("benchmark/order_records_28.txt");
-					orderfiles.add("benchmark/order_records_29.txt");
+//					orderfiles.add("benchmark/order_records_2.txt");
+//					orderfiles.add("benchmark/order_records_4.txt");
+//					orderfiles.add("benchmark/order_records_5.txt");
+//					orderfiles.add("benchmark/order_records_6.txt");
+//					orderfiles.add("benchmark/order_records_9.txt");
+//					orderfiles.add("benchmark/order_records_12.txt");
+//					orderfiles.add("benchmark/order_records_18.txt");
+//					orderfiles.add("benchmark/order_records_19.txt");
+//					orderfiles.add("benchmark/order_records_20.txt");
+//					orderfiles.add("benchmark/order_records_23.txt");
+//					orderfiles.add("benchmark/order_records_24.txt");
+//					orderfiles.add("benchmark/order_records_26.txt");
+//					orderfiles.add("benchmark/order_records_27.txt");
+//					orderfiles.add("benchmark/order_records_28.txt");
+//					orderfiles.add("benchmark/order_records_29.txt");
 //	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符

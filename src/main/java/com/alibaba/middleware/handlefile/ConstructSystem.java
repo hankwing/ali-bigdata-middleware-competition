@@ -1,21 +1,16 @@
 package com.alibaba.middleware.handlefile;
 
-import java.io.RandomAccessFile;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Timer;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
-import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.index.ByteDirectMemory;
-import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.threads.ConsutrctionTimerThread;
-import com.alibaba.middleware.tools.FilePathWithIndex;
-import com.alibaba.middleware.tools.RecordsUtils;
 
 /**
  * 读三种类型的文件 写入小文件 并由单独线程处理数据
@@ -124,12 +119,13 @@ public class ConstructSystem {
 		long startTime = System.currentTimeMillis();
 		ConsutrctionTimerThread timerThread = new ConsutrctionTimerThread();
 		Timer timer = new Timer(true);
-		timer.schedule(timerThread, 3500L * 1000L);
+		timer.schedule(timerThread, 3500 * 1000);
 
 		// 规定时间不返回  就强制返回  然后后台
 		CountDownLatch countDownLatch;
 		
 		try {
+			lastCountDownLatch = new CountDownLatch(threadNum * 3);
 			// 处理buyer表
 			countDownLatch = new CountDownLatch(threadNum);
 			for (int i = 0; i < threadNum; i++) {
@@ -157,7 +153,7 @@ public class ConstructSystem {
 
 			System.out.println("good time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
-			lastCountDownLatch = new CountDownLatch(threadNum * 3);
+			
 			for (int i = 0; i < threadNum; i++) {
 				List<String> files = getGroupFiles(orderfiles, i, threadNum);
 				new Thread(new OrderRun(lastCountDownLatch, files, i)).start();
@@ -166,9 +162,9 @@ public class ConstructSystem {
 
 			System.out.println("order time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
-
+			timer.cancel();
 			// 下面开始往direct memory里orderid的索引数据 加快查询
-			ByteDirectMemory directMemory = ByteDirectMemory.getInstance();
+			/*ByteDirectMemory directMemory = ByteDirectMemory.getInstance();
 			directMemory.clearOneSegment(DirectMemoryType.BuyerIdSegment);
 			directMemory.clearOneSegment(DirectMemoryType.GoodIdSegment);
 			
@@ -183,7 +179,7 @@ public class ConstructSystem {
 						continue;
 					}
 				}
-			}
+			}*/
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
