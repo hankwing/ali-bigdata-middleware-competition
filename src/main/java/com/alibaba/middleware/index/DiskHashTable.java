@@ -676,7 +676,6 @@ public class DiskHashTable<K> implements Serializable {
 		} else {
 			bucket = readBucket((int) (bucketIndex % Math.pow(10,
 					usedBits - 1)));
-
 		}
 
 		if (bucket != null) {			

@@ -9,6 +9,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -48,7 +49,7 @@ public class GoodHandler{
 	int dataFileSerialNumber;
 
 	BufferedReader reader;
-	LinkedBlockingQueue<IndexItem> indexQueue;
+	ArrayBlockingQueue<IndexItem> indexQueue;
 
 	//DiskHashTable<String, Long> goodIdSurrKeyIndex = null;
 	ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> goodIdIndexList = null;
@@ -71,8 +72,8 @@ public class GoodHandler{
 		this.goodIdIndexList = systemImpl.goodIdIndexList;
 		this.threadIndex = threadIndex;
 		this.goodHandlersList = systemImpl.goodHandlersList;
-		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
-		goodfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}},
+		indexQueue = new ArrayBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
+		goodfile = new WriteFile(new ArrayList<ArrayBlockingQueue<IndexItem>>(){{add(indexQueue);}},
 				RaceConfig.storeFolders[threadIndex], 
 				RaceConfig.goodFileNamePrex, (int) RaceConfig.maxIndexFileCapacity);
 
@@ -127,7 +128,7 @@ public class GoodHandler{
 
 		smallFileWriter = new SmallFileWriter(
 				goodHandlersList, goodFileMapping,
-				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
+				new ArrayList<ArrayBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.goodFileNamePrex);
 			//开始处理小文件

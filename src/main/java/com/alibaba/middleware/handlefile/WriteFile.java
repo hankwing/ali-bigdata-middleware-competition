@@ -3,6 +3,7 @@ package com.alibaba.middleware.handlefile;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig.TableName;
@@ -35,7 +36,7 @@ public class WriteFile {
 	private String indexFilePrefix;
 	private String indexFileName;
 	private int indexFileNumber;
-	private List<LinkedBlockingQueue<IndexItem>> indexQueues = null;
+	private List<ArrayBlockingQueue<IndexItem>> indexQueues = null;
 	//private SimpleCache rowCache = null;
 	private int nextLineByteLength = 0;
 
@@ -46,7 +47,7 @@ public class WriteFile {
 	 * @param name	文件名
 	 * @param maxLines	每个小文件最大记录数
 	 */	
-	public WriteFile(List<LinkedBlockingQueue<IndexItem>> indexQueues, 
+	public WriteFile(List<ArrayBlockingQueue<IndexItem>> indexQueues, 
 			String path, String name, long maxLines) {
 		this.offset = 0;
 		this.count = 0;
@@ -100,7 +101,7 @@ public class WriteFile {
 			}
 			// 将数据放入队列中 供建索引的线程建索引
 			IndexItem sendItem = new IndexItem(indexFileName, dataFileSerialNumber,line, offset);
-			for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
+			for(ArrayBlockingQueue<IndexItem> queue : indexQueues) {
 				queue.put(sendItem);
 			}
 			

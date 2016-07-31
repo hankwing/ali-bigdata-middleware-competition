@@ -9,6 +9,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -47,7 +48,7 @@ public class BuyerHandler{
 	int dataFileSerialNumber;
 	BufferedReader reader;
 	//阻塞队列用于存索引
-	LinkedBlockingQueue<IndexItem> indexQueue;
+	ArrayBlockingQueue<IndexItem> indexQueue;
 	//DiskHashTable<String, Long> buyerIdSurrKeyIndex = null;
 	ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> buyerIdIndexList = null;
 	HashSet<String> buyerAttrList = null;
@@ -67,8 +68,8 @@ public class BuyerHandler{
 		this.buyerIdIndexList = systemImpl.buyerIdIndexList;
 		this.threadIndex = threadIndex;
 		this.buyerHandlersList = systemImpl.buyerHandlersList;
-		indexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
-		buyerfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
+		indexQueue = new ArrayBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
+		buyerfile = new WriteFile(new ArrayList<ArrayBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.buyerFileNamePrex, (int) RaceConfig.maxIndexFileCapacity);
 		
@@ -132,7 +133,7 @@ public class BuyerHandler{
 		// 下面开始处理小文件
 		smallFileWriter = new SmallFileWriter(
 				buyerHandlersList, buyerFileMapping,
-				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
+				new ArrayList<ArrayBlockingQueue<IndexItem>>(){{add(indexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.buyerFileNamePrex);
 		//处理小文件，合并

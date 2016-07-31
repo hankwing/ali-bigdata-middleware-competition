@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -46,9 +47,9 @@ public class OrderHandler {
 	int dataFileSerialNumber;
 
 	BufferedReader reader;
-	LinkedBlockingQueue<IndexItem> orderIndexQueue;
-	LinkedBlockingQueue<IndexItem> orderBuyerIndexQueue;
-	LinkedBlockingQueue<IndexItem> orderGoodIndexQueue;
+	ArrayBlockingQueue<IndexItem> orderIndexQueue;
+	ArrayBlockingQueue<IndexItem> orderBuyerIndexQueue;
+	ArrayBlockingQueue<IndexItem> orderGoodIndexQueue;
 	ConcurrentHashMap<Integer, DiskHashTable<Long>> orderIdIndexList = null;
 	//ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderBuyerIdIndexList = null;
 	//ConcurrentHashMap<Integer, DiskHashTable<Integer, List<byte[]>>> orderGoodIdIndexList = null;
@@ -81,10 +82,10 @@ public class OrderHandler {
 		//this.buyerIdSurrKeyIndex = buyerIdSurrKeyIndex;
 		//this.goodIdSurrKeyIndex = goodIdSurrKeyIndex;
 		threadIndex = thread;
-		orderIndexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
-		orderBuyerIndexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
-		orderGoodIndexQueue = new LinkedBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
-		orderfile = new WriteFile(new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
+		orderIndexQueue = new ArrayBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
+		orderBuyerIndexQueue = new ArrayBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
+		orderGoodIndexQueue = new ArrayBlockingQueue<IndexItem>(RaceConfig.QueueNumber);
+		orderfile = new WriteFile(new ArrayList<ArrayBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
 		add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}},
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.orderFileNamePrex,
@@ -148,7 +149,7 @@ public class OrderHandler {
 
 		smallFileWriter = new SmallFileWriter(
 				orderHandlersList, orderFileMapping,
-				new ArrayList<LinkedBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
+				new ArrayList<ArrayBlockingQueue<IndexItem>>(){{add(orderIndexQueue);
 				add(orderBuyerIndexQueue); add(orderGoodIndexQueue);}}, 
 				RaceConfig.storeFolders[threadIndex],
 				RaceConfig.orderFileNamePrex);
@@ -189,9 +190,9 @@ public class OrderHandler {
 		boolean isEnd = false;
 		//HashSet<String> tempAttrList = new HashSet<String>();
 		IndexType indexType = null;
-		LinkedBlockingQueue<IndexItem> indexQueue;
+		ArrayBlockingQueue<IndexItem> indexQueue;
 
-		public OrderIndexConstructor( IndexType indexType, LinkedBlockingQueue<IndexItem> indexQueue) {
+		public OrderIndexConstructor( IndexType indexType, ArrayBlockingQueue<IndexItem> indexQueue) {
 			this.indexType = indexType;
 			this.indexQueue = indexQueue;
 		}
@@ -223,6 +224,7 @@ public class OrderHandler {
 											+ RaceConfig.orderIndexFileSuffix,DirectMemoryType.NoWrite);
 									break;
 								case OrderBuyerId:
+									idHashTable = buyerIdIndexList.get(0);
 									/*String orderBuyerDiskFileName = RaceConfig.storeFolders[(threadIndex + 1) % 3]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(system,
@@ -231,6 +233,7 @@ public class OrderHandler {
 											,DirectMemoryType.BuyerIdSegment);*/
 									break;
 								case OrderGoodId:
+									idHashTable = goodIdIndexList.get(0);
 									/*String orderGoodDiskFileName = RaceConfig.storeFolders[(threadIndex + 2) % 3]
 											+ indexFileName.replace("/", "_").replace("//", "_");
 									idHashTable = new DiskHashTable<Integer, List<byte[]>>(system,
@@ -296,18 +299,18 @@ public class OrderHandler {
 							// 这里要从小表索引里拿出数据来修改
 							String buyerId = RecordsUtils.getValueFromLine(
 									record.getRecordsData(),RaceConfig.buyerId);
-							for( DiskHashTable modifyTable : buyerIdIndexList.values()) {
-								modifyTable.putOffset( new BytesKey(buyerId.getBytes()),record.getOffset());
-							}
+							//for( DiskHashTable modifyTable : buyerIdIndexList.values()) {
+							idHashTable.putOffset( new BytesKey(buyerId.getBytes()),record.getOffset());
+							//}
 							//idHashTable.put(buyerIdHashCode, record.getOffset());
 
 							break;
 						case OrderGoodId:
 							String goodId = RecordsUtils.getValueFromLine(
 									record.getRecordsData(),RaceConfig.goodId);
-							for( DiskHashTable modifyTable : goodIdIndexList.values()) {
-								modifyTable.putOffset( new BytesKey(goodId.getBytes()),record.getOffset());
-							}
+							//for( DiskHashTable modifyTable : goodIdIndexList.values()) {
+							idHashTable.putOffset( new BytesKey(goodId.getBytes()),record.getOffset());
+							//}
 							//idHashTable.put(goodIdHashCode, record.getOffset());
 							break;
 						}

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -42,7 +43,7 @@ public class SmallFileWriter {
 	private ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList;
 
 	//建立索引
-	private List<LinkedBlockingQueue<IndexItem>> indexQueues = null;
+	private List<ArrayBlockingQueue<IndexItem>> indexQueues = null;
 	private int nextLineByteLength = 0;
 	
 	//数据文件映射
@@ -54,7 +55,7 @@ public class SmallFileWriter {
 	public SmallFileWriter(
 			ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList,
 			DataFileMapping dataFileMapping,
-			List<LinkedBlockingQueue<IndexItem>> indexQueues, 
+			List<ArrayBlockingQueue<IndexItem>> indexQueues, 
 			String path,String name) {
 		this.offset = 0;
 		this.count = 0;
@@ -139,7 +140,7 @@ public class SmallFileWriter {
 			if (line!=null) {
 				writer.write(line+"\n");
 				IndexItem sendItem = new IndexItem(dataFileName, dataFileSerialNumber, line, offset);
-				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
+				for(ArrayBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
 						queue.put(sendItem);
 					} catch (InterruptedException e) {
@@ -154,7 +155,7 @@ public class SmallFileWriter {
 				writer.flush();
 				writer.close();
 				// 还需要发送结束IndexItem
-				for(LinkedBlockingQueue<IndexItem> queue : indexQueues) {
+				for(ArrayBlockingQueue<IndexItem> queue : indexQueues) {
 					try {
 						queue.put(new IndexItem(null, dataFileSerialNumber, line, offset));
 					} catch (InterruptedException e) {
