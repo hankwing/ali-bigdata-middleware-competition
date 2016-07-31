@@ -9,6 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.index.ByteDirectMemory;
+import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.threads.ConsutrctionTimerThread;
 
@@ -162,13 +163,14 @@ public class ConstructSystem {
 			System.out.println("order time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
 			timer.cancel();
+			
 			// 下面开始往direct memory里orderid的索引数据 加快查询
-			/*ByteDirectMemory directMemory = ByteDirectMemory.getInstance();
+			ByteDirectMemory directMemory = ByteDirectMemory.getInstance();
 			directMemory.clearOneSegment(DirectMemoryType.BuyerIdSegment);
 			directMemory.clearOneSegment(DirectMemoryType.GoodIdSegment);
 			
 			for (int filePathIndex : systemImpl.orderIndexMapping.getAllFileIndexs()) {
-				DiskHashTable<Long, byte[]> hashTable = systemImpl.orderIdIndexList.get(filePathIndex);
+				DiskHashTable<Long> hashTable = systemImpl.orderIdIndexList.get(filePathIndex);
 				if( hashTable != null) {
 					// 往缓冲区里放
 					DirectMemoryType directMemoryType = filePathIndex % 1 == 0? 
@@ -178,7 +180,7 @@ public class ConstructSystem {
 						continue;
 					}
 				}
-			}*/
+			}
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
