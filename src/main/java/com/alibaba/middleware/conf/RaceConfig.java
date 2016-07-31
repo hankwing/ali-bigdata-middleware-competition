@@ -15,11 +15,11 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreshold = (long) (200* Math.pow(1024, 2));
 	
-	public static int directMemorySize = (int) (1500* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
+	public static int directMemorySize = (int) (1700* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
 	
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
-	public static int fileHandleNumber = 8;				// 每个文件预先打开的句柄数
+	public static int fileHandleNumber = 5;				// 每个文件预先打开的句柄数
 	
 	//public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	//public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
@@ -47,7 +47,7 @@ public class RaceConfig implements Serializable{
 	 * Cache pool config
 	 * */
     public static int cacheInitCapacity = 5000;                    // ConcurrentCache中每个队列的初始大小
-    public static int cacheMaxCapacity = 100000;                    // ConcurrentCache中每个队列的最大大小
+    public static int cacheMaxCapacity = 40000;                    // ConcurrentCache中每个队列的最大大小
     public static int bucketCapcity = 100;                        // 桶CACHE的最大上限
     public static int bucketRemoveNum = 10;                        // 每次桶的CACHE达到上限后删除一定量的桶
 
@@ -55,8 +55,8 @@ public class RaceConfig implements Serializable{
 	
 	//public static int compressed_max_bytes_lenth = 1024;		// 商品表和买家表索引对应的orderid列表压缩后最大空间
 	public static int compressed_min_bytes_length = 5;		// orderid索引对应的orderid列表压缩后最大空间
-	public static int buyer_remaining_bytes_length = 200;
-	public static int good_remaining_bytes_length = 375;
+	public static int buyer_remaining_bytes_length = 500;
+	public static int good_remaining_bytes_length = 250;
 	
 	//public static int advanced_remaining_bytes_length = 500;
 

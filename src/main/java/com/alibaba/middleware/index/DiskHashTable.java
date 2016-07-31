@@ -155,6 +155,60 @@ public class DiskHashTable<K,T> implements Serializable {
 		bucketList = new ConcurrentHashMap<Integer, HashBucket<K,T>>();
 		//bucketCachePool = BucketCachePool.getInstance();
 	}
+	
+	/**
+	 * 构建完成后  将一部分桶写到直接内存  可加快查询
+	 * 返回值：此DiskHashTable被写入dataFile的哪个位置，方便之后调用
+	 */
+	public boolean writeAllBucketsToDirectMemory( DirectMemoryType writeType) {
+		memoryType = writeType;
+		for (int key = 0; key < bucketNum ; key ++) {
+			//bucketList.remove(bucketKey);
+			if( !directMemory.isFull(memoryType) ) {
+				// 有空间  试图往里写 但不一定写成功
+				try {
+					if(bucketAddressList == null) {
+						bucketAddressList = getHashDiskTable(bucketAddressOffset);
+					}
+
+					RandomAccessFile reader = bucketReaderPool.take();
+					reader.seek(bucketAddressList.get(key));
+					
+					byte[] bucketByteArray = null;
+					if( key == bucketNum -1 ) {
+						bucketByteArray = new byte[lastObjectSize];
+					}
+					else {
+						bucketByteArray = new byte[(int) (bucketAddressList.get(key + 1) - 
+	                           bucketAddressList.get(key))];
+					}
+					reader.read(bucketByteArray);
+					int newPos = directMemory.put(bucketByteArray, memoryType);
+					if( newPos != -1 ) {
+						//如果写入成功 则放入另一个地址队列 不能覆盖文件的物理地址队列
+						bucketDirectMemList.put(key, (long) newPos);
+					}
+					else {
+						return false;
+					}
+					bucketReaderPool.put(reader);
+					
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			else {
+				return false;
+			}
+
+		}
+		
+		return true;
+	}
 
 	/**
 	 * 索引建立完之后 将所有桶数据写到外存 不调用单个写桶的函数 因为会频繁调用flush影响效率 
@@ -474,8 +528,8 @@ public class DiskHashTable<K,T> implements Serializable {
 					byte[] compressBytes = buffer.array();
 					
 					if( compressBytes.length > (memoryType == DirectMemoryType.BuyerIdSegment ?
-							RaceConfig.buyer_remaining_bytes_length :
-								RaceConfig.good_remaining_bytes_length)) {
+							directMemory.orderBuyerPreserveSpace :
+								directMemory.orderGoodPreserveSpace)) {
 						// 说明超过了最大预留空间  需要写到尾部去
 						int newPos = directMemory.putAndAppendRemaining(compressBytes, memoryType);
 						if( newPos != -1) {
