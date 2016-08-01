@@ -183,6 +183,8 @@ public class OrderEventHandler implements EventHandler<RecordsEvent>{
 			countDownLatch.countDown();
 
 		}
+		// 处理完
+		event = null;
 	}
 
 }

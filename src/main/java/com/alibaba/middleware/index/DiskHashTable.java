@@ -11,6 +11,7 @@ import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -80,8 +81,15 @@ public class DiskHashTable<K> implements Serializable {
 	public int orderListFileSeriNum = 0;								// 根据这个创建不同的orderidlist文件
 	public String orderListFilePrex = null;
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerOrderIdListHandlersList = null;
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodOrderIdListHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+		buyerOrderIdListHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+		goodOrderIdListHandlersList = null;
+	
+	// 用于解析Byte数组的ByteBuffer
+//	public ByteBuffer offSetByteBuffer = null;
+//	public ByteBuffer offSetByteBuffer = null;
+//	public ByteBuffer offSetByteBuffer = null;
 	//private FIFOCache bucketWriterWhenBuilding = null;
 
 	//private transient LinkedBlockingQueue<HashBucket<K,T>> bucketQueue = null;
@@ -506,34 +514,49 @@ public class DiskHashTable<K> implements Serializable {
 			byte[] offset = bucket.getAddress(getBucketStringIndex( key), key);
 			if( offset != null) {
 				boolean isNeedDump = false;
-				ByteBuffer byteBuffer = ByteBuffer.wrap(offset);
-				if( byteBuffer.get() == RaceConfig.byte_has_direct_memory_pos) {
+				
+				if( offset[0] == RaceConfig.byte_has_direct_memory_pos) {
 					// 说明后面已经带有地址信息了  拿到最后一个地址信息 代表直接内存的pos
-					byte[] byteAndOffset = ByteUtils.splitBytesAndGetLast(offset);
-					ByteBuffer byteAndPosBuffer = ByteBuffer.wrap(byteAndOffset);
-					byteAndPosBuffer.position(RaceConfig.byte_size);
+					byte[] byteAndOffset = Arrays.copyOfRange(offset, offset.length
+							- RaceConfig.compressed_min_bytes_length + RaceConfig.byte_size ,
+							offset.length);
+					//ByteBuffer byteAndPosBuffer = ByteBuffer.wrap(byteAndOffset);
+					//byteAndPosBuffer.position(RaceConfig.byte_size);
 
-					int pos = byteAndPosBuffer.getInt();				// 得到直接内存地址
+					int pos = ByteUtils.byteArrayToLeInt(byteAndOffset);				// 得到直接内存地址
 					byte[] originByte = directMemory.get(pos, memoryType);
 
-					ByteBuffer buffer = ByteBuffer.allocate(originByte.length + 
+					// 将新地址放到后面去
+					byte[] combined = new byte[originByte.length + appendOffset.length];
+
+					System.arraycopy(originByte,0,combined,0,originByte.length);
+					System.arraycopy(appendOffset,0, combined,originByte.length,appendOffset.length);
+					
+					/*ByteBuffer buffer = ByteBuffer.allocate(originByte.length + 
 							RaceConfig.compressed_min_bytes_length);
 					// 下面将appendOffset加入byte[]数组里 并压缩存储
 					buffer.put(originByte);
 					buffer.put(appendOffset);
-					byte[] compressBytes = buffer.array();
-					
-					if( compressBytes.length > (memoryType == DirectMemoryType.BuyerIdSegment ?
+					byte[] compressBytes = buffer.array();*/
+					if( combined.length > (memoryType == DirectMemoryType.BuyerIdSegment ?
 							directMemory.orderBuyerPreserveSpace :
 								directMemory.orderGoodPreserveSpace)) {
 						// 说明超过了最大预留空间  需要写到尾部去
-						int newPos = directMemory.putAndAppendRemaining(compressBytes, memoryType);
+						int newPos = directMemory.putAndAppendRemaining(combined, memoryType);
 						if( newPos != -1) {
 							// 重新写入成功
-							byteBuffer.position(offset.length - RaceConfig.compressed_min_bytes_length
+							/*byte[] intValue = ByteUtils.leIntToByteArray(newPos);
+							System.arraycopy(intValue ,0, offset, offset.length - 
+									RaceConfig.compressed_min_bytes_length
+									+ RaceConfig.byte_size,intValue.length);*/
+							ByteBuffer byteBuffer = ByteBuffer.wrap(offset);
+							byteBuffer.position(offset.length - 
+									RaceConfig.compressed_min_bytes_length
 									+ RaceConfig.byte_size);
 							byteBuffer.putInt(newPos);
 							bucket.replaceAddress(getBucketStringIndex( key), key,byteBuffer.array());
+							
+							//bucket.replaceAddress(getBucketStringIndex( key), key, offset);
 						}
 						else {
 							// 说明空间不够了 需要dump
@@ -542,25 +565,30 @@ public class DiskHashTable<K> implements Serializable {
 					}
 					else {
 						// 重新写入直接内存中
-						directMemory.putInSprcificPos(compressBytes,pos, memoryType);
+						directMemory.putInSprcificPos(combined,pos, memoryType);
 					}
 					//bucket.replaceAddress(getBucketStringIndex(key), key, compressBytes);
 				}
 				else {
 					// 说明还没有创建直接内存地址  给它创建一个
-					ByteBuffer newBuffer = ByteBuffer.allocate(appendOffset.length);
+					//ByteBuffer newBuffer = ByteBuffer.allocate(appendOffset.length);
 					//
 					//newBuffer.put(sign);
-					newBuffer.put(appendOffset);
-					int pos = directMemory.putAndAppendRemaining(newBuffer.array(), memoryType);
+					//newBuffer.put(appendOffset);
+					int pos = directMemory.putAndAppendRemaining(appendOffset, memoryType);
 					if( pos != -1) {
 						// 说明写成功了  将地址放到offset的后面
 						offset[0] = 1;				// 这里代表的是这个offset在直接内存里存在值了
-						byte sign = ByteUtils.getByteFromInt(orderListFileSeriNum); //  sign代表文件下标
-						byteBuffer = ByteBuffer.allocate(offset.length + 
-								RaceConfig.byte_size + RaceConfig.int_size).
-							put(offset).put(sign).putInt(pos);
-						bucket.replaceAddress(getBucketStringIndex(key), key, byteBuffer.array());
+						byte sign = ByteUtils.getMagicByteFromInt(orderListFileSeriNum); //  sign代表文件下标
+						
+						byte[] combined = new byte[offset.length + 
+													RaceConfig.byte_size + RaceConfig.int_size];
+						System.arraycopy(offset ,0,combined, 0,offset.length);
+						combined[offset.length] = sign;
+						byte[] intValue = ByteUtils.leIntToByteArray(pos);
+						System.arraycopy(intValue ,0,combined, offset.length
+								+ RaceConfig.byte_size,intValue.length);
+						bucket.replaceAddress(getBucketStringIndex(key), key, combined);
 					}
 					else {
 						// 说明direct memory内存不够了  将direct memory dump到文件里去 但写完后还要调用一次putoffset

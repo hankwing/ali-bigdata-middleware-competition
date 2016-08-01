@@ -34,6 +34,23 @@ public class ByteUtils {
 		}
 		return list;
 	}
+	
+	public static int byteArrayToLeInt(byte[] encodedValue) {
+	    int value = (encodedValue[0] << (Byte.SIZE * 3));
+	    value |= (encodedValue[1] & 0xFF) << (Byte.SIZE * 2);
+	    value |= (encodedValue[2] & 0xFF) << (Byte.SIZE * 1);
+	    value |= (encodedValue[3] & 0xFF);
+	    return value;
+	}
+
+	public static byte[] leIntToByteArray(int value) {
+	    byte[] encodedValue = new byte[Integer.SIZE / Byte.SIZE];
+	    encodedValue[0] = (byte) (value >> Byte.SIZE * 3);
+	    encodedValue[1] = (byte) (value >> Byte.SIZE * 2);   
+	    encodedValue[2] = (byte) (value >> Byte.SIZE);   
+	    encodedValue[3] = (byte) value;
+	    return encodedValue;
+	}
 
 	/**
 	 * 解析出所有byte+int对
@@ -73,7 +90,7 @@ public class ByteUtils {
 	 */
 	public static byte[] splitBytesAndGetLast(byte[] line) {
 		return Arrays.copyOfRange(line, line.length
-				- RaceConfig.compressed_min_bytes_length, line.length);
+				- RaceConfig.compressed_min_bytes_length , line.length);
 
 	}
 
@@ -99,11 +116,11 @@ public class ByteUtils {
 		return value + 0x7fffffffl;
 	}
 
-	public static byte getByteFromInt(int value) {
+	public static byte getMagicByteFromInt(int value) {
 		return (byte) (value - 128);
 	}
 
-	public static int getIntFromByte(byte value) {
+	public static int getMagicIntFromByte(byte value) {
 		return value + 128;
 	}
 

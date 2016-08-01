@@ -191,12 +191,16 @@ public class RecordsUtils {
 	 * @return
 	 */
 	public static byte[] encodeIndex(int dataSerialNumber, long offset){
-		ByteBuffer buffer = ByteBuffer.allocate(RaceConfig.compressed_min_bytes_length);
+		byte[] buffer = new byte[RaceConfig.compressed_min_bytes_length];
+		buffer[0] = ByteUtils.getMagicByteFromInt(dataSerialNumber);
+		byte[] intByte = ByteUtils.leIntToByteArray(ByteUtils.getUnsignedInt(offset));
+		System.arraycopy(intByte ,0,buffer, RaceConfig.byte_size,intByte.length);
+		/*ByteBuffer buffer = ByteBuffer.allocate(RaceConfig.compressed_min_bytes_length);
 		//放入源数据文件编号
-		buffer.put(ByteUtils.getByteFromInt(dataSerialNumber));
+		buffer.put(ByteUtils.getMagicByteFromInt(dataSerialNumber));
 		buffer.putInt(ByteUtils.getUnsignedInt(offset));
-		//buffer.clear();
-		return buffer.array();
+		buffer.clear();*/
+		return buffer;
 	}
 	
 	/**
@@ -204,10 +208,10 @@ public class RecordsUtils {
 	 * @param dataFileMapping
 	 * @param indexBytes
 	 */
-	public static FileIndexWithOffset decodeIndex(byte[] indexBytes){
+	/*public static FileIndexWithOffset decodeIndex(byte[] indexBytes){
 		ByteBuffer buffer = ByteBuffer.wrap(indexBytes);
 		return new FileIndexWithOffset( buffer.get(), ByteUtils.getLongOffset(buffer.getInt()));
-	}
+	}*/
 	
 	/**
 	 * 得到一行数据里某个key的value 用于good和buyer表

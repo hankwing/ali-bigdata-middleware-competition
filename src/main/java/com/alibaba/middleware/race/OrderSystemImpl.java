@@ -139,16 +139,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-//					buyerfiles.add("prerun_data/buyer.0.0");
-//					buyerfiles.add("prerun_data/buyer.1.1");
-					buyerfiles.add("benchmark/buyer_records_1.txt");
+					buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");
+//					buyerfiles.add("benchmark/buyer_records_1.txt");
 					//buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-//					goodfiles.add("prerun_data/good.0.0");
-//					goodfiles.add("prerun_data/good.1.1");
-//					goodfiles.add("prerun_data/good.2.2");
-					goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.0.0");
+					goodfiles.add("prerun_data/good.1.1");
+					goodfiles.add("prerun_data/good.2.2");
+//					goodfiles.add("benchmark/good_records_1.txt");
 //					goodfiles.add("benchmark/good_records_2.txt");
 //					goodfiles.add("benchmark/good_records_3.txt");
 //					goodfiles.add("benchmark/good_records_4.txt");
@@ -157,30 +157,30 @@ public class OrderSystemImpl implements OrderSystem {
 	
 					orderfiles = new ArrayList<String>();
 
-//					orderfiles.add("disk1/orders/order.0.0");
-//					orderfiles.add("disk2/orders/order.0.3");
-//					orderfiles.add("disk3/orders/order.1.1");
-//					orderfiles.add("disk1/orders/order.2.2");
+					orderfiles.add("disk1/orders/order.0.0");
+					orderfiles.add("disk2/orders/order.0.3");
+					orderfiles.add("disk3/orders/order.1.1");
+					orderfiles.add("disk1/orders/order.2.2");
 
 //					for( int i = 0; i <30; i++) {
 //						orderfiles.add("benchmark/order_records_"+ i + ".txt");
 //					}
 					
-					orderfiles.add("benchmark/order_records_2.txt");
-					orderfiles.add("benchmark/order_records_4.txt");
-					orderfiles.add("benchmark/order_records_5.txt");
-					orderfiles.add("benchmark/order_records_6.txt");
-					orderfiles.add("benchmark/order_records_9.txt");
-					orderfiles.add("benchmark/order_records_12.txt");
-					orderfiles.add("benchmark/order_records_18.txt");
-					orderfiles.add("benchmark/order_records_19.txt");
-					orderfiles.add("benchmark/order_records_20.txt");
-					orderfiles.add("benchmark/order_records_23.txt");
-					orderfiles.add("benchmark/order_records_24.txt");
-					orderfiles.add("benchmark/order_records_26.txt");
-					orderfiles.add("benchmark/order_records_27.txt");
-					orderfiles.add("benchmark/order_records_28.txt");
-					orderfiles.add("benchmark/order_records_29.txt");
+//					orderfiles.add("benchmark/order_records_2.txt");
+//					orderfiles.add("benchmark/order_records_4.txt");
+//					orderfiles.add("benchmark/order_records_5.txt");
+//					orderfiles.add("benchmark/order_records_6.txt");
+//					orderfiles.add("benchmark/order_records_9.txt");
+//					orderfiles.add("benchmark/order_records_12.txt");
+//					orderfiles.add("benchmark/order_records_18.txt");
+//					orderfiles.add("benchmark/order_records_19.txt");
+//					orderfiles.add("benchmark/order_records_20.txt");
+//					orderfiles.add("benchmark/order_records_23.txt");
+//					orderfiles.add("benchmark/order_records_24.txt");
+//					orderfiles.add("benchmark/order_records_26.txt");
+//					orderfiles.add("benchmark/order_records_27.txt");
+//					orderfiles.add("benchmark/order_records_28.txt");
+//					orderfiles.add("benchmark/order_records_29.txt");
 //	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
@@ -580,7 +580,7 @@ public class OrderSystemImpl implements OrderSystem {
 
 				// 解码获得long型的offset
 				ByteBuffer buffer = ByteBuffer.wrap(results);
-				int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+				int dataFileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 				long offset = ByteUtils.getLongOffset(buffer.getInt());
 					// 从文件里读数据
 					String diskValue = RecordsUtils.getStringFromFile(
@@ -616,7 +616,7 @@ public class OrderSystemImpl implements OrderSystem {
 					// find the records offset
 						//解码byte数组
 					ByteBuffer buffer = ByteBuffer.wrap(results);
-					int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+					int dataFileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 					long offset = ByteUtils.getLongOffset(buffer.getInt());
 					String diskValue = RecordsUtils.getStringFromFile(
 							orderHandlersList.get(dataFileIndex),offset, tableName);
@@ -648,7 +648,7 @@ public class OrderSystemImpl implements OrderSystem {
 						// 跳过标志位
 						buffer.position(RaceConfig.byte_size);
 						// 从byte解析出int
-						int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+						int dataFileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 						long offset = ByteUtils.getLongOffset(buffer.getInt());
 						String records = RecordsUtils.getStringFromFile(
 								buyerHandlersList.get(dataFileIndex), offset, tableName);
@@ -681,7 +681,7 @@ public class OrderSystemImpl implements OrderSystem {
 						// 跳过标志位
 						buffer.position(RaceConfig.byte_size);
 						// 从byte解析出int
-						int dataFileIndex = ByteUtils.getIntFromByte(buffer.get());
+						int dataFileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 						long offset = ByteUtils.getLongOffset(buffer.getInt());
 						String records = RecordsUtils.getStringFromFile(
 								goodHandlersList.get(dataFileIndex), offset, tableName);
@@ -720,15 +720,12 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             QueryOrderThread t = new QueryOrderThread(this,orderId, keys);
-            while (true) {
-                if (waitForConstruct.get() < RaceConfig.orderTableThreadNum) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    break;
+            // 没构建完则等待一段时间
+            while (waitForConstruct.get() < RaceConfig.orderTableThreadNum) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
                 // DO NOTHING. WAIT FOR CONSTRUCTION
 //				System.out.println("Q4 Waiting for construction");
@@ -769,20 +766,18 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             QueryOrderByBuyerThread t = new QueryOrderByBuyerThread(this, startTime, endTime, buyerid);
-            while (true) {
-                if (waitForConstruct.get() < RaceConfig.orderTableThreadNum) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    System.out.println("Begin execution");
-                    break;
+            
+            while (waitForConstruct.get() < RaceConfig.orderTableThreadNum) {
+               
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
                 // DO NOTHING. WAIT FOR CONSTRUCTION
 //				System.out.println("Q4 Waiting for construction");
             }
+            
             Future<Iterator<Result>> future = queryExe.submit(t);
             try {
                 iterator = future.get();
@@ -820,15 +815,12 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             QueryOrdersBySalerThread t = new QueryOrdersBySalerThread(this,salerid, goodid, keys);
-            while (true) {
-                if (waitForConstruct.get() < RaceConfig.orderTableThreadNum) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    break;
+            
+            while (waitForConstruct.get() < RaceConfig.orderTableThreadNum) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
                 // DO NOTHING. WAIT FOR CONSTRUCTION
 //				System.out.println("Q4 Waiting for construction");
@@ -870,15 +862,12 @@ public class OrderSystemImpl implements OrderSystem {
         if (queryExe != null) {
             long before = System.currentTimeMillis();
             SumOrdersByGoodThread t = new SumOrdersByGoodThread(this,goodid, key);
-			while (true) {
-                if (waitForConstruct.get() < RaceConfig.orderTableThreadNum) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    break;
+            
+			while (waitForConstruct.get() < RaceConfig.orderTableThreadNum) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
 				// DO NOTHING. WAIT FOR CONSTRUCTION
 //				System.out.println("Q4 Waiting for construction");

@@ -13,9 +13,9 @@ public class RaceConfig implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = -4468293265402134589L;
-	public static long smallFileSizeThreshold = (long) (200* Math.pow(1024, 2));
+	public static long smallFileSizeThreshold = (long) (11* Math.pow(1024, 2));
 	
-	public static int directMemorySize = (int) (2500* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
+	public static int directMemorySize = (int) (2000* Math.pow(1024, 2));			// 每个索引可使用的directMemory大小
 	
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int orderTableThreadNum = 3;							// 读写线程数
@@ -24,7 +24,7 @@ public class RaceConfig implements Serializable{
 	
 	//public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	//public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
-	public static long maxIndexFileCapacity = 10000000;				// 一个索引最多存多少行数据
+	public static long maxIndexFileCapacity = 9000000;				// 一个索引最多存多少行数据
 	public static long threIndexFileCapacity = 1000;			// 索引建立xx条后开始向direct memory里写桶
 	public static long singleFileMaxLines = 10000000;			// 合并后的文件最大行数
 	
@@ -48,7 +48,7 @@ public class RaceConfig implements Serializable{
 	 * Cache pool config
 	 * */
     public static int cacheInitCapacity = 5000;                    // ConcurrentCache中每个队列的初始大小
-    public static int cacheMaxCapacity = 40000;                    // ConcurrentCache中每个队列的最大大小
+    public static int cacheMaxCapacity = 10000;                    // ConcurrentCache中每个队列的最大大小
     public static int bucketCapcity = 100;                        // 桶CACHE的最大上限
     public static int bucketRemoveNum = 10;                        // 每次桶的CACHE达到上限后删除一定量的桶
 

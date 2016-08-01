@@ -108,8 +108,9 @@ public class HashBucket<K> implements Serializable{
 	public byte[] getAddress(  String bucketIndex, K key) {
 
 		Map<K, byte[]> partialResult = keyToAddress.get(bucketIndex);
-		if( partialResult != null && partialResult.get(key) != null) {
-			return partialResult.get(key);
+		byte[] result = null;
+		if( partialResult != null && (result = partialResult.get(key)) != null) {
+			return result;
 		}
 		else if( nextBucket != null ){
 			return nextBucket.getAddress(bucketIndex, key);

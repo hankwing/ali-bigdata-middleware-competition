@@ -69,7 +69,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 				// 放入缓冲区
 				// 这里要将offset解析成文件下标+offset的形式才能用
 				ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
-				int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+				int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 				long offset = ByteUtils.getLongOffset(buffer.getInt());
 
 				String diskData = RecordsUtils.getStringFromFile(
@@ -172,7 +172,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						// 从orderid列表中取出相应的数据
 						ByteBuffer buffer = ByteBuffer.wrap(byteAndOffset);
 						// 从byte解析出int			
-						int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+						int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 						long offset = buffer.getInt();
 						
 						// 从文件里读出内容

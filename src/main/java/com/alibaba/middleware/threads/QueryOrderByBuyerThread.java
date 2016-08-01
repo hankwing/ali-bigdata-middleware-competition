@@ -61,7 +61,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 				// 这里要将offset解析成文件下标+offset的形式
 				ByteBuffer buffer = ByteBuffer.wrap(encodedOffset);
 				// 从byte解析出int			
-				int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+				int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 				long offset = ByteUtils.getLongOffset(buffer.getInt());
 				//Row row = rowCache.getFromCache(new BytesKey(encodedOffset), TableName.OrderTable);
 				//if(row != null) {
@@ -153,7 +153,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 					// 从orderid列表中取出相应的数据
 					ByteBuffer buffer = ByteBuffer.wrap(byteAndOffset);
 					// 从byte解析出int			
-					int fileIndex = ByteUtils.getIntFromByte(buffer.get());
+					int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 					long offset = buffer.getInt();
 					// 从文件里读出内容
 					offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(

@@ -130,9 +130,9 @@ public class ConstructSystem {
 			Collection<String> goodfiles, Collection<String> orderfiles,
 			Collection<String> storeFolders, int threadNum) {
 		long startTime = System.currentTimeMillis();
-		ConsutrctionTimerThread timerThread = new ConsutrctionTimerThread();
-		Timer timer = new Timer(true);
-		timer.schedule(timerThread, 3550 * 1000);
+		//ConsutrctionTimerThread timerThread = new ConsutrctionTimerThread();
+		//Timer timer = new Timer(true);
+		//timer.schedule(timerThread, 3550 * 1000);
 
 		// 规定时间不返回  就强制返回  然后后台
 		CountDownLatch countDownLatch;
@@ -160,11 +160,10 @@ public class ConstructSystem {
 			}
 			countDownLatch.await();
 			
-			
 			//　下面开始使用disroptor处理order表  三个生产者三个消费者
 			EventFactory<RecordsEvent> eventFactory = new IndexItemFactory();
 			ExecutorService executor = Executors.newCachedThreadPool();
-			int ringBufferSize = 1024 * 1024; // RingBuffer 大小
+			int ringBufferSize = 4096; // RingBuffer 大小
 			        
 			@SuppressWarnings("deprecation")
 			Disruptor<RecordsEvent> disruptor = new Disruptor<RecordsEvent>(eventFactory,
@@ -197,9 +196,9 @@ public class ConstructSystem {
 			
 			// 等待消费者消费完
 			lastCountDownLatch.await();
-			
+			disruptor.shutdown();
 			// 处理order表  要传前面两个小表索引的引用进去
-			timer.cancel();
+			//timer.cancel();
 			// 下面开始往direct memory里orderid的索引数据 加快查询
 			/*ByteDirectMemory directMemory = ByteDirectMemory.getInstance();
 			directMemory.clearOneSegment(DirectMemoryType.BuyerIdSegment);
