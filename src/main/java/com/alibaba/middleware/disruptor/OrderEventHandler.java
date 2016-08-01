@@ -164,16 +164,16 @@ public class OrderEventHandler implements EventHandler<RecordsEvent>{
 			case OrderBuyerId:
 				// 这里可以选择把两个小表索引写到直接内存里面去
 				// 把direct memory剩余的内容dump到文件里去
-				for( DiskHashTable modifyTable : system.buyerIdIndexList.values()) {
-					modifyTable.dumpDirectMemory();
-				}
+				//for( DiskHashTable modifyTable : system.buyerIdIndexList.values()) {
+				//	modifyTable.dumpDirectMemory();
+				//}
 				//idHashTable.writeAllBuckets();
 				//orderBuyerIdIndexList.put(fileIndex, idHashTable);
 				break;
 			case OrderGoodId:
-				for( DiskHashTable modifyTable : system.goodIdIndexList.values()) {
-					modifyTable.dumpDirectMemory();
-				}
+				//for( DiskHashTable modifyTable : system.goodIdIndexList.values()) {
+				//	modifyTable.dumpDirectMemory();
+				//}
 //				idHashTable.writeAllBuckets();
 //				orderGoodIdIndexList.put(fileIndex,idHashTable);
 				break;

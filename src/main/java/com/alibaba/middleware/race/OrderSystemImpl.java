@@ -262,7 +262,7 @@ public class OrderSystemImpl implements OrderSystem {
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
 					}
-					System.out.println("start query2" );
+//					System.out.println("start query2" );
 //					for( int i = 0; i < 8; i++) {
 //						// 启动八个线程同时查询
 //						Thread query = new Thread(new Runnable() {  
@@ -277,7 +277,7 @@ public class OrderSystemImpl implements OrderSystem {
 //										for( int i = 0; i< 2000; i++) {
 //											String buyerId = RecordsUtils.getValueFromLine(br.readLine(), RaceConfig.buyerId);
 //											buyerId = buyerId == null? UUID.randomUUID().toString():buyerId;
-//											long startTime = random.nextLong();
+//											long startTime = 0;
 //											long endTime = random.nextLong();
 //											
 //											Iterator<Result> results = orderSystem.queryOrdersByBuyer(startTime, endTime, buyerId);
@@ -313,7 +313,7 @@ public class OrderSystemImpl implements OrderSystem {
 //									List<String> keys = new ArrayList<String>();
 //									keys.add("orderid");
 //									int count = 0;
-//									for( int i = 0; i < orderfiles.size() && count < 2000 ; i++) {
+//									for( int i = 0; i < orderfiles.size() && count < 3000 ; i++) {
 //										FileInputStream fis = new FileInputStream(orderfiles.get(i));
 //									    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
 //									    String line = br.readLine();
@@ -323,14 +323,10 @@ public class OrderSystemImpl implements OrderSystem {
 //									    			line, RaceConfig.goodId);
 //									    	Iterator<Result> results = orderSystem.queryOrdersBySaler("", goodid, keys);
 //											//System.out.println("query3");
-//											if(results.hasNext()) {
-//												System.out.println(ConcurrentCache.getInstance().getSize());
+//											while(results.hasNext()) {
+//												System.out.println(results.next());
 //											}
-//											else {
-//												count ++;
-//												
-//												System.out.println("error");
-//											}
+//											count ++;
 //									    	line = br.readLine();
 //									    }
 //									    br.close();

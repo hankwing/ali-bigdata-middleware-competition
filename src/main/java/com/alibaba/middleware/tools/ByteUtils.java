@@ -53,7 +53,7 @@ public class ByteUtils {
 	}
 
 	/**
-	 * 解析出所有byte+int对
+	 * 解析出所有int对
 	 * @param buffer
 	 * @return
 	 */
@@ -61,8 +61,8 @@ public class ByteUtils {
 
 		List<byte[]> list = new ArrayList<>();
 		for (int i = buffer.position(); i < buffer.capacity(); 
-				i += RaceConfig.compressed_min_bytes_length) {
-			byte[] det = new byte[RaceConfig.compressed_min_bytes_length];
+				i += RaceConfig.int_size) {
+			byte[] det = new byte[RaceConfig.int_size];
 			buffer.get(det);
 			list.add(det);
 		}

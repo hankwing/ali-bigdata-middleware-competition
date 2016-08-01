@@ -1,10 +1,13 @@
 package com.alibaba.middleware.index;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
+import com.alibaba.middleware.tools.ByteUtils;
 
 public class ByteDirectMemory {
 
@@ -67,6 +70,52 @@ public class ByteDirectMemory {
 		}
 		return pos;
 		
+	}
+	
+	/**
+	 * 将字节数组放入直接内存中 直接内存分为三段  这里需要判断是否还有剩余空间
+	 * 
+	 * 返回写完之后的pos  如果pos为0则说明写入没有成功
+	 * @param byteArray
+	 * @param segment
+	 */
+	public void appendByteToPosAndUpdate(byte[] byteArray, int oldPos, int oldSize, 
+			DirectMemoryType memoryType) {
+		
+		// TODO Auto-generated method stub
+		switch( memoryType) {
+/*		case MainSegment:
+			mainSegLock.writeLock().lock();
+			orderIdBuffer.position(mainSegOffset);
+			if( orderIdBuffer.remaining() < byteArray.length) {
+				// 说明空间不够了
+				mainSegIsFull = true;
+			}
+			else {
+				newPos = mainSegOffset;
+				orderIdBuffer.putInt(byteArray.length);
+				orderIdBuffer.put(byteArray);
+				mainSegOffset = orderIdBuffer.position();
+			}
+			mainSegLock.writeLock().unlock();
+			break;*/
+		case BuyerIdSegment:
+			orderBuyerSegLock.writeLock().lock();
+			orderBuyerBuffer.position(oldPos);
+			orderBuyerBuffer.putInt(oldSize + byteArray.length);	// 更新大小
+			orderBuyerBuffer.position(oldSize + oldPos + RaceConfig.int_size);			// 定位到旧数据的尾部
+			orderBuyerBuffer.put(byteArray);						// 放入数据
+			orderBuyerSegLock.writeLock().unlock();
+			break;
+		case GoodIdSegment:
+			orderGoodSegLock.writeLock().lock();
+			orderGoodBuffer.position(oldPos);
+			orderGoodBuffer.putInt(oldSize + byteArray.length);	// 更新大小
+			orderGoodBuffer.position(oldSize + oldPos + RaceConfig.int_size);			// 定位到旧数据的尾部
+			orderGoodBuffer.put(byteArray);						// 放入数据
+			orderGoodSegLock.writeLock().unlock();
+			break;
+		}
 	}
 	
 	/**
@@ -250,6 +299,70 @@ public class ByteDirectMemory {
 		return newPos;
 	}
 
+	/**
+	 * 得到相应位置后面的byte大小的int
+	 * @param position
+	 * @param memoryType
+	 * @return
+	 */
+	public int getByteSize(int position,DirectMemoryType memoryType ) {
+		// TODO Auto-generated method stub
+		int content = -1;
+		switch( memoryType) {
+/*		case MainSegment:
+			mainSegLock.writeLock().lock();
+			orderIdBuffer.position( position);
+			content = new byte[orderIdBuffer.getInt()];
+			orderIdBuffer.get(content);
+			mainSegLock.writeLock().unlock();
+			break;*/
+		case BuyerIdSegment:
+			orderBuyerSegLock.writeLock().lock();
+			orderBuyerBuffer.position(position);
+			content = orderBuyerBuffer.getInt();
+			orderBuyerSegLock.writeLock().unlock();
+			break;
+		case GoodIdSegment:
+			orderGoodSegLock.writeLock().lock();
+			orderGoodBuffer.position( position);
+			content = orderGoodBuffer.getInt();
+			orderGoodSegLock.writeLock().unlock();
+			break;
+		}
+		return content;
+	}
+	
+	public List<byte[]> getOrderIdListsFromBytes(int position,DirectMemoryType memoryType ) {
+		// TODO Auto-generated method stub
+		List<byte[]> content = null;
+		switch( memoryType) {
+/*		case MainSegment:
+			mainSegLock.writeLock().lock();
+			orderIdBuffer.position( position);
+			content = new byte[orderIdBuffer.getInt()];
+			orderIdBuffer.get(content);
+			mainSegLock.writeLock().unlock();
+			break;*/
+		case BuyerIdSegment:
+			orderBuyerSegLock.writeLock().lock();
+			orderBuyerBuffer.position(position);
+			byte[] bytes = new byte[orderBuyerBuffer.getInt()];
+			orderBuyerBuffer.get(bytes);
+			content = ByteUtils.splitBytes(bytes);
+			orderBuyerSegLock.writeLock().unlock();
+			break;
+		case GoodIdSegment:
+			orderGoodSegLock.writeLock().lock();
+			orderGoodBuffer.position(position);
+			byte[] goodBytes = new byte[orderGoodBuffer.getInt()];
+			orderGoodBuffer.get(goodBytes);
+			content = ByteUtils.splitBytes(goodBytes);
+			orderGoodSegLock.writeLock().unlock();
+			break;
+		}
+		return content;
+	}
+	
 	public byte[] get(int position,DirectMemoryType memoryType ) {
 		// TODO Auto-generated method stub
 		byte[] content = null;
@@ -265,6 +378,7 @@ public class ByteDirectMemory {
 			orderBuyerSegLock.writeLock().lock();
 			orderBuyerBuffer.position(position);
 			content = new byte[orderBuyerBuffer.getInt()];
+			
 			orderBuyerBuffer.get(content);
 			orderBuyerSegLock.writeLock().unlock();
 			break;

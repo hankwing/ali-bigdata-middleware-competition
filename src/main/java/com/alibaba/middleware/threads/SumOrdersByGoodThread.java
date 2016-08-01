@@ -111,14 +111,10 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 					List<byte[]> byteAndInts = ByteUtils.splitByteBuffer(tempBuffer);
 					for( byte[] byteAndOffset : byteAndInts) {
 						// 从orderid列表中取出相应的数据
-						ByteBuffer buffer = ByteBuffer.wrap(byteAndOffset);
 						// 从byte解析出int			
-						int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
-						long offset = buffer.getInt();
-						
-						// 从文件里读出内容
-						offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
-								system.goodOrderIdListHandlersList.get(fileIndex), offset));
+						//int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
+						offsetList.addAll(directMemory.getOrderIdListsFromBytes(
+								 ByteUtils.byteArrayToLeInt(byteAndOffset), DirectMemoryType.GoodIdSegment));
 					}
 					
 				}

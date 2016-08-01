@@ -146,18 +146,16 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 				// 解析出offset列表
 				
 				ByteBuffer tempBuffer = ByteBuffer.wrap(offsets);
+				// 跳过标识位以及本身数据的offset
 				tempBuffer.position(RaceConfig.byte_size + RaceConfig.compressed_min_bytes_length);
-				// 得到所有的byte+offset对
+				// 得到所有的offset
 				List<byte[]> byteAndInts = ByteUtils.splitByteBuffer(tempBuffer);
 				for( byte[] byteAndOffset : byteAndInts) {
 					// 从orderid列表中取出相应的数据
-					ByteBuffer buffer = ByteBuffer.wrap(byteAndOffset);
-					// 从byte解析出int			
-					int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
-					long offset = buffer.getInt();
-					// 从文件里读出内容
-					offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
-							system.buyerOrderIdListHandlersList.get(fileIndex), offset));
+					// 从byte解析出int
+					//int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
+					offsetList.addAll(directMemory.getOrderIdListsFromBytes(
+							ByteUtils.byteArrayToLeInt(byteAndOffset), DirectMemoryType.BuyerIdSegment));
 				}
 			}
 		}
