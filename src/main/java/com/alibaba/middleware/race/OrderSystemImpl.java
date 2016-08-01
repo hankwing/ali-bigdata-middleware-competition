@@ -34,6 +34,7 @@ import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.threads.*;
+import com.alibaba.middleware.tools.BufferedRandomAccessFile;
 import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
@@ -59,14 +60,14 @@ public class OrderSystemImpl implements OrderSystem {
 	// goodId里的goodId代理键索引
 	public ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> goodIdIndexList = null;
 	// 文件句柄池<数据文件的下标，文件句柄队列>
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> orderHandlersList = null;
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList = null;
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> orderHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> buyerHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> goodHandlersList = null;
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
 	buyerOrderIdListHandlersList = null;
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
 	goodOrderIdListHandlersList = null;
 
 	//public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; 
@@ -411,9 +412,6 @@ public class OrderSystemImpl implements OrderSystem {
 				continue;
 			}
 		}
-		
-		
-
 		scanner.close();
 
 	}
@@ -433,13 +431,13 @@ public class OrderSystemImpl implements OrderSystem {
 		buyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey>>();
 		// goodId里的goodId代理键索引
 		goodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey>>();
-		orderHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
-		buyerHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
-		goodHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+		orderHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
+		buyerHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
+		goodHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
 		buyerOrderIdListHandlersList = new 
-				ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+				ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
 		goodOrderIdListHandlersList = new 
-				ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+				ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
 		
 		orderFileMapping = new DataFileMapping();
 		buyerFileMapping = new DataFileMapping();

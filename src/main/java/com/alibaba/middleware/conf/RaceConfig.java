@@ -15,27 +15,29 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreshold = (long) (11* Math.pow(1024, 2));
 	
-	public static int buyerDirectMemorySize = (int) (3000* Math.pow(1024, 2));
-	public static int goodDirectMemorySize = (int) (2900* Math.pow(1024, 2));
+	public static int directMemorySize = (int) (1720 * Math.pow(1000, 2));
+	// 用于标识是哪块direct memory
+	public static int buyerMemory = 0;
+	public static int goodMemory = 1;
+	public static int sharedMemory = 2;
 	
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int orderTableThreadNum = 3;							// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
-	public static int fileHandleNumber = 5;				// 每个文件预先打开的句柄数
+	public static int fileHandleNumber = Runtime.getRuntime().availableProcessors();// 每个文件预先打开的句柄数
 	
 	//public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	//public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
 	public static long maxIndexFileCapacity = 9000000;				// 一个索引最多存多少行数据
 	public static long threIndexFileCapacity = 1000;			// 索引建立xx条后开始向direct memory里写桶
 	public static long singleFileMaxLines = 10000000;			// 合并后的文件最大行数
-	
 	/**
 	 * Thread pool config
 	 * */
 	public static int rowCacheNumber = 5000000;					// 在内存里最多保留几个row数据
 	public static int monitorThreadNum = 2;
     public static int workerThreadNum = Runtime.getRuntime().availableProcessors() * 1;
-	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 1;
+	public static int queryThreadNum = Runtime.getRuntime().availableProcessors() * 2;
 	// JVMMonitorThread
     public static int monitorInitDelayInMills = 20 *1000;			// 20s后开始检测内存
     public static int monitorFixedDelayInMills = 5 * 1000;			// 每10s检测一次内存
@@ -57,7 +59,7 @@ public class RaceConfig implements Serializable{
 	
 	//public static int compressed_max_bytes_lenth = 1024;		// 商品表和买家表索引对应的orderid列表压缩后最大空间
 	public static int compressed_min_bytes_length = 5;		// orderid索引对应的orderid列表压缩后最大空间
-	public static int buyer_remaining_bytes_length = 110;
+	public static int buyer_remaining_bytes_length = 100;
 	public static int good_remaining_bytes_length = 200;
 	
 	//public static int advanced_remaining_bytes_length = 500;

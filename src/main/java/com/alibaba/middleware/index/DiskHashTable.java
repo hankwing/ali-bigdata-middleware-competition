@@ -25,6 +25,7 @@ import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.race.OrderSystemImpl;
+import com.alibaba.middleware.tools.BufferedRandomAccessFile;
 import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.RecordsUtils;
 import com.esotericsoftware.kryo.Kryo;
@@ -81,9 +82,9 @@ public class DiskHashTable<K> implements Serializable {
 	public int orderListFileSeriNum = 0;								// 根据这个创建不同的orderidlist文件
 	public String orderListFilePrex = null;
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
 		buyerOrderIdListHandlersList = null;
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
 		goodOrderIdListHandlersList = null;
 //	public static int appendCount = 0;
 //	public static int buyerCount = 0;
@@ -169,55 +170,55 @@ public class DiskHashTable<K> implements Serializable {
 	 * 构建完成后  将一部分桶写到直接内存  可加快查询
 	 * 返回值：此DiskHashTable被写入dataFile的哪个位置，方便之后调用
 	 */
-	public boolean writeAllBucketsToDirectMemory( DirectMemoryType writeType) {
-		memoryType = writeType;
-		for (int key = 0; key < bucketNum ; key ++) {
-			//bucketList.remove(bucketKey);
-			if( !directMemory.isFull(memoryType) ) {
-				// 有空间  试图往里写 但不一定写成功
-				try {
-					if(bucketAddressList == null) {
-						bucketAddressList = getHashDiskTable(bucketAddressOffset);
-					}
-
-					RandomAccessFile reader = bucketReaderPool.take();
-					reader.seek(bucketAddressList.get(key));
-					
-					byte[] bucketByteArray = null;
-					if( key == bucketNum -1 ) {
-						bucketByteArray = new byte[lastObjectSize];
-					}
-					else {
-						bucketByteArray = new byte[(int) (bucketAddressList.get(key + 1) - 
-	                           bucketAddressList.get(key))];
-					}
-					reader.read(bucketByteArray);
-					int newPos = directMemory.put(bucketByteArray, memoryType);
-					if( newPos != -1 ) {
-						//如果写入成功 则放入另一个地址队列 不能覆盖文件的物理地址队列
-						bucketDirectMemList.put(key, (long) newPos);
-					}
-					else {
-						return false;
-					}
-					bucketReaderPool.put(reader);
-					
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			else {
-				return false;
-			}
-
-		}
-		
-		return true;
-	}
+//	public boolean writeAllBucketsToDirectMemory( DirectMemoryType writeType) {
+//		memoryType = writeType;
+//		for (int key = 0; key < bucketNum ; key ++) {
+//			//bucketList.remove(bucketKey);
+//			if( !directMemory.isFull(memoryType) ) {
+//				// 有空间  试图往里写 但不一定写成功
+//				try {
+//					if(bucketAddressList == null) {
+//						bucketAddressList = getHashDiskTable(bucketAddressOffset);
+//					}
+//
+//					RandomAccessFile reader = bucketReaderPool.take();
+//					reader.seek(bucketAddressList.get(key));
+//					
+//					byte[] bucketByteArray = null;
+//					if( key == bucketNum -1 ) {
+//						bucketByteArray = new byte[lastObjectSize];
+//					}
+//					else {
+//						bucketByteArray = new byte[(int) (bucketAddressList.get(key + 1) - 
+//	                           bucketAddressList.get(key))];
+//					}
+//					reader.read(bucketByteArray);
+//					int newPos = directMemory.put(bucketByteArray, memoryType);
+//					if( newPos != -1 ) {
+//						//如果写入成功 则放入另一个地址队列 不能覆盖文件的物理地址队列
+//						bucketDirectMemList.put(key, (long) newPos);
+//					}
+//					else {
+//						return false;
+//					}
+//					bucketReaderPool.put(reader);
+//					
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				} catch (IOException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//			else {
+//				return false;
+//			}
+//
+//		}
+//		
+//		return true;
+//	}
 
 	/**
 	 * 索引建立完之后 将所有桶数据写到外存 不调用单个写桶的函数 因为会频繁调用flush影响效率 
@@ -237,7 +238,7 @@ public class DiskHashTable<K> implements Serializable {
 			
 			for (int key = 0; key < bucketNum ; key ++) {
 				// 优先把桶写到直接内存里  满了就写到文件里
-				if( memoryType != DirectMemoryType.NoWrite && writeBucketAfterBuilding(key) ) {
+				if( memoryType != DirectMemoryType.NoWrite ) {
 					// 如果是订单表的三个索引  那么先写到直接内存
 					//System.out.println("write to direct memory success:" + key);
 				}
@@ -366,32 +367,32 @@ public class DiskHashTable<K> implements Serializable {
 	 * 查询阶段调用的方法  将桶优先写入直接内存  直接内存无空间了就直接丢弃
 	 * @param bucketKey
 	 */
-	public boolean writeBucketAfterBuilding(int bucketKey) {
-		
-		//bucketList.remove(bucketKey);
-		boolean isSuccess = false;
-		HashBucket<K> bucketToRemove = bucketList.get(bucketKey);
-		if( !directMemory.isFull(memoryType) ) {
-			// 有空间  试图往里写 但不一定写成功
-
-			byte[] objectByte = kryoContext.serialze(bucketToRemove);
-			int newPos = directMemory.put(objectByte, memoryType);
-			if( newPos != -1 ) {
-				//如果写入成功 则放入另一个地址队列 不能覆盖文件的物理地址队列
-				isSuccess = true;
-				bucketList.remove(bucketKey);
-				bucketDirectMemList.put(bucketKey, (long) newPos);
-			}
-			else {
-				
-				System.out.println("direct memory is full");
-			}
-		}
-		
-		return isSuccess;
-		
-		
-	}
+//	public boolean writeBucketAfterBuilding(int bucketKey) {
+//		
+//		//bucketList.remove(bucketKey);
+//		boolean isSuccess = false;
+//		HashBucket<K> bucketToRemove = bucketList.get(bucketKey);
+//		if( !directMemory.isFull(memoryType) ) {
+//			// 有空间  试图往里写 但不一定写成功
+//
+//			byte[] objectByte = kryoContext.serialze(bucketToRemove);
+//			int newPos = directMemory.put(objectByte, memoryType);
+//			if( newPos != -1 ) {
+//				//如果写入成功 则放入另一个地址队列 不能覆盖文件的物理地址队列
+//				isSuccess = true;
+//				bucketList.remove(bucketKey);
+//				bucketDirectMemList.put(bucketKey, (long) newPos);
+//			}
+//			else {
+//				
+//				System.out.println("direct memory is full");
+//			}
+//		}
+//		
+//		return isSuccess;
+//		
+//		
+//	}
 	
 	/**
 	 * 直接丢弃
@@ -417,37 +418,37 @@ public class DiskHashTable<K> implements Serializable {
 				//readWriteLock.readLock().lock();
 				if (isbuilding) {
 					//从直接内存拿数据
-					readWriteLock.readLock().lock();
-					//System.out.println("read bucket from direct mem:" + bucketKey);
-					long startp = bucketAddressList.get(bucketKey);
-					byte[] bucketbytes;
-
-					bucketbytes = directMemory.get((int)startp, memoryType);
-
-					ObjectInputStream bucketReader = new ObjectInputStream(
-							new ByteArrayInputStream(bucketbytes));
-
-					fileBucket = (HashBucket<K>) bucketReader.readObject();
-					fileBucket.setContext(this);
-					bucketReader.close();
-					readWriteLock.readLock().unlock();
+//					readWriteLock.readLock().lock();
+//					//System.out.println("read bucket from direct mem:" + bucketKey);
+//					long startp = bucketAddressList.get(bucketKey);
+//					byte[] bucketbytes;
+//
+//					bucketbytes = directMemory.get((int)startp, memoryType);
+//
+//					ObjectInputStream bucketReader = new ObjectInputStream(
+//							new ByteArrayInputStream(bucketbytes));
+//
+//					fileBucket = (HashBucket<K>) bucketReader.readObject();
+//					fileBucket.setContext(this);
+//					bucketReader.close();
+//					readWriteLock.readLock().unlock();
 
 				} else {
 					// 查询阶段  先从directMemory拿桶数据  拿不到再从文件中读取数据
 					// 下面从direct memory中读取桶
-					Long pos = bucketDirectMemList.get(bucketKey);
-					if( pos != null) {
-						// 说明桶在directMemory里了
-						byte[] bucketbytes;
-						bucketbytes = directMemory.get(pos.intValue(), memoryType);
-						
-						fileBucket = (HashBucket<K>)kryoContext.deserialze(
-								HashBucket.class, bucketbytes);
-						fileBucket.setContext(this);
-						//input.close();
-						// 不用放到桶队列里去 用完就删
-					}
-					else {
+//					Long pos = bucketDirectMemList.get(bucketKey);
+//					if( pos != null) {
+//						// 说明桶在directMemory里了
+//						byte[] bucketbytes;
+//						bucketbytes = directMemory.get(pos.intValue(), memoryType);
+//						
+//						fileBucket = (HashBucket<K>)kryoContext.deserialze(
+//								HashBucket.class, bucketbytes);
+//						fileBucket.setContext(this);
+//						//input.close();
+//						// 不用放到桶队列里去 用完就删
+//					}
+//					else {
 						//从文件里读
 						// 下面从文件里读取桶
 						if(bucketAddressList == null) {
@@ -475,7 +476,7 @@ public class DiskHashTable<K> implements Serializable {
 						// 从文件里读的桶 才注册到桶管理器里
 						bucketCachePool.addBucket(fileBucket);
 						//bucketList.put(bucketKey, fileBucket);
-					}
+//					}
 				}
 			}
 
@@ -483,9 +484,6 @@ public class DiskHashTable<K> implements Serializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (InterruptedException e) {
@@ -520,34 +518,50 @@ public class DiskHashTable<K> implements Serializable {
 			if( offset != null) {
 				boolean isNeedDump = false;
 				
-				if( offset[0] == RaceConfig.byte_has_direct_memory_pos) {
+				if( offset[0] >= RaceConfig.byte_has_direct_memory_pos) {
+					// 得到
 					// 说明后面已经带有地址信息了  拿到最后一个地址信息 代表直接内存的pos
 					byte[] byteAndOffset = Arrays.copyOfRange(offset, offset.length
-							- RaceConfig.compressed_min_bytes_length + RaceConfig.byte_size,
-							offset.length);
+							- RaceConfig.compressed_min_bytes_length, offset.length);
 					//ByteBuffer byteAndPosBuffer = ByteBuffer.wrap(byteAndOffset);
 					//byteAndPosBuffer.position(RaceConfig.byte_size);
-
-					int pos = ByteUtils.byteArrayToLeInt(byteAndOffset);				// 得到直接内存地址
+					int memoryIndex = ByteUtils.getMagicIntFromByte(byteAndOffset[0]);
+					// 跳过第一个字节
+					int pos = ByteUtils.byteArrayToLeInt(Arrays.copyOfRange(byteAndOffset, 
+							1, byteAndOffset.length));
 					
-					int size = directMemory.getByteSize(pos, memoryType);
-					if( size + appendOffset.length > (memoryType == DirectMemoryType.BuyerIdSegment ?
-							directMemory.orderBuyerPreserveSpace :
-								directMemory.orderGoodPreserveSpace)) {
+					int size = directMemory.getByteSize( memoryIndex, pos);
+					int maxSize = memoryType == DirectMemoryType.BuyerIdSegment ?
+							directMemory.orderBuyerPreserveSpace / offset[0] :
+								directMemory.orderGoodPreserveSpace / offset[0];
+					if( size + appendOffset.length > maxSize) {
 //						sumContentNum = sumContentNum + appendOffset.length + 
 //								RaceConfig.buyer_remaining_bytes_length + 4;
 						// 说明要将appendOffset放到另外一块direct memory当中  并且要更新当前索引里的信息
 //						appendCount ++; 
-						int newPos = directMemory.putAndAppendRemaining(appendOffset, memoryType);
-						if( newPos != -1) {
+						if( offset[0] > 3) {
+							// 说明该id对应的orderid列表超过平均数了  可能是热点
+							offset[0] = 1;
+						}
+						else {
+							offset[0]++;
+						}
+						// 第一位代表写入的缓冲区编号  第二位代表写入缓冲区的位置
+						int[] newPos = directMemory.putAndAppendRemaining(appendOffset, memoryType, 
+								memoryType == DirectMemoryType.BuyerIdSegment ?
+										directMemory.orderBuyerPreserveSpace / offset[0] :
+											directMemory.orderGoodPreserveSpace / offset[0] );
+						if( newPos[1] != -1) {
 							// 说明写成功了  将地址放到offset的后面
 							//byte sign = ByteUtils.getMagicByteFromInt(orderListFileSeriNum); //  sign代表文件下标
 							
-							byte[] combined = new byte[offset.length + RaceConfig.int_size];
+							byte[] combined = new byte[offset.length + RaceConfig.byte_size +
+							                           RaceConfig.int_size];
 							System.arraycopy(offset ,0,combined, 0,offset.length);
-							//combined[offset.length] = sign;
-							byte[] intValue = ByteUtils.leIntToByteArray(newPos);
-							System.arraycopy(intValue ,0,combined, offset.length ,intValue.length);
+							combined[offset.length] = ByteUtils.getMagicByteFromInt(newPos[0]);
+							byte[] intValue = ByteUtils.leIntToByteArray(newPos[1]);
+							System.arraycopy(intValue ,0,combined, offset.length + RaceConfig.byte_size ,
+									intValue.length);
 							bucket.replaceAddress(getBucketStringIndex(key), key, combined);
 						}
 						else {
@@ -563,8 +577,10 @@ public class DiskHashTable<K> implements Serializable {
 //						byte[] combined = new byte[originByte.length + appendOffset.length];
 //						System.arraycopy(originByte,0,combined,0,originByte.length);
 //						System.arraycopy(appendOffset,0, combined,originByte.length,appendOffset.length);
-						directMemory.appendByteToPosAndUpdate(appendOffset, pos,
-								 size, memoryType);
+						if( memoryIndex == 2) {
+							int a = 0;
+						}
+						directMemory.appendByteToPosAndUpdate(memoryIndex, appendOffset, pos, size);
 					}
 					//bucket.replaceAddress(getBucketStringIndex(key), key, compressBytes);
 				}
@@ -577,18 +593,23 @@ public class DiskHashTable<K> implements Serializable {
 //					buyerCount ++;
 //					sumContentNum = sumContentNum + appendOffset.length + 
 //							RaceConfig.buyer_remaining_bytes_length + 4;
-					int pos = directMemory.putAndAppendRemaining(appendOffset, memoryType);
-					if( pos != -1) {
+					int[] posInfo = directMemory.putAndAppendRemaining(appendOffset, memoryType, 
+							memoryType == DirectMemoryType.BuyerIdSegment ?
+									directMemory.orderBuyerPreserveSpace:
+										directMemory.orderGoodPreserveSpace);
+					if( posInfo[1] != -1) {
 						// 说明写成功了  将地址放到offset的后面
 						
-						offset[0] = 1;				// 这里代表的是这个offset在直接内存里存在值了
+						offset[0] = 1;				// 这里代表的是这个offset在直接内存里存在而且记录了当前有几个offset
 						//byte sign = ByteUtils.getMagicByteFromInt(orderListFileSeriNum); //  sign代表文件下标
 						
-						byte[] combined = new byte[offset.length + RaceConfig.int_size];
+						byte[] combined = new byte[offset.length + RaceConfig.byte_size + 
+						                           RaceConfig.int_size];
 						System.arraycopy(offset ,0,combined, 0,offset.length);
-						//combined[offset.length] = sign;
-						byte[] intValue = ByteUtils.leIntToByteArray(pos);
-						System.arraycopy(intValue ,0,combined, offset.length ,intValue.length);
+						combined[offset.length] = ByteUtils.getMagicByteFromInt(posInfo[0]);//将写入的缓冲区编号写入
+						byte[] intValue = ByteUtils.leIntToByteArray(posInfo[1]);
+						System.arraycopy(intValue ,0,combined, offset.length + RaceConfig.byte_size ,
+								intValue.length);
 						bucket.replaceAddress(getBucketStringIndex(key), key, combined);
 					}
 					else {
@@ -599,7 +620,7 @@ public class DiskHashTable<K> implements Serializable {
 				if( isNeedDump ) {
 					// direct memory不应该不够
 					System.out.println("direct memory full" );
-					System.exit(0);
+					//System.exit(0);
 //					dumpDirectMemory();
 					// 写完文件后  还要再调用一次putoffset  将本次没有添加进去的内容添加到新的directmemory中
 					//putOffset(key, appendOffset);

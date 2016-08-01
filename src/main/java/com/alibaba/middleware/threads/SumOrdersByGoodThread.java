@@ -2,6 +2,7 @@ package com.alibaba.middleware.threads;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.alibaba.middleware.cache.ConcurrentCache;
@@ -113,8 +114,11 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 						// 从orderid列表中取出相应的数据
 						// 从byte解析出int			
 						//int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
-						offsetList.addAll(directMemory.getOrderIdListsFromBytes(
-								 ByteUtils.byteArrayToLeInt(byteAndOffset), DirectMemoryType.GoodIdSegment));
+						int memoryIndex = ByteUtils.getMagicIntFromByte(byteAndOffset[0]);
+						// 跳过第一个字节
+						int pos = ByteUtils.byteArrayToLeInt(Arrays.copyOfRange(byteAndOffset, 
+								1, byteAndOffset.length));
+						offsetList.addAll(directMemory.getOrderIdListsFromBytes(memoryIndex,pos));
 					}
 					
 				}

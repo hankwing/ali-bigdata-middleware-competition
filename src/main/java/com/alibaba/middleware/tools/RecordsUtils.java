@@ -128,12 +128,12 @@ public class RecordsUtils {
 	 * @param offset
 	 * @return
 	 */
-	public static String getStringFromFile(LinkedBlockingQueue<RandomAccessFile> file
+	public static String getStringFromFile(LinkedBlockingQueue<BufferedRandomAccessFile> file
 			, Long offset, TableName tableType){
 		String result = null;
 		
 		try {
-			RandomAccessFile fileReader = file.take();
+			BufferedRandomAccessFile fileReader = file.take();
 			fileReader.seek(offset);
 			result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
 					StandardCharsets.UTF_8);
@@ -343,34 +343,34 @@ public class RecordsUtils {
 	 * @param directMemory
 	 * @param type
 	 */
-	public static void writeToFile(String fileName, ByteDirectMemory directMemory, DirectMemoryType type) {
-		 File file = new File(fileName);
-		 FileChannel wChannel;
-		try {
-			wChannel = new FileOutputStream(file).getChannel();
-			switch( type) {
-			 case BuyerIdSegment:
-				 directMemory.orderBuyerBuffer.position(0);
-				 wChannel.write(directMemory.orderBuyerBuffer);
-				 directMemory.clearOneSegment(type);
-				 break;
-			 case GoodIdSegment:
-				 directMemory.orderGoodBuffer.position(0);
-				 wChannel.write(directMemory.orderGoodBuffer);
-				 directMemory.clearOneSegment(type);
-				 break;
-			 default:
-				 break;
-			 }
-			 wChannel.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		 
-	}
+//	public static void writeToFile(String fileName, ByteDirectMemory directMemory, DirectMemoryType type) {
+//		 File file = new File(fileName);
+//		 FileChannel wChannel;
+//		try {
+//			wChannel = new FileOutputStream(file).getChannel();
+//			switch( type) {
+//			 case BuyerIdSegment:
+//				 directMemory.orderBuyerBuffer.position(0);
+//				 wChannel.write(directMemory.orderBuyerBuffer);
+//				 directMemory.clearOneSegment(type);
+//				 break;
+//			 case GoodIdSegment:
+//				 directMemory.orderGoodBuffer.position(0);
+//				 wChannel.write(directMemory.orderGoodBuffer);
+//				 directMemory.clearOneSegment(type);
+//				 break;
+//			 default:
+//				 break;
+//			 }
+//			 wChannel.close();
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		 
+//	}
 	
 }

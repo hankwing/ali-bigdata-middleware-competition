@@ -58,16 +58,19 @@ public class Test {
 
 	public static void main(String[] args) {
 		
-		if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
-		      System.out.println("BIG_ENDIAN");
-		    } else {
-		      System.out.println("LITTLE_ENDIAN");
-		    }
-		
-		byte[] array = new byte[]{116, 101, 1, 6};
-		
-		int value = ByteUtils.byteArrayToLeInt(array);
-		System.out.println(value);
+//		if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
+//		      System.out.println("BIG_ENDIAN");
+//		    } else {
+//		      System.out.println("LITTLE_ENDIAN");
+//		    }
+//		
+//		byte[] array = new byte[]{116, 101, 1, 6};
+//		
+//		int value = ByteUtils.byteArrayToLeInt(array);
+//		System.out.println(value);
+		int a = 128;
+		byte b = (byte)a;
+		System.out.println(b);
 		
 	}
 	

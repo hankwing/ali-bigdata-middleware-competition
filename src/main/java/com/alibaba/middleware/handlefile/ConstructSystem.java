@@ -150,8 +150,8 @@ public class ConstructSystem {
 			System.out.println("buyer time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
 			
-			System.out.println("the first cache remaining:" + 
-					ByteDirectMemory.getInstance().getPosition(DirectMemoryType.BuyerIdSegment));
+//			System.out.println("the first cache remaining:" + 
+//					ByteDirectMemory.getInstance().getPosition(DirectMemoryType.BuyerIdSegment));
 
 			// 处理good表
 			countDownLatch = new CountDownLatch(threadNum);
@@ -203,6 +203,7 @@ public class ConstructSystem {
 
 			System.out.println("order time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
+			ByteDirectMemory.getInstance().clear();
 			
 			// 下面开始往direct memory里orderid的索引数据 加快查询
 			/*ByteDirectMemory directMemory = ByteDirectMemory.getInstance();
