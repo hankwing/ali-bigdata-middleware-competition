@@ -34,18 +34,18 @@ public class ByteDirectMemory {
 	
 	public static ByteDirectMemory getInstance() {
 		if(instance == null) {
-			instance = new ByteDirectMemory(RaceConfig.directMemorySize);
+			instance = new ByteDirectMemory(RaceConfig.buyerDirectMemorySize, RaceConfig.goodDirectMemorySize);
 		}
 		return instance;
 	}
 	
-	public ByteDirectMemory(int size) {
+	public ByteDirectMemory(int buyerSize, int goodSize) {
 		// TODO Auto-generated constructor stub
 		//orderIdBuffer = ByteBuffer.allocateDirect(size);
 		orderBuyerPreserveSpace = RaceConfig.buyer_remaining_bytes_length;
 		orderGoodPreserveSpace = RaceConfig.good_remaining_bytes_length;
-		orderBuyerBuffer = ByteBuffer.allocateDirect(size);
-		orderGoodBuffer = ByteBuffer.allocateDirect(size);
+		orderBuyerBuffer = ByteBuffer.allocateDirect(buyerSize);
+		orderGoodBuffer = ByteBuffer.allocateDirect(goodSize);
 	}
 
 	public long getPosition( DirectMemoryType memoryType) {
@@ -195,7 +195,6 @@ public class ByteDirectMemory {
 			if( orderBuyerBuffer.remaining() < byteArray.length + RaceConfig.int_size +
 					orderBuyerPreserveSpace) {
 				// 说明空间不够了 下次初始化时  每个offset的预留空间减半  
-				orderBuyerPreserveSpace /= 2;
 				System.out.println("orderBuyerBuffer direct memory have no space!");
 				orderBuyerSegIsFull = true;
 			}
@@ -215,7 +214,6 @@ public class ByteDirectMemory {
 			if( orderGoodBuffer.remaining() < byteArray.length + RaceConfig.int_size +
 					orderGoodPreserveSpace) {
 				// 说明空间不够了
-				orderGoodPreserveSpace /= 2;
 				System.out.println("orderGoodBuffer direct memory have no space!");
 				orderGoodSegIsFull = true;
 			}
@@ -266,7 +264,6 @@ public class ByteDirectMemory {
 			orderBuyerBuffer.position(orderBuyerSegOffset);
 			if( orderBuyerBuffer.remaining() < byteArray.length) {
 				// 说明空间不够了
-				orderBuyerPreserveSpace /= 2;
 				orderBuyerSegIsFull = true;
 			}
 			else {
@@ -283,7 +280,6 @@ public class ByteDirectMemory {
 			orderGoodBuffer.position(orderGoodSegOffset);
 			if( orderGoodBuffer.remaining() < byteArray.length) {
 				// 说明空间不够了
-				orderGoodPreserveSpace /= 2;
 				orderGoodSegIsFull = true;
 			}
 			else {
@@ -429,6 +425,8 @@ public class ByteDirectMemory {
 	
 	public void clear(){
 		//orderIdBuffer.clear();
+		System.out.println("buyer direct pos:" + orderBuyerSegOffset);
+		System.out.println("good direct pos:" + orderGoodSegOffset);
 		orderGoodBuffer.clear();
 		orderBuyerBuffer.clear();
 	}

@@ -85,6 +85,9 @@ public class DiskHashTable<K> implements Serializable {
 		buyerOrderIdListHandlersList = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
 		goodOrderIdListHandlersList = null;
+//	public static int appendCount = 0;
+//	public static int buyerCount = 0;
+//	public static int sumContentNum = 0;
 	
 	// 用于解析Byte数组的ByteBuffer
 //	public ByteBuffer offSetByteBuffer = null;
@@ -531,8 +534,10 @@ public class DiskHashTable<K> implements Serializable {
 					if( size + appendOffset.length > (memoryType == DirectMemoryType.BuyerIdSegment ?
 							directMemory.orderBuyerPreserveSpace :
 								directMemory.orderGoodPreserveSpace)) {
+//						sumContentNum = sumContentNum + appendOffset.length + 
+//								RaceConfig.buyer_remaining_bytes_length + 4;
 						// 说明要将appendOffset放到另外一块direct memory当中  并且要更新当前索引里的信息
-						
+//						appendCount ++; 
 						int newPos = directMemory.putAndAppendRemaining(appendOffset, memoryType);
 						if( newPos != -1) {
 							// 说明写成功了  将地址放到offset的后面
@@ -569,9 +574,13 @@ public class DiskHashTable<K> implements Serializable {
 					//
 					//newBuffer.put(sign);
 					//newBuffer.put(appendOffset);
+//					buyerCount ++;
+//					sumContentNum = sumContentNum + appendOffset.length + 
+//							RaceConfig.buyer_remaining_bytes_length + 4;
 					int pos = directMemory.putAndAppendRemaining(appendOffset, memoryType);
 					if( pos != -1) {
 						// 说明写成功了  将地址放到offset的后面
+						
 						offset[0] = 1;				// 这里代表的是这个offset在直接内存里存在值了
 						//byte sign = ByteUtils.getMagicByteFromInt(orderListFileSeriNum); //  sign代表文件下标
 						
@@ -589,9 +598,9 @@ public class DiskHashTable<K> implements Serializable {
 				}
 				if( isNeedDump ) {
 					// direct memory不应该不够
-					System.out.println("error direct memory is full !!!!!!");
+					System.out.println("direct memory full" );
 					System.exit(0);
-					//dumpDirectMemory();
+//					dumpDirectMemory();
 					// 写完文件后  还要再调用一次putoffset  将本次没有添加进去的内容添加到新的directmemory中
 					//putOffset(key, appendOffset);
 				}
