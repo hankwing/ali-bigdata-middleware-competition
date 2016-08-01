@@ -111,6 +111,7 @@ public class ByteDirectMemory {
 			sharedDirectBuffer.position(oldSize + oldPos + RaceConfig.int_size);			// 定位到旧数据的尾部
 			sharedDirectBuffer.put(byteArray);						// 放入数据
 			sharedSegLock.writeLock().unlock();
+			
 		}
 
 	}
@@ -223,6 +224,7 @@ public class ByteDirectMemory {
 	 * @return
 	 */
 	public synchronized int putToSharedMemory( byte[] byteArray, int reserveSize) {
+		sharedSegLock.writeLock().lock();
 		int pos = -1;
 		sharedDirectBuffer.position(sharedSegOffset);
 		if( sharedSegIsFull || sharedDirectBuffer.remaining() <
@@ -241,6 +243,7 @@ public class ByteDirectMemory {
 			sharedDirectBuffer.put(new byte[reserveSize]);
 			sharedSegOffset = sharedDirectBuffer.position();
 		}
+		sharedSegLock.writeLock().unlock();
 		return pos;
 		
 	}

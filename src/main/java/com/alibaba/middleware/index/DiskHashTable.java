@@ -86,6 +86,8 @@ public class DiskHashTable<K> implements Serializable {
 		buyerOrderIdListHandlersList = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
 		goodOrderIdListHandlersList = null;
+	// 标志位 如果设为true 则表示要将offset建在索引本身后面
+	private boolean isNeedDump = false;
 //	public static int appendCount = 0;
 //	public static int buyerCount = 0;
 //	public static int sumContentNum = 0;
@@ -135,6 +137,8 @@ public class DiskHashTable<K> implements Serializable {
 		this.goodOrderIdListMapping = system.goodOrderIdListMapping;
 		this.buyerOrderIdListHandlersList = system.buyerOrderIdListHandlersList;
 		this.goodOrderIdListHandlersList = system.goodOrderIdListHandlersList;
+		
+		
 		// 保存orderid列表的文件名前缀
 		if( memoryType == DirectMemoryType.BuyerIdSegment ) {
 			orderListFilePrex = RaceConfig.storeFolders[1] + RaceConfig.buyerOrderListFileNamePrex;
@@ -515,17 +519,29 @@ public class DiskHashTable<K> implements Serializable {
 			// 对应改buyerid或者goodid的记录地址的offset
 			
 			byte[] offset = bucket.getAddress(getBucketStringIndex( key), key);
+			
 			if( offset != null) {
-				boolean isNeedDump = false;
-				
-				if( offset[0] >= RaceConfig.byte_has_direct_memory_pos) {
+				if( isNeedDump ) {
+					// direct memory不应该不够
+					System.out.println("direct memory full" );
+					// 需要建到内存里去  也就是放到offset后面  之后解析的时候  如果magicInt为负数  则代表要从文件里取数据
+					
+					byte[] combined = new byte[offset.length + appendOffset.length];
+					System.arraycopy(offset ,0,combined, 0,offset.length);
+					System.arraycopy(appendOffset ,0,combined, offset.length,appendOffset.length);
+					bucket.replaceAddress(getBucketStringIndex(key), key, combined);
+					
+//					dumpDirectMemory();
+					// 写完文件后  还要再调用一次putoffset  将本次没有添加进去的内容添加到新的directmemory中
+					//putOffset(key, appendOffset);
+				} else if( offset[0] >= RaceConfig.byte_has_direct_memory_pos) {
 					// 得到
 					// 说明后面已经带有地址信息了  拿到最后一个地址信息 代表直接内存的pos
 					byte[] byteAndOffset = Arrays.copyOfRange(offset, offset.length
 							- RaceConfig.compressed_min_bytes_length, offset.length);
 					//ByteBuffer byteAndPosBuffer = ByteBuffer.wrap(byteAndOffset);
 					//byteAndPosBuffer.position(RaceConfig.byte_size);
-					int memoryIndex = ByteUtils.getMagicIntFromByte(byteAndOffset[0]);
+					int memoryIndex = byteAndOffset[0];
 					// 跳过第一个字节
 					int pos = ByteUtils.byteArrayToLeInt(Arrays.copyOfRange(byteAndOffset, 
 							1, byteAndOffset.length));
@@ -558,7 +574,7 @@ public class DiskHashTable<K> implements Serializable {
 							byte[] combined = new byte[offset.length + RaceConfig.byte_size +
 							                           RaceConfig.int_size];
 							System.arraycopy(offset ,0,combined, 0,offset.length);
-							combined[offset.length] = ByteUtils.getMagicByteFromInt(newPos[0]);
+							combined[offset.length] = (byte)newPos[0];
 							byte[] intValue = ByteUtils.leIntToByteArray(newPos[1]);
 							System.arraycopy(intValue ,0,combined, offset.length + RaceConfig.byte_size ,
 									intValue.length);
@@ -567,6 +583,9 @@ public class DiskHashTable<K> implements Serializable {
 						else {
 							// 说明direct memory内存不够了  将direct memory dump到文件里去 但写完后还要调用一次putoffset
 							isNeedDump = true;
+							// 这里要将建索引的数目减少点  为了腾出内存给多余的offset
+							RaceConfig.maxIndexFileCapacity /= 2;
+							putOffset(key, appendOffset);
 						}
 						
 					}
@@ -577,9 +596,6 @@ public class DiskHashTable<K> implements Serializable {
 //						byte[] combined = new byte[originByte.length + appendOffset.length];
 //						System.arraycopy(originByte,0,combined,0,originByte.length);
 //						System.arraycopy(appendOffset,0, combined,originByte.length,appendOffset.length);
-						if( memoryIndex == 2) {
-							int a = 0;
-						}
 						directMemory.appendByteToPosAndUpdate(memoryIndex, appendOffset, pos, size);
 					}
 					//bucket.replaceAddress(getBucketStringIndex(key), key, compressBytes);
@@ -606,7 +622,7 @@ public class DiskHashTable<K> implements Serializable {
 						byte[] combined = new byte[offset.length + RaceConfig.byte_size + 
 						                           RaceConfig.int_size];
 						System.arraycopy(offset ,0,combined, 0,offset.length);
-						combined[offset.length] = ByteUtils.getMagicByteFromInt(posInfo[0]);//将写入的缓冲区编号写入
+						combined[offset.length] = (byte)posInfo[0];//将写入的缓冲区编号写入
 						byte[] intValue = ByteUtils.leIntToByteArray(posInfo[1]);
 						System.arraycopy(intValue ,0,combined, offset.length + RaceConfig.byte_size ,
 								intValue.length);
@@ -615,16 +631,13 @@ public class DiskHashTable<K> implements Serializable {
 					else {
 						// 说明direct memory内存不够了  将direct memory dump到文件里去 但写完后还要调用一次putoffset
 						isNeedDump = true;
+						// 重新调用自身
+						// 这里要将建索引的数目减少点  为了腾出内存给多余的offset
+						RaceConfig.maxIndexFileCapacity /= 2;
+						putOffset(key, appendOffset);
 					}
 				}
-				if( isNeedDump ) {
-					// direct memory不应该不够
-					System.out.println("direct memory full" );
-					//System.exit(0);
-//					dumpDirectMemory();
-					// 写完文件后  还要再调用一次putoffset  将本次没有添加进去的内容添加到新的directmemory中
-					//putOffset(key, appendOffset);
-				}
+				
 			}
 			
 		} else {

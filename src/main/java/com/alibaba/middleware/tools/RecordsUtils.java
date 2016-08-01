@@ -158,12 +158,12 @@ public class RecordsUtils {
 	 * @param offset
 	 * @return
 	 */
-	public static List<byte[]> getOrderIdListsFromFile(LinkedBlockingQueue<RandomAccessFile> file
+	public static List<byte[]> getOrderIdListsFromFile(LinkedBlockingQueue<BufferedRandomAccessFile> file
 			, long offset){
 		List<byte[]> results = null;
 		
 		try {
-			RandomAccessFile fileReader = file.take();
+			BufferedRandomAccessFile fileReader = file.take();
 			fileReader.seek(offset);
 			
 			byte[] content = new byte[fileReader.readInt()];

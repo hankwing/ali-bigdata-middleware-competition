@@ -173,11 +173,19 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 						// 从orderid列表中取出相应的数据
 						// 从byte解析出int			
 						//int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
-						int memoryIndex = ByteUtils.getMagicIntFromByte(byteAndOffset[0]);
+						int memoryIndex = byteAndOffset[0];
 						// 跳过第一个字节
 						int pos = ByteUtils.byteArrayToLeInt(Arrays.copyOfRange(byteAndOffset, 
 								1, byteAndOffset.length));
-						offsets.addAll(directMemory.getOrderIdListsFromBytes(memoryIndex, pos));
+						if( memoryIndex >= 0) {
+							// 说明是在直接内存里
+							offsets.addAll(directMemory.getOrderIdListsFromBytes(memoryIndex, pos));
+						}
+						else {
+							// 说明自己就是数据的offset
+							offsets.add(byteAndOffset);
+						}
+						
 						
 						/*ByteBuffer buffer = ByteBuffer.wrap(byteAndOffset);
 						// 从byte解析出int			
