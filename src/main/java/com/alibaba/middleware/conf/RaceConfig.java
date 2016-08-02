@@ -24,7 +24,7 @@ public class RaceConfig implements Serializable{
 	public static int handleThreadNumber = 1;				// 读写线程数
 	public static int orderTableThreadNum = 3;							// 读写线程数
 	public static int QueueNumber = 5000;					// 建索引时的一个缓冲队列的大小
-	public static int fileHandleNumber = Runtime.getRuntime().availableProcessors();// 每个文件预先打开的句柄数
+	public static int fileHandleNumber = Runtime.getRuntime().availableProcessors() * 2;// 每个文件预先打开的句柄数
 	
 	//public static int cacheNumberOneRead = 100;					// 每读一次就放入缓冲区中的行的数量
 	//public static int bucketNumberOneRead = 50;					// 每读一次桶就放入缓冲区中的桶的数量
@@ -101,9 +101,6 @@ public class RaceConfig implements Serializable{
 	public static int buyerFileCapacity = 10000;
 	public static int goodFileCapacity = 10000;
 	public static int columnFileCapacity = 10000;*/
-
-	
-	
 	
 	public static String[] storeFolders = null;
 	public static String buyerFileNamePrex = "/buyer_";
