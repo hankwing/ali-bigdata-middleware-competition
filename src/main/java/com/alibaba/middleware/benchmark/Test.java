@@ -17,6 +17,7 @@ import java.io.Serializable;
 import java.lang.instrument.Instrumentation;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.FileLock;
@@ -57,21 +58,19 @@ import com.alibaba.middleware.tools.RecordsUtils;
 public class Test {
 
 	public static void main(String[] args) {
-		
-//		if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
-//		      System.out.println("BIG_ENDIAN");
-//		    } else {
-//		      System.out.println("LITTLE_ENDIAN");
-//		    }
-//		
-//		byte[] array = new byte[]{116, 101, 1, 6};
-//		
-//		int value = ByteUtils.byteArrayToLeInt(array);
-//		System.out.println(value);
-		int a = 128;
-		byte b = (byte)a;
-		System.out.println(b);
-		
+
+		// if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
+		// System.out.println("BIG_ENDIAN");
+		// } else {
+		// System.out.println("LITTLE_ENDIAN");
+		// }
+		//
+		// byte[] array = new byte[]{116, 101, 1, 6};
+		//
+		// int value = ByteUtils.byteArrayToLeInt(array);
+		// System.out.println(value);
+
+
 	}
-	
+
 }
