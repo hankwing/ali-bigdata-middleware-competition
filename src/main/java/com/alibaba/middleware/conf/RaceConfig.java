@@ -50,8 +50,8 @@ public class RaceConfig implements Serializable{
 	/**
 	 * Cache pool config
 	 * */
-    public static int cacheInitCapacity = 5000;                    // ConcurrentCache中每个队列的初始大小
-    public static int cacheMaxCapacity = 10000;                    // ConcurrentCache中每个队列的最大大小
+    public static int cacheInitCapacity = 10000;                    // ConcurrentCache中每个队列的初始大小
+    public static int cacheMaxCapacity = 20000;                    // ConcurrentCache中每个队列的最大大小
     public static int bucketCapcity = 100;                        // 桶CACHE的最大上限
     public static int bucketRemoveNum = 10;                        // 每次桶的CACHE达到上限后删除一定量的桶
 

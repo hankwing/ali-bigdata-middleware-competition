@@ -17,8 +17,8 @@ public class ConcurrentCache {
     private ConcurrentLinkedHashMap<BytesKey, String> buyerCacheMap;
     private ConcurrentLinkedHashMap<BytesKey, String> goodCacheMap;
 
-    private ConcurrentLinkedHashMap<BytesKey, List<byte[]>> buyerToOrderIdCacheMap;
-    private ConcurrentLinkedHashMap<BytesKey, List<byte[]>> goodToOrderIdCacheMap;
+    //private ConcurrentLinkedHashMap<BytesKey, List<byte[]>> buyerToOrderIdCacheMap;
+    //private ConcurrentLinkedHashMap<BytesKey, List<byte[]>> goodToOrderIdCacheMap;
 
     private int initCapacity = RaceConfig.cacheInitCapacity;
     private int maxCapacity = RaceConfig.cacheMaxCapacity;
@@ -48,16 +48,16 @@ public class ConcurrentCache {
                 .initialCapacity(initCapacity)
                 .build();
 
-        buyerToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, List<byte[]>>()
-                .maximumWeightedCapacity(maxCapacity)
-                .concurrencyLevel(16)
-                .initialCapacity(initCapacity)
-                .build();
-        goodToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, List<byte[]>>()
-                .maximumWeightedCapacity(maxCapacity)
-                .concurrencyLevel(16)
-                .initialCapacity(initCapacity)
-                .build();
+//        buyerToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, List<byte[]>>()
+//                .maximumWeightedCapacity(maxCapacity)
+//                .concurrencyLevel(16)
+//                .initialCapacity(initCapacity)
+//                .build();
+//        goodToOrderIdCacheMap = new ConcurrentLinkedHashMap.Builder<BytesKey, List<byte[]>>()
+//                .maximumWeightedCapacity(maxCapacity)
+//                .concurrencyLevel(16)
+//                .initialCapacity(initCapacity)
+//                .build();
     }
 
     /**
@@ -84,18 +84,18 @@ public class ConcurrentCache {
         }
     }
 
-    public void putInIdCache(BytesKey key, List<byte[]> value, RaceConfig.IdIndexType indexType) {
-        switch (indexType) {
-            case BuyerIdToOrderOffsets:
-                if (!buyerToOrderIdCacheMap.containsKey(key))
-                    buyerToOrderIdCacheMap.put(key, value);
-                break;
-            case GoodIdToOrderOffsets:
-                if (!goodToOrderIdCacheMap.containsKey(key))
-                    goodToOrderIdCacheMap.put(key, value);
-                break;
-        }
-    }
+//    public void putInIdCache(BytesKey key, List<byte[]> value, RaceConfig.IdIndexType indexType) {
+//        switch (indexType) {
+//            case BuyerIdToOrderOffsets:
+//                if (!buyerToOrderIdCacheMap.containsKey(key))
+//                    buyerToOrderIdCacheMap.put(key, value);
+//                break;
+//            case GoodIdToOrderOffsets:
+//                if (!goodToOrderIdCacheMap.containsKey(key))
+//                    goodToOrderIdCacheMap.put(key, value);
+//                break;
+//        }
+//    }
 
     public String getFromCache(Object key, TableName tableType) {
 
@@ -113,31 +113,31 @@ public class ConcurrentCache {
         return null;
     }
 
-    public List<byte[]> getFromIdCache(BytesKey key, RaceConfig.IdIndexType indexType) {
-        List<byte[]> cache = null;
-        switch (indexType) {
-            case BuyerIdToOrderOffsets:
-                cache = buyerToOrderIdCacheMap.get(key);
-                break;
-            case GoodIdToOrderOffsets:
-                cache = goodToOrderIdCacheMap.get(key);
-                break;
-        }
-        return cache;
-    }
+//    public List<byte[]> getFromIdCache(BytesKey key, RaceConfig.IdIndexType indexType) {
+//        List<byte[]> cache = null;
+//        switch (indexType) {
+//            case BuyerIdToOrderOffsets:
+//                cache = buyerToOrderIdCacheMap.get(key);
+//                break;
+//            case GoodIdToOrderOffsets:
+//                cache = goodToOrderIdCacheMap.get(key);
+//                break;
+//        }
+//        return cache;
+//    }
 
     public void forceEvict(long num) {
         //long orderS = orderCacheMap.size();
         long buyerS = buyerCacheMap.size();
         long goodS = goodCacheMap.size();
-        long goodIdS = goodToOrderIdCacheMap.size();
-        long buyerIdS = buyerToOrderIdCacheMap.size();
-        long size = buyerS + goodS + goodIdS + buyerIdS;
+//        long goodIdS = goodToOrderIdCacheMap.size();
+//        long buyerIdS = buyerToOrderIdCacheMap.size();
+        long size = buyerS + goodS;
         //orderEvict(num*orderS/size);
         buyerEvict(num*buyerS/size);
         goodEvict(num*goodS/size);
-        goodToOrderIdEvict(num*goodIdS/size);
-        buyerToOrderIdEvict(num*buyerIdS/size);
+//        goodToOrderIdEvict(num*buyerS/size);
+//        buyerToOrderIdEvict(num*goodS/size);
     }
 
     //public void orderEvict(long num) {
@@ -152,13 +152,13 @@ public class ConcurrentCache {
         goodCacheMap.batchEvict(num);
     }
 
-    public void goodToOrderIdEvict(long num) {
-        goodToOrderIdCacheMap.batchEvict(num);
-    }
-
-    public void buyerToOrderIdEvict(long num) {
-        buyerToOrderIdCacheMap.batchEvict(num);
-    }
+//    public void goodToOrderIdEvict(long num) {
+//        goodToOrderIdCacheMap.batchEvict(num);
+//    }
+//
+//    public void buyerToOrderIdEvict(long num) {
+//        buyerToOrderIdCacheMap.batchEvict(num);
+//    }
 
     /**
      * No use
@@ -166,7 +166,7 @@ public class ConcurrentCache {
      * */
 
     public int getSize() {
-        return buyerCacheMap.size() + goodCacheMap.size() + 
-        		buyerToOrderIdCacheMap.size() + goodToOrderIdCacheMap.size();
+        return buyerCacheMap.size() + goodCacheMap.size(); 
+//        		buyerToOrderIdCacheMap.size() + goodToOrderIdCacheMap.size();
     }
 }

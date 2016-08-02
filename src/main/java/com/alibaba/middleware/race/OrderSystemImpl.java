@@ -763,6 +763,7 @@ public class OrderSystemImpl implements OrderSystem {
 		Iterator<Result> result = new QueryOrderByBuyerThread(this, startTime,
 				endTime, buyerid).getResult();
 		System.out.println("query 2 time:" + (System.currentTimeMillis() - before));
+		System.out.println("cache number：" + rowCache.getSize());
 		return result;
         //Iterator<Result> iterator = null;
         //if (queryExe != null) {
