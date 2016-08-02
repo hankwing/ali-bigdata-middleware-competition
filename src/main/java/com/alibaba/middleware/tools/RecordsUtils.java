@@ -154,7 +154,7 @@ public class RecordsUtils {
 				result.append(new String(data));
 			}
 			result.append(new String(data,0,locateEnd));
-			
+			//System.out.println("read from disk:" + result.toString());
 			//result = new String(fileReader.readLine().getBytes(
 			//		StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
 			// 放回文件句柄队列中

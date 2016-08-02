@@ -609,7 +609,7 @@ public class ByteDirectMemory {
 			builder.append(new String(data));
 		}
 		builder.append(new String(data,0,locateEnd));
-		
+		//System.out.println("read from direct mem:" + builder.toString());
 		lock.writeLock().unlock();
 		return builder.toString();
 	}
