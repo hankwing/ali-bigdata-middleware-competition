@@ -13,7 +13,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
-import com.alibaba.middleware.tools.BufferedRandomAccessFile;
 import com.alibaba.middleware.tools.ByteUtils;
 
 /***
@@ -41,7 +40,7 @@ public class SmallFileWriter {
 	private String dataFilePerfix;
 	private String dataFileName;
 	private int dataFileNumber;
-	private ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> fileHandlersList;
+	private ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList;
 
 	//建立索引
 	private List<ArrayBlockingQueue<IndexItem>> indexQueues = null;
@@ -54,7 +53,7 @@ public class SmallFileWriter {
 	private int interval;
 
 	public SmallFileWriter(
-			ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> fileHandlersList,
+			ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> fileHandlersList,
 			DataFileMapping dataFileMapping,
 			List<ArrayBlockingQueue<IndexItem>> indexQueues, 
 			String path,String name) {
@@ -92,14 +91,14 @@ public class SmallFileWriter {
 			this.writer = new BufferedWriter(new FileWriter(dataFileName));
 			dataFileSerialNumber = dataFileMapping.addDataFileName(dataFileName);
 			
-			LinkedBlockingQueue<BufferedRandomAccessFile> handlersQueue = fileHandlersList.get(dataFileSerialNumber);
+			LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(dataFileSerialNumber);
 			if( handlersQueue == null) {
-				handlersQueue = new LinkedBlockingQueue<BufferedRandomAccessFile>();
+				handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 				fileHandlersList.put(dataFileSerialNumber, handlersQueue);
 			}
 
 			for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-				handlersQueue.add(new BufferedRandomAccessFile(dataFileName, "r"));
+				handlersQueue.add(new RandomAccessFile(dataFileName, "r"));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -127,14 +126,14 @@ public class SmallFileWriter {
 				offset = 0;
 				count = 0;
 				// 加入文件句柄缓冲池
-				LinkedBlockingQueue<BufferedRandomAccessFile> handlersQueue = fileHandlersList.get(dataFileSerialNumber);
+				LinkedBlockingQueue<RandomAccessFile> handlersQueue = fileHandlersList.get(dataFileSerialNumber);
 				if( handlersQueue == null) {
-					handlersQueue = new LinkedBlockingQueue<BufferedRandomAccessFile>();
+					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 					fileHandlersList.put(dataFileSerialNumber, handlersQueue);
 				}
 
 				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					handlersQueue.add(new BufferedRandomAccessFile(dataFileName, "r"));
+					handlersQueue.add(new RandomAccessFile(dataFileName, "r"));
 				}
 				
 			}

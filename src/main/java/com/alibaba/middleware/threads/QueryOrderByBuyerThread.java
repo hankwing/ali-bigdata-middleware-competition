@@ -32,12 +32,11 @@ import java.util.TreeMap;
 /**
  * @author Jelly
  */
-public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
+public class QueryOrderByBuyerThread  {
     private long startTime;
     private long endTime;
     private String buyerid;
     private OrderSystemImpl system;
-    private ConcurrentCache rowCache = null;
     private ByteDirectMemory directMemory = null;
 
     public QueryOrderByBuyerThread(OrderSystemImpl system, long startTime, long endTime, String buyerid) {
@@ -45,7 +44,6 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
         this.endTime = endTime;
         this.buyerid = buyerid;
         this.system = system;
-        rowCache = ConcurrentCache.getInstance();
         directMemory = ByteDirectMemory.getInstance();
     }
     
@@ -120,8 +118,7 @@ public class QueryOrderByBuyerThread extends QueryThread<Iterator<Result>> {
 	 *            买家Id
 	 * @return 符合条件的订单集合，按照createtime大到小排列
 	 */
-	@Override
-    public Iterator<Result> call() throws Exception {
+    public Iterator<Result> getResult() {
     	// 根据买家ID在索引里找到结果 再判断结果是否介于startTime和endTime之间 结果集合按照createTime插入排序
 		TreeMap<Long, List<Result>> results = new TreeMap<Long, List<Result>>(
 				Collections.reverseOrder());

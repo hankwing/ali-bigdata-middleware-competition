@@ -29,18 +29,16 @@ import com.alibaba.middleware.tools.RecordsUtils;
 /**
  * @author Jelly
  */
-public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
+public class SumOrdersByGoodThread {
 
 	private String goodid;
 	private String key;
 	private OrderSystemImpl system = null;
-	private ConcurrentCache rowCache = null;
 	private ByteDirectMemory directMemory = null;
 
 	public SumOrdersByGoodThread(OrderSystemImpl system, String goodid,
 			String key) {
 		directMemory = ByteDirectMemory.getInstance();
-		rowCache = ConcurrentCache.getInstance();
 		this.system = system;
 		this.goodid = goodid;
 		this.key = key;
@@ -63,8 +61,7 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 	 * @throws TypeException
 	 */
 	@SuppressWarnings("unchecked")
-	@Override
-	public KeyValueImpl call() throws TypeException {
+	public KeyValueImpl getResult() {
 		// TODO
 		// KeyValueImpl result = new KeyValueImpl()
 		List<String> keys = new ArrayList<String>();
@@ -168,14 +165,24 @@ public class SumOrdersByGoodThread extends QueryThread<KeyValueImpl> {
 				if (!buyerKeys.isEmpty()) {
 					// need query buyerTable
 					resultBuilder.append("\t");
-					resultBuilder.append(system.getRowStringById(TableName.BuyerTable, 
-							RecordsUtils.getValueFromLine(diskData, RaceConfig.buyerId)));
+					try {
+						resultBuilder.append(system.getRowStringById(TableName.BuyerTable, 
+								RecordsUtils.getValueFromLine(diskData, RaceConfig.buyerId)));
+					} catch (TypeException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 				if (!goodKeys.isEmpty()) {
 					// 到good表里找相应的key	
 					resultBuilder.append("\t");
-					resultBuilder.append(system.getRowStringById(TableName.GoodTable, 
-							RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)));
+					try {
+						resultBuilder.append(system.getRowStringById(TableName.GoodTable, 
+								RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId)));
+					} catch (TypeException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 					Row row = RecordsUtils.createKVMapFromLine(resultBuilder.toString());
 					try {
 						KeyValueImpl keyValue = row.getKV(key);

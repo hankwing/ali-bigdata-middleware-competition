@@ -25,7 +25,6 @@ import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.race.OrderSystemImpl;
-import com.alibaba.middleware.tools.BufferedRandomAccessFile;
 import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.RecordsUtils;
 import com.esotericsoftware.kryo.Kryo;
@@ -82,9 +81,9 @@ public class DiskHashTable<K> implements Serializable {
 	public int orderListFileSeriNum = 0;								// 根据这个创建不同的orderidlist文件
 	public String orderListFilePrex = null;
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
 		buyerOrderIdListHandlersList = null;
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
 		goodOrderIdListHandlersList = null;
 	// 标志位 如果设为true 则表示要将offset建在索引本身后面
 	private boolean isNeedDump = false;

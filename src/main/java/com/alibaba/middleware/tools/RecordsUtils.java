@@ -128,12 +128,12 @@ public class RecordsUtils {
 	 * @param offset
 	 * @return
 	 */
-	public static String getStringFromFile(LinkedBlockingQueue<BufferedRandomAccessFile> file
+	public static String getStringFromFile(LinkedBlockingQueue<RandomAccessFile> file
 			, Long offset, TableName tableType){
 		String result = null;
 		
 		try {
-			BufferedRandomAccessFile fileReader = file.take();
+			RandomAccessFile fileReader = file.take();
 			fileReader.seek(offset);
 			result = new String(fileReader.readLine().getBytes(StandardCharsets.ISO_8859_1), 
 					StandardCharsets.UTF_8);
@@ -158,12 +158,12 @@ public class RecordsUtils {
 	 * @param offset
 	 * @return
 	 */
-	public static List<byte[]> getOrderIdListsFromFile(LinkedBlockingQueue<BufferedRandomAccessFile> file
+	public static List<byte[]> getOrderIdListsFromFile(LinkedBlockingQueue<RandomAccessFile> file
 			, long offset){
 		List<byte[]> results = null;
 		
 		try {
-			BufferedRandomAccessFile fileReader = file.take();
+			RandomAccessFile fileReader = file.take();
 			fileReader.seek(offset);
 			
 			byte[] content = new byte[fileReader.readInt()];

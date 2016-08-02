@@ -33,18 +33,16 @@ import java.util.TreeMap;
 /**
  * @author Jelly
  */
-public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
+public class QueryOrdersBySalerThread {
 	private String salerid;
 	private String goodid;
 	private Collection<String> keys;
 	private OrderSystemImpl system = null;
-	private ConcurrentCache rowCache = null;
 	private ByteDirectMemory directMemory = null;
 
 	public QueryOrdersBySalerThread(OrderSystemImpl system, String salerid,
 			String goodid, Collection<String> keys) {
 		directMemory = ByteDirectMemory.getInstance();
-		rowCache = ConcurrentCache.getInstance();
 		this.system = system;
 		this.salerid = salerid;
 		this.goodid = goodid;
@@ -123,8 +121,7 @@ public class QueryOrdersBySalerThread extends QueryThread<Iterator<Result>> {
 	 *            待查询的字段，如果为null，则查询所有字段，如果为空，则排除所有字段
 	 * @return 符合条件的订单集合，按照订单id从小至大排序
 	 */
-	@Override
-	public Iterator<Result> call() throws Exception {
+	public Iterator<Result> getResult() {
 		// TODO
 		// 根据商品ID找到多条订单信息 再筛选出keys 结果集按照订单id插入排序
 		ArrayList<String> buyerKeys = new ArrayList<String>();

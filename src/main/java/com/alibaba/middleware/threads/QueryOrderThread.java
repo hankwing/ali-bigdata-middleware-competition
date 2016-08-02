@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * @author Jelly
  */
-public class QueryOrderThread extends QueryThread<ResultImpl> {
+public class QueryOrderThread {
     private long orderId;
     private Collection<String> keys;
     private OrderSystemImpl system = null;
@@ -37,8 +37,7 @@ public class QueryOrderThread extends QueryThread<ResultImpl> {
 	 *            待查询的字段，如果为null，则查询所有字段，如果为空，则排除所有字段
 	 * @return 查询结果，如果该订单不存在，返回null
 	 */
-    @Override
-    public ResultImpl call() {
+    public ResultImpl getResults() {
     	ResultImpl result = null;
 		//Row resultKV = new Row();
 		StringBuilder resultBuilder = new StringBuilder();
