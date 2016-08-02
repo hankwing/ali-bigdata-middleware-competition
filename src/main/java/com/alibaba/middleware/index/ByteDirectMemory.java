@@ -1,13 +1,19 @@
 package com.alibaba.middleware.index;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.alibaba.middleware.conf.RaceConfig;
 import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
+import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.tools.ByteUtils;
+import com.alibaba.middleware.tools.RecordsUtils;
 
 public class ByteDirectMemory {
 
@@ -35,17 +41,19 @@ public class ByteDirectMemory {
 	private int orderBuyerSegOffset = 0;
 	private int orderGoodSegOffset = 0;
 	private int sharedSegOffset = 0;
+	private OrderSystemImpl system = null;
 	
-	public static ByteDirectMemory getInstance() {
+	public static ByteDirectMemory getInstance( OrderSystemImpl system) {
 		if(instance == null) {
-			instance = new ByteDirectMemory(RaceConfig.directMemorySize);
+			instance = new ByteDirectMemory(system, RaceConfig.directMemorySize);
 		}
 		return instance;
 	}
 	
-	public ByteDirectMemory(int size) {
+	public ByteDirectMemory(OrderSystemImpl system, int size) {
 		// TODO Auto-generated constructor stub
 		//orderIdBuffer = ByteBuffer.allocateDirect(size);
+		this.system = system;
 		orderBuyerPreserveSpace = RaceConfig.buyer_remaining_bytes_length;
 		orderGoodPreserveSpace = RaceConfig.good_remaining_bytes_length;
 		orderBuyerBuffer = ByteBuffer.allocateDirect(size);
@@ -218,6 +226,69 @@ public class ByteDirectMemory {
 	}
 	
 	/**
+	 * 将字节数组放入直接内存中 在末尾写入1024个空白字节 以便后来修改用
+	 * 
+	 * 
+	 * 返回int数组  第一个代表写到哪个缓冲区了  第二个代表实际的位置信息
+	 * @param byteArray
+	 * @param segment
+	 */
+	public int[] putFileContent(FileChannel fileChannel, DirectMemoryType memoryType) {
+		
+		// TODO Auto-generated method stub
+		int[] resultInfo = new int[2];
+		try{
+			switch( memoryType) {
+			case BuyerIdSegment:
+				orderBuyerSegLock.writeLock().lock();
+				
+				orderBuyerBuffer.position(orderBuyerSegOffset);
+				if( orderBuyerSegIsFull || orderBuyerBuffer.remaining() < fileChannel.size()) {
+					// 说明空间不够了 写到shared memory里去
+					
+					//System.out.println("orderBuyerBuffer direct memory have no space");
+					orderBuyerSegIsFull = true;
+					resultInfo[0] = RaceConfig.sharedMemory;
+					resultInfo[1] = putFileToSharedMemory(fileChannel);
+				}
+				else {
+					// 先写int代表大小
+					resultInfo[0] = RaceConfig.buyerMemory;					// 0代表
+					resultInfo[1] = orderBuyerSegOffset;
+					fileChannel.read(orderBuyerBuffer);
+					orderBuyerSegOffset = orderBuyerBuffer.position();
+				}
+				orderBuyerSegLock.writeLock().unlock();
+				break;
+			case GoodIdSegment:
+				orderGoodSegLock.writeLock().lock();
+				orderGoodBuffer.position(orderGoodSegOffset);
+				if( orderGoodSegIsFull || orderGoodBuffer.remaining() < fileChannel.size()) {
+					// 说明空间不够了
+					//System.out.println("orderGoodBuffer direct memory have no space!");
+					orderGoodSegIsFull = true;
+					resultInfo[0] = RaceConfig.sharedMemory;
+					resultInfo[1] = putFileToSharedMemory(fileChannel);
+				}
+				else {
+					resultInfo[0] = RaceConfig.goodMemory;
+					resultInfo[1] = orderGoodSegOffset;
+					fileChannel.read(orderGoodBuffer);
+					orderGoodSegOffset = orderGoodBuffer.position();
+				}
+				
+				orderGoodSegLock.writeLock().unlock();
+				break;
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return resultInfo;
+	}
+	
+	/**
 	 * 这里要确保只有一个方法进入
 	 * @param byteArray
 	 * @param reserveSize
@@ -247,6 +318,41 @@ public class ByteDirectMemory {
 		return pos;
 		
 	}
+	
+	/**
+	 * 这里要确保只有一个方法进入
+	 * @param byteArray
+	 * @param reserveSize
+	 * @return
+	 */
+	public synchronized int putFileToSharedMemory(FileChannel fileChannel) {
+		int pos = -1;
+		try {
+			sharedSegLock.writeLock().lock();
+			
+			sharedDirectBuffer.position(sharedSegOffset);
+			if( sharedSegIsFull || sharedDirectBuffer.remaining() < fileChannel.size()) {
+				// 说明空间不够了
+				
+				System.out.println("all direct memory have no space");
+				sharedSegIsFull = true;
+			}
+			else {
+				// 先写int代表大小
+				pos = sharedSegOffset;
+				//sharedDirectBuffer.putInt(byteArray.length);
+				fileChannel.read(sharedDirectBuffer);
+				
+				sharedSegOffset = sharedDirectBuffer.position();
+			}
+			sharedSegLock.writeLock().unlock();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return pos;
+		
+	}
 
 	/**
 	 * 将字节数组放入直接内存中 直接内存分为三段  这里需要判断是否还有剩余空间
@@ -255,62 +361,62 @@ public class ByteDirectMemory {
 	 * @param byteArray
 	 * @param segment
 	 */
-	public int put(byte[] byteArray, DirectMemoryType memoryType) {
-		
-		// TODO Auto-generated method stub
-		int newPos = -1;
-		switch( memoryType) {
-/*		case MainSegment:
-			mainSegLock.writeLock().lock();
-			orderIdBuffer.position(mainSegOffset);
-			if( orderIdBuffer.remaining() < byteArray.length) {
-				// 说明空间不够了
-				mainSegIsFull = true;
-			}
-			else {
-				newPos = mainSegOffset;
-				orderIdBuffer.putInt(byteArray.length);
-				orderIdBuffer.put(byteArray);
-				mainSegOffset = orderIdBuffer.position();
-			}
-			mainSegLock.writeLock().unlock();
-			break;*/
-		case BuyerIdSegment:
-			orderBuyerSegLock.writeLock().lock();
-			
-			orderBuyerBuffer.position(orderBuyerSegOffset);
-			if( orderBuyerBuffer.remaining() < byteArray.length) {
-				// 说明空间不够了
-				orderBuyerSegIsFull = true;
-			}
-			else {
-				// 先写int代表大小
-				newPos = orderBuyerSegOffset;
-				orderBuyerBuffer.putInt(byteArray.length);
-				orderBuyerBuffer.put(byteArray);
-				orderBuyerSegOffset = orderBuyerBuffer.position();
-			}
-			orderBuyerSegLock.writeLock().unlock();
-			break;
-		case GoodIdSegment:
-			orderGoodSegLock.writeLock().lock();
-			orderGoodBuffer.position(orderGoodSegOffset);
-			if( orderGoodBuffer.remaining() < byteArray.length) {
-				// 说明空间不够了
-				orderGoodSegIsFull = true;
-			}
-			else {
-				newPos = orderGoodSegOffset;
-				orderGoodBuffer.putInt(byteArray.length);
-				orderGoodBuffer.put(byteArray);
-				orderGoodSegOffset = orderGoodBuffer.position();
-			}
-			
-			orderGoodSegLock.writeLock().unlock();
-			break;
-		}
-		return newPos;
-	}
+//	public int put(byte[] byteArray, DirectMemoryType memoryType) {
+//		
+//		// TODO Auto-generated method stub
+//		int newPos = -1;
+//		switch( memoryType) {
+///*		case MainSegment:
+//			mainSegLock.writeLock().lock();
+//			orderIdBuffer.position(mainSegOffset);
+//			if( orderIdBuffer.remaining() < byteArray.length) {
+//				// 说明空间不够了
+//				mainSegIsFull = true;
+//			}
+//			else {
+//				newPos = mainSegOffset;
+//				orderIdBuffer.putInt(byteArray.length);
+//				orderIdBuffer.put(byteArray);
+//				mainSegOffset = orderIdBuffer.position();
+//			}
+//			mainSegLock.writeLock().unlock();
+//			break;*/
+//		case BuyerIdSegment:
+//			orderBuyerSegLock.writeLock().lock();
+//			
+//			orderBuyerBuffer.position(orderBuyerSegOffset);
+//			if( orderBuyerBuffer.remaining() < byteArray.length) {
+//				// 说明空间不够了
+//				orderBuyerSegIsFull = true;
+//			}
+//			else {
+//				// 先写int代表大小
+//				newPos = orderBuyerSegOffset;
+//				orderBuyerBuffer.putInt(byteArray.length);
+//				orderBuyerBuffer.put(byteArray);
+//				orderBuyerSegOffset = orderBuyerBuffer.position();
+//			}
+//			orderBuyerSegLock.writeLock().unlock();
+//			break;
+//		case GoodIdSegment:
+//			orderGoodSegLock.writeLock().lock();
+//			orderGoodBuffer.position(orderGoodSegOffset);
+//			if( orderGoodBuffer.remaining() < byteArray.length) {
+//				// 说明空间不够了
+//				orderGoodSegIsFull = true;
+//			}
+//			else {
+//				newPos = orderGoodSegOffset;
+//				orderGoodBuffer.putInt(byteArray.length);
+//				orderGoodBuffer.put(byteArray);
+//				orderGoodSegOffset = orderGoodBuffer.position();
+//			}
+//			
+//			orderGoodSegLock.writeLock().unlock();
+//			break;
+//		}
+//		return newPos;
+//	}
 
 	/**
 	 * 得到相应位置后面的byte大小的int
@@ -349,36 +455,36 @@ public class ByteDirectMemory {
 	 * @param position
 	 * @return
 	 */
-	public List<byte[]> getOrderIdListsFromBytes(int directMemType, int position ) {
-		// TODO Auto-generated method stub
-		List<byte[]> content = null;
-		if( directMemType == RaceConfig.buyerMemory) {
-			// 从buyer缓冲区里拿
-			orderBuyerSegLock.writeLock().lock();
-			orderBuyerBuffer.position(position);
-			byte[] bytes = new byte[orderBuyerBuffer.getInt()];
-			orderBuyerBuffer.get(bytes);
-			content = ByteUtils.splitBytes(bytes);
-			orderBuyerSegLock.writeLock().unlock();
-		}
-		else if( directMemType == RaceConfig.goodMemory){
-			orderGoodSegLock.writeLock().lock();
-			orderGoodBuffer.position(position);
-			byte[] goodBytes = new byte[orderGoodBuffer.getInt()];
-			orderGoodBuffer.get(goodBytes);
-			content = ByteUtils.splitBytes(goodBytes);
-			orderGoodSegLock.writeLock().unlock();
-		}
-		else {
-			sharedSegLock.writeLock().lock();
-			sharedDirectBuffer.position(position);
-			byte[] bytes = new byte[sharedDirectBuffer.getInt()];
-			sharedDirectBuffer.get(bytes);
-			content = ByteUtils.splitBytes(bytes);
-			sharedSegLock.writeLock().unlock();
-		}
-		return content;
-	}
+//	public List<byte[]> getOrderIdListsFromBytes(int directMemType, int position ) {
+//		// TODO Auto-generated method stub
+//		List<byte[]> content = null;
+//		if( directMemType == RaceConfig.buyerMemory) {
+//			// 从buyer缓冲区里拿
+//			orderBuyerSegLock.writeLock().lock();
+//			orderBuyerBuffer.position(position);
+//			byte[] bytes = new byte[orderBuyerBuffer.getInt()];
+//			orderBuyerBuffer.get(bytes);
+//			content = ByteUtils.splitBytes(bytes);
+//			orderBuyerSegLock.writeLock().unlock();
+//		}
+//		else if( directMemType == RaceConfig.goodMemory){
+//			orderGoodSegLock.writeLock().lock();
+//			orderGoodBuffer.position(position);
+//			byte[] goodBytes = new byte[orderGoodBuffer.getInt()];
+//			orderGoodBuffer.get(goodBytes);
+//			content = ByteUtils.splitBytes(goodBytes);
+//			orderGoodSegLock.writeLock().unlock();
+//		}
+//		else {
+//			sharedSegLock.writeLock().lock();
+//			sharedDirectBuffer.position(position);
+//			byte[] bytes = new byte[sharedDirectBuffer.getInt()];
+//			sharedDirectBuffer.get(bytes);
+//			content = ByteUtils.splitBytes(bytes);
+//			sharedSegLock.writeLock().unlock();
+//		}
+//		return content;
+//	}
 	
 	/**
 	 * 构建用的
@@ -450,28 +556,97 @@ public class ByteDirectMemory {
 		//orderIdBuffer.clear();
 		System.out.println("buyer direct pos:" + orderBuyerSegOffset);
 		System.out.println("good direct pos:" + orderGoodSegOffset);
-		//orderGoodBuffer.clear();
-		//orderBuyerBuffer.clear();
-		//sharedDirectBuffer.clear();
+		orderGoodBuffer.clear();
+		orderBuyerBuffer.clear();
+		sharedDirectBuffer.clear();
 	}
 	
-//	public void clearOneSegment(DirectMemoryType memoryType) {
-//		switch( memoryType) {
-//		case BuyerIdSegment:
-//			orderBuyerSegLock.writeLock().lock();
-//			orderBuyerBuffer.clear();
-//			orderBuyerSegIsFull = false;
-//			orderBuyerSegOffset = 0;
-//			orderBuyerSegLock.writeLock().unlock();
-//			break;
-//		case GoodIdSegment:
-//			orderGoodSegLock.writeLock().lock();
-//			orderGoodBuffer.clear();
-//			orderGoodSegIsFull = false;
-//			orderGoodSegOffset = 0;
-//			orderGoodSegLock.writeLock().unlock();
-//			break;
-//			
-//		}
-//	}
+	/**
+	 * 将direct memory里的内容全部dump到文件里去
+	 */
+	public void dumpDirectMemory() {
+		// 需要将三块 direct memory dump到三个文件里去
+		String orderBuyerFileName = RaceConfig.storeFolders[RaceConfig.buyerMemory] + 
+				RaceConfig.buyerOrderListFileNamePrex;
+		String orderGoodFileName = RaceConfig.storeFolders[RaceConfig.goodMemory] + 
+				RaceConfig.goodOrderListFileNamePrex;
+		String orderSharedFileName = RaceConfig.storeFolders[RaceConfig.sharedMemory] + 
+				RaceConfig.sharedOrderListFileNamePrex;
+		// 添加入orderListMapping
+		try{
+			// 写入文件里去  并清空bytebuffer 为写入小文件数据做准备
+			RecordsUtils.writeToFile(orderBuyerFileName, instance, RaceConfig.buyerMemory );
+			RecordsUtils.writeToFile(orderGoodFileName, instance, RaceConfig.goodMemory );
+			RecordsUtils.writeToFile(orderSharedFileName, instance, RaceConfig.sharedMemory );
+			// 加入文件句柄
+
+			for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+				system.buyerOrderIdListHandlersList.add(new RandomAccessFile(orderBuyerFileName, "r"));
+			}
+			
+			for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+				system.goodOrderIdListHandlersList.add(new RandomAccessFile(orderGoodFileName, "r"));
+			}
+			
+			for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+				system.sharedOrderIdListHandlersList.add(new RandomAccessFile(orderSharedFileName, "r"));
+			}
+		
+			
+//			switch( memoryType) {
+//			 case BuyerIdSegment:
+//				 orderListFileSeriNum = buyerOrderIdListMapping.addDataFileName(orderListFileName);
+//				 // 建立文件句柄
+//				
+//				orderListFileSeriNum ++;
+//				 break;
+//			 case GoodIdSegment:
+//				 orderListFileSeriNum = goodOrderIdListMapping.addDataFileName(orderListFileName);
+//				// 建立文件句柄
+//				LinkedBlockingQueue<RandomAccessFile> goodHandlersQueue = 
+//						goodOrderIdListHandlersList.get(orderListFileSeriNum);
+//				if( goodHandlersQueue == null) {
+//					goodHandlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+//					goodOrderIdListHandlersList.put(orderListFileSeriNum, goodHandlersQueue);
+//				}
+//				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
+//					goodHandlersQueue.add(new RandomAccessFile(orderListFileName, "r"));
+//				}
+//				orderListFileSeriNum ++;
+//				break;
+//			 default:
+//				 break;
+//			 }
+			
+		} catch( Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+	
+	public void clearOneSegment(int memoryType) {
+		
+		if( memoryType == RaceConfig.buyerMemory) {
+			// 从buyer缓冲区里拿
+			orderBuyerSegLock.writeLock().lock();
+			orderBuyerBuffer.clear();
+			orderBuyerSegIsFull = false;
+			orderBuyerSegOffset = 0;
+			orderBuyerSegLock.writeLock().unlock();
+		}
+		else if( memoryType == RaceConfig.goodMemory){
+			orderGoodSegLock.writeLock().lock();
+			orderGoodBuffer.clear();
+			orderGoodSegIsFull = false;
+			orderGoodSegOffset = 0;
+			orderGoodSegLock.writeLock().unlock();
+		}
+		else {
+			sharedSegLock.writeLock().lock();
+			sharedDirectBuffer.clear();
+			sharedSegIsFull = false;
+			sharedSegOffset = 0;
+			sharedSegLock.writeLock().unlock();
+		}
+	}
 }

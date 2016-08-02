@@ -28,7 +28,6 @@ import com.alibaba.middleware.handlefile.WriteFile;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
-import com.alibaba.middleware.tools.BufferedRandomAccessFile;
 import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
@@ -60,7 +59,7 @@ public class RecordsProducer{
 	 * @param files
 	 */
 	public void handeFiles(Collection<String> files, 
-			ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> handlersList,
+			ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> handlersList,
 			DataFileMapping fileMapping) {
 		System.out.println("start order handling!");
 
@@ -70,14 +69,14 @@ public class RecordsProducer{
 				File bf = new File(file);
 				dataFileSerialNumber = fileMapping.addDataFileName(file);
 				// 建立文件句柄
-				LinkedBlockingQueue<BufferedRandomAccessFile> handlersQueue = 
+				LinkedBlockingQueue<RandomAccessFile> handlersQueue = 
 						handlersList.get(dataFileSerialNumber);
 				if( handlersQueue == null) {
-					handlersQueue = new LinkedBlockingQueue<BufferedRandomAccessFile>();
+					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 					handlersList.put(dataFileSerialNumber, handlersQueue);
 				}
 				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					handlersQueue.add(new BufferedRandomAccessFile(file, "r"));
+					handlersQueue.add(new RandomAccessFile(file, "r"));
 				}
 				
 				reader = new BufferedReader(new FileReader(bf));

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.middleware.tools;
+package com.alibaba.middleware.benchmark;
 
 import java.io.*;
 import java.util.Arrays;

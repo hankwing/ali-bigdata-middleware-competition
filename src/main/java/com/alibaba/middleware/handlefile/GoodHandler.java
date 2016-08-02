@@ -26,7 +26,6 @@ import com.alibaba.middleware.handlefile.BuyerHandler.BuyerIndexConstructor;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.race.OrderSystemImpl;
 import com.alibaba.middleware.race.Row;
-import com.alibaba.middleware.tools.BufferedRandomAccessFile;
 import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.FilePathWithIndex;
@@ -58,7 +57,7 @@ public class GoodHandler{
 	int threadIndex = 0;
 	CountDownLatch latch = null;
 	private ConcurrentCache rowCache = null;
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> goodHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
 	private OrderSystemImpl system = null;
 
 	public double MEG = Math.pow(1024, 2);
@@ -98,15 +97,15 @@ public class GoodHandler{
 					dataFileSerialNumber = goodFileMapping.addDataFileName(file);
 					reader = new BufferedReader(new FileReader(file));
 					// 建立文件句柄
-					LinkedBlockingQueue<BufferedRandomAccessFile> handlersQueue = 
+					LinkedBlockingQueue<RandomAccessFile> handlersQueue = 
 							goodHandlersList.get(dataFileSerialNumber);
 					if( handlersQueue == null) {
-						handlersQueue = new LinkedBlockingQueue<BufferedRandomAccessFile>();
+						handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 						goodHandlersList.put(dataFileSerialNumber, handlersQueue);
 					}
 
 					for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-						handlersQueue.add(new BufferedRandomAccessFile(file, "r"));
+						handlersQueue.add(new RandomAccessFile(file, "r"));
 					}
 					
 					String record = reader.readLine();
