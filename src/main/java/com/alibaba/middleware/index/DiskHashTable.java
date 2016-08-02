@@ -125,7 +125,7 @@ public class DiskHashTable<K> implements Serializable {
 		readWriteLock = new ReentrantReadWriteLock();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
 		bucketDirectMemList = new ConcurrentHashMap<Integer,Long>();
-		directMemory = ByteDirectMemory.getInstance( system);			//	获取direct memory
+		directMemory = ByteDirectMemory.getInstance();			//	获取direct memory
 		//directMemory.clear();									// 先不清空了
 		bucketCachePool = BucketCachePool.getInstance();
 		bucketReaderPool = new LinkedBlockingQueue<RandomAccessFile>();
@@ -134,8 +134,8 @@ public class DiskHashTable<K> implements Serializable {
 		//FIFOCacheMonitorThread.getInstance().registerFIFIOCache(bucketWriterWhenBuilding);
 		this.buyerOrderIdListMapping = system.buyerOrderIdListMapping;
 		this.goodOrderIdListMapping = system.goodOrderIdListMapping;
-		//this.buyerOrderIdListHandlersList = system.buyerOrderIdListHandlersList;
-		//this.goodOrderIdListHandlersList = system.goodOrderIdListHandlersList;
+		this.buyerOrderIdListHandlersList = system.buyerOrderIdListHandlersList;
+		this.goodOrderIdListHandlersList = system.goodOrderIdListHandlersList;
 		
 		
 		// 保存orderid列表的文件名前缀
@@ -184,7 +184,7 @@ public class DiskHashTable<K> implements Serializable {
 //						bucketAddressList = getHashDiskTable(bucketAddressOffset);
 //					}
 //
-//					BufferedRandomAccessFile reader = bucketReaderPool.take();
+//					RandomAccessFile reader = bucketReaderPool.take();
 //					reader.seek(bucketAddressList.get(key));
 //					
 //					byte[] bucketByteArray = null;
@@ -660,28 +660,28 @@ public class DiskHashTable<K> implements Serializable {
 			 case BuyerIdSegment:
 				 orderListFileSeriNum = buyerOrderIdListMapping.addDataFileName(orderListFileName);
 				 // 建立文件句柄
-				LinkedBlockingQueue<BufferedRandomAccessFile> handlersQueue = 
+				LinkedBlockingQueue<RandomAccessFile> handlersQueue = 
 						buyerOrderIdListHandlersList.get(orderListFileSeriNum);
 				if( handlersQueue == null) {
-					handlersQueue = new LinkedBlockingQueue<BufferedRandomAccessFile>();
+					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 					buyerOrderIdListHandlersList.put(orderListFileSeriNum, handlersQueue);
 				}
 				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					handlersQueue.add(new BufferedRandomAccessFile(orderListFileName, "r"));
+					handlersQueue.add(new RandomAccessFile(orderListFileName, "r"));
 				}
 				orderListFileSeriNum ++;
 				 break;
 			 case GoodIdSegment:
 				 orderListFileSeriNum = goodOrderIdListMapping.addDataFileName(orderListFileName);
 				// 建立文件句柄
-				LinkedBlockingQueue<BufferedRandomAccessFile> goodHandlersQueue = 
+				LinkedBlockingQueue<RandomAccessFile> goodHandlersQueue = 
 						goodOrderIdListHandlersList.get(orderListFileSeriNum);
 				if( goodHandlersQueue == null) {
-					goodHandlersQueue = new LinkedBlockingQueue<BufferedRandomAccessFile>();
+					goodHandlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
 					goodOrderIdListHandlersList.put(orderListFileSeriNum, goodHandlersQueue);
 				}
 				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					goodHandlersQueue.add(new BufferedRandomAccessFile(orderListFileName, "r"));
+					goodHandlersQueue.add(new RandomAccessFile(orderListFileName, "r"));
 				}
 				orderListFileSeriNum ++;
 				break;
