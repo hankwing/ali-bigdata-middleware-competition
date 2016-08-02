@@ -125,7 +125,7 @@ public class DiskHashTable<K> implements Serializable {
 		readWriteLock = new ReentrantReadWriteLock();
 		bucketAddressList = new ConcurrentHashMap<Integer, Long>();
 		bucketDirectMemList = new ConcurrentHashMap<Integer,Long>();
-		directMemory = ByteDirectMemory.getInstance( system);			//	获取direct memory
+		directMemory = ByteDirectMemory.getInstance();			//	获取direct memory
 		//directMemory.clear();									// 先不清空了
 		bucketCachePool = BucketCachePool.getInstance();
 		bucketReaderPool = new LinkedBlockingQueue<RandomAccessFile>();
@@ -134,8 +134,8 @@ public class DiskHashTable<K> implements Serializable {
 		//FIFOCacheMonitorThread.getInstance().registerFIFIOCache(bucketWriterWhenBuilding);
 		this.buyerOrderIdListMapping = system.buyerOrderIdListMapping;
 		this.goodOrderIdListMapping = system.goodOrderIdListMapping;
-		//this.buyerOrderIdListHandlersList = system.buyerOrderIdListHandlersList;
-		//this.goodOrderIdListHandlersList = system.goodOrderIdListHandlersList;
+		this.buyerOrderIdListHandlersList = system.buyerOrderIdListHandlersList;
+		this.goodOrderIdListHandlersList = system.goodOrderIdListHandlersList;
 		
 		
 		// 保存orderid列表的文件名前缀
