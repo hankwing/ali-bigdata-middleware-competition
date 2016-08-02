@@ -450,9 +450,9 @@ public class ByteDirectMemory {
 		//orderIdBuffer.clear();
 		System.out.println("buyer direct pos:" + orderBuyerSegOffset);
 		System.out.println("good direct pos:" + orderGoodSegOffset);
-		orderGoodBuffer.clear();
-		orderBuyerBuffer.clear();
-		sharedDirectBuffer.clear();
+		//orderGoodBuffer.clear();
+		//orderBuyerBuffer.clear();
+		//sharedDirectBuffer.clear();
 	}
 	
 //	public void clearOneSegment(DirectMemoryType memoryType) {

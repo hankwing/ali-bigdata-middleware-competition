@@ -25,6 +25,7 @@ import com.alibaba.middleware.conf.RaceConfig.DirectMemoryType;
 import com.alibaba.middleware.conf.RaceConfig.TableName;
 import com.alibaba.middleware.handlefile.DataFileMapping;
 import com.alibaba.middleware.race.OrderSystemImpl;
+import com.alibaba.middleware.tools.BufferedRandomAccessFile;
 import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.RecordsUtils;
 import com.esotericsoftware.kryo.Kryo;
@@ -57,7 +58,7 @@ public class DiskHashTable<K> implements Serializable {
 	private transient long lastOffset = 0;
 	private transient BucketCachePool bucketCachePool = null;			// 每建一个桶就往里注册一个
 
-	private transient LinkedBlockingQueue<RandomAccessFile>
+	private transient LinkedBlockingQueue<BufferedRandomAccessFile>
 	bucketReaderPool = null;
 	private transient ByteDirectMemory directMemory = null;
 	private long bucketAddressOffset = 0;					// 存桶对应物理地址的map的offset
@@ -81,9 +82,9 @@ public class DiskHashTable<K> implements Serializable {
 	public int orderListFileSeriNum = 0;								// 根据这个创建不同的orderidlist文件
 	public String orderListFilePrex = null;
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
 		buyerOrderIdListHandlersList = null;
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
 		goodOrderIdListHandlersList = null;
 	// 标志位 如果设为true 则表示要将offset建在索引本身后面
 	private boolean isNeedDump = false;
@@ -128,7 +129,7 @@ public class DiskHashTable<K> implements Serializable {
 		directMemory = ByteDirectMemory.getInstance();			//	获取direct memory
 		//directMemory.clear();									// 先不清空了
 		bucketCachePool = BucketCachePool.getInstance();
-		bucketReaderPool = new LinkedBlockingQueue<RandomAccessFile>();
+		bucketReaderPool = new LinkedBlockingQueue<BufferedRandomAccessFile>();
 		// 注册将桶写到direct memory的监控线程
 		//bucketWriterWhenBuilding = new FIFOCache(this);
 		//FIFOCacheMonitorThread.getInstance().registerFIFIOCache(bucketWriterWhenBuilding);
@@ -270,7 +271,7 @@ public class DiskHashTable<K> implements Serializable {
 			//directMemory.clear();												// 清空直接内存
 			// 建立索引文件句柄缓冲池
 			for( int i =0; i < RaceConfig.fileHandleNumber; i++) {
-				RandomAccessFile streamIn = new RandomAccessFile(bucketFilePath,"r");
+				BufferedRandomAccessFile streamIn = new BufferedRandomAccessFile(bucketFilePath,"r");
 				//ObjectInputStream bucketReader = new ObjectInputStream(streamIn);
 				bucketReaderPool.add(streamIn);
 			}
@@ -457,7 +458,7 @@ public class DiskHashTable<K> implements Serializable {
 						if(bucketAddressList == null) {
 							bucketAddressList = getHashDiskTable(bucketAddressOffset);
 						}
-						RandomAccessFile reader = bucketReaderPool.take();
+						BufferedRandomAccessFile reader = bucketReaderPool.take();
 						reader.seek(bucketAddressList.get(bucketKey));
 						byte[] bucketByteArray = null;
 						if( bucketKey == bucketNum -1 ) {

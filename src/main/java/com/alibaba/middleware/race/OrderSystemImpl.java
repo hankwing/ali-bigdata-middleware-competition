@@ -34,6 +34,7 @@ import com.alibaba.middleware.handlefile.FileIndexWithOffset;
 import com.alibaba.middleware.index.ByteDirectMemory;
 import com.alibaba.middleware.index.DiskHashTable;
 import com.alibaba.middleware.threads.*;
+import com.alibaba.middleware.tools.BufferedRandomAccessFile;
 import com.alibaba.middleware.tools.ByteUtils;
 import com.alibaba.middleware.tools.BytesKey;
 import com.alibaba.middleware.tools.RecordsUtils;
@@ -59,14 +60,14 @@ public class OrderSystemImpl implements OrderSystem {
 	// goodId里的goodId代理键索引
 	public ConcurrentHashMap<Integer, DiskHashTable<BytesKey>> goodIdIndexList = null;
 	// 文件句柄池<数据文件的下标，文件句柄队列>
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> orderHandlersList = null;
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList = null;
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> orderHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> buyerHandlersList = null;
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> goodHandlersList = null;
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
 	buyerOrderIdListHandlersList = null;
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
+	public ConcurrentHashMap<Integer, LinkedBlockingQueue<BufferedRandomAccessFile>> 
 	goodOrderIdListHandlersList = null;
 
 	//public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; 
@@ -139,16 +140,16 @@ public class OrderSystemImpl implements OrderSystem {
 					// 在内存中建立orderBench.txt的索引 建立期间可随时调用write将某个块写出去
 	
 					buyerfiles = new ArrayList<String>();
-//					buyerfiles.add("prerun_data/buyer.0.0");
-//					buyerfiles.add("prerun_data/buyer.1.1");
-					buyerfiles.add("benchmark/buyer_records_1.txt");
+					buyerfiles.add("prerun_data/buyer.0.0");
+					buyerfiles.add("prerun_data/buyer.1.1");
+//					buyerfiles.add("benchmark/buyer_records_1.txt");
 //					buyerfiles.add("benchmark/buyer_records_2.txt");
 	
 					goodfiles = new ArrayList<String>();
-//					goodfiles.add("prerun_data/good.0.0");
-//					goodfiles.add("prerun_data/good.1.1");
-//					goodfiles.add("prerun_data/good.2.2");
-					goodfiles.add("benchmark/good_records_1.txt");
+					goodfiles.add("prerun_data/good.0.0");
+					goodfiles.add("prerun_data/good.1.1");
+					goodfiles.add("prerun_data/good.2.2");
+//					goodfiles.add("benchmark/good_records_1.txt");
 //					goodfiles.add("benchmark/good_records_2.txt");
 //					goodfiles.add("benchmark/good_records_3.txt");
 //					goodfiles.add("benchmark/good_records_4.txt");
@@ -157,31 +158,31 @@ public class OrderSystemImpl implements OrderSystem {
 	
 					orderfiles = new ArrayList<String>();
 
-//					orderfiles.add("disk1/orders/order.0.0");
-//					orderfiles.add("disk2/orders/order.0.3");
-//					orderfiles.add("disk3/orders/order.1.1");
-//					orderfiles.add("disk1/orders/order.2.2");
+					orderfiles.add("disk1/orders/order.0.0");
+					orderfiles.add("disk2/orders/order.0.3");
+					orderfiles.add("disk3/orders/order.1.1");
+					orderfiles.add("disk1/orders/order.2.2");
 
 //					for( int i = 0; i <30; i++) {
 //						orderfiles.add("benchmark/order_records_"+ i + ".txt");
 //					}
 					
-					orderfiles.add("benchmark/order_records_2.txt");
-					orderfiles.add("benchmark/order_records_4.txt");
-					orderfiles.add("benchmark/order_records_5.txt");
-					orderfiles.add("benchmark/order_records_6.txt");
-					orderfiles.add("benchmark/order_records_9.txt");
-					orderfiles.add("benchmark/order_records_12.txt");
-					orderfiles.add("benchmark/order_records_18.txt");
-					orderfiles.add("benchmark/order_records_19.txt");
-					orderfiles.add("benchmark/order_records_20.txt");
-					orderfiles.add("benchmark/order_records_23.txt");
-					orderfiles.add("benchmark/order_records_24.txt");
-					orderfiles.add("benchmark/order_records_26.txt");
-					orderfiles.add("benchmark/order_records_27.txt");
-					orderfiles.add("benchmark/order_records_28.txt");
-					orderfiles.add("benchmark/order_records_29.txt");
-//	
+//					orderfiles.add("benchmark/order_records_2.txt");
+//					orderfiles.add("benchmark/order_records_4.txt");
+//					orderfiles.add("benchmark/order_records_5.txt");
+//					orderfiles.add("benchmark/order_records_6.txt");
+//					orderfiles.add("benchmark/order_records_9.txt");
+//					orderfiles.add("benchmark/order_records_12.txt");
+//					orderfiles.add("benchmark/order_records_18.txt");
+//					orderfiles.add("benchmark/order_records_19.txt");
+//					orderfiles.add("benchmark/order_records_20.txt");
+//					orderfiles.add("benchmark/order_records_23.txt");
+//					orderfiles.add("benchmark/order_records_24.txt");
+//					orderfiles.add("benchmark/order_records_26.txt");
+//					orderfiles.add("benchmark/order_records_27.txt");
+//					orderfiles.add("benchmark/order_records_28.txt");
+//					orderfiles.add("benchmark/order_records_29.txt");
+////	
 					List<String> storeFolders = new ArrayList<String>();
 					// 添加三个盘符
 					storeFolders.add("disk1/");
@@ -430,13 +431,13 @@ public class OrderSystemImpl implements OrderSystem {
 		buyerIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey>>();
 		// goodId里的goodId代理键索引
 		goodIdIndexList = new ConcurrentHashMap<Integer, DiskHashTable<BytesKey>>();
-		orderHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
-		buyerHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
-		goodHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+		orderHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
+		buyerHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
+		goodHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
 		buyerOrderIdListHandlersList = new 
-				ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+				ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
 		goodOrderIdListHandlersList = new 
-				ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+				ConcurrentHashMap<Integer,LinkedBlockingQueue<BufferedRandomAccessFile>>();
 		
 		orderFileMapping = new DataFileMapping();
 		buyerFileMapping = new DataFileMapping();
