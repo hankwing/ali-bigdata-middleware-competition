@@ -369,10 +369,37 @@ public class RecordsUtils {
 		} catch( Exception e) {
 			e.printStackTrace();
 		}
-		
-		
-
 	}
+
+//	public static void writeToFile(String fileName, ByteDirectMemory directMemory, DirectMemoryType type) {
+//		 File file = new File(fileName);
+//		 FileChannel wChannel;
+//		try {
+//			wChannel = new FileOutputStream(file).getChannel();
+//			switch( type) {
+//			 case BuyerIdSegment:
+//				 directMemory.orderBuyerBuffer.position(0);
+//				 wChannel.write(directMemory.orderBuyerBuffer);
+//				 directMemory.clearOneSegment(type);
+//				 break;
+//			 case GoodIdSegment:
+//				 directMemory.orderGoodBuffer.position(0);
+//				 wChannel.write(directMemory.orderGoodBuffer);
+//				 directMemory.clearOneSegment(type);
+//				 break;
+//			 default:
+//				 break;
+//			 }
+//			 wChannel.close();
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		 
+//	}
 	
 	/**
 	 * 从byteBuffer里读取一行数据
@@ -403,7 +430,7 @@ public class RecordsUtils {
 		while (true) {
 			buffer.get(data);
 			for (int i = 0; i < data.length; i++) {
-				if (data[i] == '\n') {
+				if (data[i] == (byte)'\n') {
 					isEnd = false;
 					locateEnd = i;
 					break;
