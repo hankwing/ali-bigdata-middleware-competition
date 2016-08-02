@@ -372,5 +372,34 @@ public class RecordsUtils {
 //		}
 //		 
 //	}
+	/**
+	 * 从buffer以readline的形式读取文件
+	 * @param buffer
+	 * @param offset
+	 * @return
+	 */
+	public static String byteBufferReadLine(ByteBuffer buffer, int offset) {
+		StringBuilder builder = new StringBuilder();
+		buffer.position(offset);
+		byte[] data = new byte[1024];
+		int locateEnd = 0;
+		boolean isEnd = true;
+		while (true) {
+			buffer.get(data);
+			for (int i = 0; i < data.length; i++) {
+				if (data[i] == '\n') {
+					isEnd = false;
+					locateEnd = i;
+					break;
+				}
+			}
+			if (isEnd == false) {
+				break;
+			}
+			builder.append(new String(data));
+		}
+		builder.append(new String(data,0,locateEnd));
+		return builder.toString();
+	}
 	
 }
