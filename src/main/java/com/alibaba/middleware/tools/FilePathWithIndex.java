@@ -1,7 +1,6 @@
 package com.alibaba.middleware.tools;
 
 import java.io.FileNotFoundException;
-import java.io.RandomAccessFile;
 
 /**
  * 存有文件的地址以及各个索引元数据的偏移地址(如果不为Null的话)

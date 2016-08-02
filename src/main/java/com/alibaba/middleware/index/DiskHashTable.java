@@ -184,7 +184,7 @@ public class DiskHashTable<K> implements Serializable {
 //						bucketAddressList = getHashDiskTable(bucketAddressOffset);
 //					}
 //
-//					RandomAccessFile reader = bucketReaderPool.take();
+//					BufferedRandomAccessFile reader = bucketReaderPool.take();
 //					reader.seek(bucketAddressList.get(key));
 //					
 //					byte[] bucketByteArray = null;
@@ -660,28 +660,28 @@ public class DiskHashTable<K> implements Serializable {
 			 case BuyerIdSegment:
 				 orderListFileSeriNum = buyerOrderIdListMapping.addDataFileName(orderListFileName);
 				 // 建立文件句柄
-				LinkedBlockingQueue<RandomAccessFile> handlersQueue = 
+				LinkedBlockingQueue<BufferedRandomAccessFile> handlersQueue = 
 						buyerOrderIdListHandlersList.get(orderListFileSeriNum);
 				if( handlersQueue == null) {
-					handlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+					handlersQueue = new LinkedBlockingQueue<BufferedRandomAccessFile>();
 					buyerOrderIdListHandlersList.put(orderListFileSeriNum, handlersQueue);
 				}
 				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					handlersQueue.add(new RandomAccessFile(orderListFileName, "r"));
+					handlersQueue.add(new BufferedRandomAccessFile(orderListFileName, "r"));
 				}
 				orderListFileSeriNum ++;
 				 break;
 			 case GoodIdSegment:
 				 orderListFileSeriNum = goodOrderIdListMapping.addDataFileName(orderListFileName);
 				// 建立文件句柄
-				LinkedBlockingQueue<RandomAccessFile> goodHandlersQueue = 
+				LinkedBlockingQueue<BufferedRandomAccessFile> goodHandlersQueue = 
 						goodOrderIdListHandlersList.get(orderListFileSeriNum);
 				if( goodHandlersQueue == null) {
-					goodHandlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+					goodHandlersQueue = new LinkedBlockingQueue<BufferedRandomAccessFile>();
 					goodOrderIdListHandlersList.put(orderListFileSeriNum, goodHandlersQueue);
 				}
 				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-					goodHandlersQueue.add(new RandomAccessFile(orderListFileName, "r"));
+					goodHandlersQueue.add(new BufferedRandomAccessFile(orderListFileName, "r"));
 				}
 				orderListFileSeriNum ++;
 				break;

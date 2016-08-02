@@ -43,7 +43,7 @@ public class ByteDirectMemory {
 	private int sharedSegOffset = 0;
 	private OrderSystemImpl system = null;
 	
-	public static ByteDirectMemory getInstance( OrderSystemImpl system) {
+	public synchronized static ByteDirectMemory getInstance( OrderSystemImpl system) {
 		if(instance == null) {
 			instance = new ByteDirectMemory(system, RaceConfig.directMemorySize);
 		}
@@ -562,6 +562,60 @@ public class ByteDirectMemory {
 	}
 	
 	/**
+	 * 从byteBuffer里读取一行数据
+	 * @param buffer
+	 * @param offset
+	 * @return
+	 */
+	public String getLineFromByteBuffer(int memoryType, int offset) {
+		
+		ByteBuffer buffer = null;
+		ReentrantReadWriteLock lock = null;
+		if( memoryType == RaceConfig.buyerMemory) {
+			// 从buyer缓冲区里拿
+			buffer = orderBuyerBuffer;
+			lock = orderBuyerSegLock;
+		}
+		else if( memoryType == RaceConfig.goodMemory){
+			buffer = orderGoodBuffer;
+			lock = orderGoodSegLock;
+		}
+		else {
+			buffer = sharedDirectBuffer;
+			lock = sharedSegLock;
+		}
+		lock.writeLock().lock();
+		
+		StringBuilder builder = new StringBuilder();
+		buffer.position(offset);
+		byte[] data = new byte[1024];
+		int locateEnd = 0;
+		boolean isEnd = true;
+		while (true) {
+			if (buffer.remaining() < data.length) {
+				data = new byte[buffer.remaining()];
+			}
+			buffer.get(data);
+			for (int i = 0; i < data.length; i++) {
+				if (data[i] == '\n') {
+					isEnd = false;
+					locateEnd = i;
+					break;
+				}
+			}
+			if (isEnd == false) {
+				break;
+			}
+			builder.append(new String(data));
+		}
+		builder.append(new String(data,0,locateEnd));
+		
+		lock.writeLock().unlock();
+		return builder.toString();
+	}
+
+	
+	/**
 	 * 将direct memory里的内容全部dump到文件里去
 	 */
 	public void dumpDirectMemory() {
@@ -603,14 +657,14 @@ public class ByteDirectMemory {
 //			 case GoodIdSegment:
 //				 orderListFileSeriNum = goodOrderIdListMapping.addDataFileName(orderListFileName);
 //				// 建立文件句柄
-//				LinkedBlockingQueue<RandomAccessFile> goodHandlersQueue = 
+//				LinkedBlockingQueue<BufferedRandomAccessFile> goodHandlersQueue = 
 //						goodOrderIdListHandlersList.get(orderListFileSeriNum);
 //				if( goodHandlersQueue == null) {
-//					goodHandlersQueue = new LinkedBlockingQueue<RandomAccessFile>();
+//					goodHandlersQueue = new LinkedBlockingQueue<BufferedRandomAccessFile>();
 //					goodOrderIdListHandlersList.put(orderListFileSeriNum, goodHandlersQueue);
 //				}
 //				for( int i = 0; i < RaceConfig.fileHandleNumber ; i++) {
-//					goodHandlersQueue.add(new RandomAccessFile(orderListFileName, "r"));
+//					goodHandlersQueue.add(new BufferedRandomAccessFile(orderListFileName, "r"));
 //				}
 //				orderListFileSeriNum ++;
 //				break;

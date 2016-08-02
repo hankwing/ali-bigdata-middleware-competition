@@ -126,13 +126,37 @@ public class RecordsUtils {
 	public static String getStringFromFile(
 			LinkedBlockingQueue<RandomAccessFile> file, Long offset,
 			TableName tableType) {
-		String result = null;
+		StringBuilder result = null;
 
 		try {
 			RandomAccessFile fileReader = file.take();
 			fileReader.seek(offset);
-			result = new String(fileReader.readLine().getBytes(
-					StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+			
+			result = new StringBuilder();
+			byte[] data = new byte[1024];
+			int locateEnd = 0;
+			boolean isEnd = true;
+			while (true) {
+//				if (fileReader.() < data.length) {
+//					data = new byte[buffer.remaining()];
+//				}
+				fileReader.read(data);
+				for (int i = 0; i < data.length; i++) {
+					if (data[i] == '\n') {
+						isEnd = false;
+						locateEnd = i;
+						break;
+					}
+				}
+				if (isEnd == false) {
+					break;
+				}
+				result.append(new String(data));
+			}
+			result.append(new String(data,0,locateEnd));
+			
+			//result = new String(fileReader.readLine().getBytes(
+			//		StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
 			// 放回文件句柄队列中
 			file.add(fileReader);
 		} catch (IOException e) {
@@ -143,7 +167,7 @@ public class RecordsUtils {
 			e.printStackTrace();
 		}
 
-		return result;
+		return result.toString();
 
 	}
 
@@ -275,23 +299,29 @@ public class RecordsUtils {
 	 * @return
 	 */
 	public static Row createKVMapFromLine(String line) {
-		if (line != null && !line.equals("")) {
-			Row kvMap = new Row();
-			String[] kvs = line.split("\t");
+		try{
+			if (line != null && !line.equals("")) {
+				Row kvMap = new Row();
+				String[] kvs = line.split("\t");
 
-			for (String rawkv : kvs) {
-				int p = rawkv.indexOf(':');
-				String key = rawkv.substring(0, p);
-				String value = rawkv.substring(p + 1);
-				if (key.length() == 0 || value.length() == 0) {
-					throw new RuntimeException("Bad data:" + line);
+				for (String rawkv : kvs) {
+					int p = rawkv.indexOf(':');
+					String key = rawkv.substring(0, p);
+					String value = rawkv.substring(p + 1);
+					if (key.length() == 0 || value.length() == 0) {
+						throw new RuntimeException("Bad data:" + line);
+					}
+					kvMap.put(key, new KeyValueImpl(key, value));
 				}
-				kvMap.put(key, new KeyValueImpl(key, value));
+				return kvMap;
+			} else {
+				return null;
 			}
-			return kvMap;
-		} else {
+		} catch( Exception e) {
+			System.out.println(line);
 			return null;
 		}
+		
 	}
 
 	/**
@@ -400,49 +430,4 @@ public class RecordsUtils {
 //		}
 //		 
 //	}
-	
-	/**
-	 * 从byteBuffer里读取一行数据
-	 * @param buffer
-	 * @param offset
-	 * @return
-	 */
-	public static String getLineFromByteBuffer(int memoryType, int offset) {
-		
-		ByteBuffer buffer = null;
-		ByteDirectMemory directMemorys = ByteDirectMemory.getInstance( null);
-		if( memoryType == RaceConfig.buyerMemory) {
-			// 从buyer缓冲区里拿
-			buffer = directMemorys.orderBuyerBuffer;
-		}
-		else if( memoryType == RaceConfig.goodMemory){
-			buffer = directMemorys.orderGoodBuffer;
-		}
-		else {
-			buffer = directMemorys.sharedDirectBuffer;
-		}
-		
-		StringBuilder builder = new StringBuilder();
-		buffer.position(offset);
-		byte[] data = new byte[1024];
-		int locateEnd = 0;
-		boolean isEnd = true;
-		while (true) {
-			buffer.get(data);
-			for (int i = 0; i < data.length; i++) {
-				if (data[i] == (byte)'\n') {
-					isEnd = false;
-					locateEnd = i;
-					break;
-				}
-			}
-			if (isEnd == false) {
-				break;
-			}
-			builder.append(new String(data));
-		}
-		builder.append(new String(data,0,locateEnd));
-		return builder.toString();
-	}
-
 }
