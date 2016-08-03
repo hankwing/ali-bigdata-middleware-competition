@@ -42,7 +42,7 @@ public class QueryOrdersBySalerThread {
 
 	public QueryOrdersBySalerThread(OrderSystemImpl system, String salerid,
 			String goodid, Collection<String> keys) {
-		directMemory = ByteDirectMemory.getInstance();
+		directMemory = ByteDirectMemory.getInstance(system);
 		this.system = system;
 		this.salerid = salerid;
 		this.goodid = goodid;
@@ -155,9 +155,9 @@ public class QueryOrdersBySalerThread {
 		if(!isCached){*/
 			// 在索引里找offsetlist
 			List<byte[]> offsets = new ArrayList<byte[]>();
-			for( int filePathIndex : system.goodIndexMapping.getAllFileIndexs()) {
+			//for( int filePathIndex : system.goodIndexMapping.getAllFileIndexs()) {
 				DiskHashTable<BytesKey> hashTable = 
-						system.goodIdIndexList.get(filePathIndex);
+						system.goodIdIndexList.get(0);
 				// 一次性解析所有offset
 				byte[] encodedOffsets = hashTable.get(surrId);
 				if( encodedOffsets != null) {
@@ -174,16 +174,25 @@ public class QueryOrdersBySalerThread {
 						// 跳过第一个字节
 						int pos = ByteUtils.byteArrayToLeInt(Arrays.copyOfRange(byteAndOffset, 
 								1, byteAndOffset.length));
-						if( memoryIndex >= 0) {
-							// 说明是在直接内存里
-							offsets.addAll(directMemory.getOrderIdListsFromBytes(memoryIndex, pos));
+						
+						if( memoryIndex == RaceConfig.buyerMemory) {
+							// 从buyer缓冲区里拿
+							offsets.addAll(RecordsUtils.getOrderIdListsFromFile(
+									system.buyerOrderIdListHandlersList, pos));
+						}
+						else if( memoryIndex == RaceConfig.goodMemory){
+							offsets.addAll(RecordsUtils.getOrderIdListsFromFile(
+									system.goodOrderIdListHandlersList, pos));
+						}
+						else if(memoryIndex == RaceConfig.sharedMemory){
+							offsets.addAll(RecordsUtils.getOrderIdListsFromFile(
+									system.sharedOrderIdListHandlersList, pos));
 						}
 						else {
 							// 说明自己就是数据的offset
 							offsets.add(byteAndOffset);
 						}
-						
-						
+
 						/*ByteBuffer buffer = ByteBuffer.wrap(byteAndOffset);
 						// 从byte解析出int			
 						int fileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
@@ -195,7 +204,7 @@ public class QueryOrdersBySalerThread {
 					}
 			
 				}
-			}
+			//}
 
 			handleOffsets(offsets, results, buyerKeys, goodKeys);
 			// 放入缓冲区

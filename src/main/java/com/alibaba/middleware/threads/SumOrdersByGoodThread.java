@@ -38,7 +38,7 @@ public class SumOrdersByGoodThread {
 
 	public SumOrdersByGoodThread(OrderSystemImpl system, String goodid,
 			String key) {
-		directMemory = ByteDirectMemory.getInstance();
+		directMemory = ByteDirectMemory.getInstance(system);
 		this.system = system;
 		this.goodid = goodid;
 		this.key = key;
@@ -96,9 +96,9 @@ public class SumOrdersByGoodThread {
 //		if (!isCached) {
 			// 说明没有找到 则在索引里找offsets
 		List<byte[]> offsetList = new ArrayList<byte[]>();
-			for( int filePathIndex : system.goodIndexMapping.getAllFileIndexs()) {
+			//for( int filePathIndex : system.goodIndexMapping.getAllFileIndexs()) {
 				DiskHashTable<BytesKey> hashTable = 
-						system.goodIdIndexList.get(filePathIndex);
+						system.goodIdIndexList.get(0);
 				// 一次性解析所有offset
 				byte[] encodedOffsets = hashTable.get(surrId);
 				if(encodedOffsets != null) {
@@ -115,9 +115,19 @@ public class SumOrdersByGoodThread {
 						// 跳过第一个字节
 						int pos = ByteUtils.byteArrayToLeInt(Arrays.copyOfRange(byteAndOffset, 
 								1, byteAndOffset.length));
-						if( memoryIndex >= 0) {
-							// 说明是在直接内存里
-							offsetList.addAll(directMemory.getOrderIdListsFromBytes(memoryIndex,pos));
+						
+						if( memoryIndex == RaceConfig.buyerMemory) {
+							// 从buyer缓冲区里拿
+							offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
+									system.buyerOrderIdListHandlersList, pos));
+						}
+						else if( memoryIndex == RaceConfig.goodMemory){
+							offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
+									system.goodOrderIdListHandlersList, pos));
+						}
+						else if(memoryIndex == RaceConfig.sharedMemory){
+							offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
+									system.sharedOrderIdListHandlersList, pos));
 						}
 						else {
 							// 说明自己就是数据的offset
@@ -127,7 +137,7 @@ public class SumOrdersByGoodThread {
 					}
 					
 				}
-			}
+			//}
 			// 放入缓冲区
 //			rowCache.putInIdCache(surrId, offsetList,
 //					IdIndexType.GoodIdToOrderOffsets);

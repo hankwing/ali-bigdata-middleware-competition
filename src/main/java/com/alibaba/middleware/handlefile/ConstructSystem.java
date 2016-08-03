@@ -1,5 +1,9 @@
 package com.alibaba.middleware.handlefile;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -201,9 +205,33 @@ public class ConstructSystem {
 			// 处理order表  要传前面两个小表索引的引用进去
 			//timer.cancel();
 
+			// 下面开始把direct memory里的orderList列表写出去  就写成三个文件就可以了
+			
+			
 			System.out.println("order time:"
 					+ (System.currentTimeMillis() - startTime) / 1000);
-			ByteDirectMemory.getInstance().clear();
+			// 将direct memory的内容写成三个文件
+			ByteDirectMemory directMemory = ByteDirectMemory.getInstance(systemImpl);
+			directMemory.dumpDirectMemory();
+			
+			// 下面开始往direct memroy里写入小文件数据
+			for(int fileIndex : systemImpl.buyerFileMapping.getAllFileIndexs()) {
+				String fileName = systemImpl.buyerFileMapping.getDataFileName(fileIndex);
+				FileChannel in = new FileInputStream(fileName).getChannel();
+				// posInfo第一位代表直接内存编号 第二位为直接内存内的offset
+				int[] posInfo = directMemory.putFileContent(in, DirectMemoryType.BuyerIdSegment);
+				systemImpl.buyerFileDirectMemoryAddress.put(fileIndex, posInfo);
+				in.close();
+			}
+			
+			for(int fileIndex : systemImpl.goodFileMapping.getAllFileIndexs()) {
+				String fileName = systemImpl.goodFileMapping.getDataFileName(fileIndex);
+				FileChannel in = new FileInputStream(fileName).getChannel();
+				// posInfo第一位代表直接内存编号 第二位为直接内存内的offset
+				int[] posInfo = directMemory.putFileContent(in, DirectMemoryType.GoodIdSegment);
+				systemImpl.goodFileDirectMemoryAddress.put(fileIndex, posInfo);
+				in.close();
+			}
 			
 			// 下面开始往direct memory里orderid的索引数据 加快查询
 			/*ByteDirectMemory directMemory = ByteDirectMemory.getInstance();
@@ -223,6 +251,12 @@ public class ConstructSystem {
 				}
 			}*/
 		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

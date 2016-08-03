@@ -62,12 +62,16 @@ public class OrderSystemImpl implements OrderSystem {
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> orderHandlersList = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> buyerHandlersList = null;
 	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> goodHandlersList = null;
+	
+	public ConcurrentHashMap<Integer, int[]> goodFileDirectMemoryAddress = null;
+	public ConcurrentHashMap<Integer, int[]> buyerFileDirectMemoryAddress = null;
+	
+	
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
-	buyerOrderIdListHandlersList = null;
+	public LinkedBlockingQueue<RandomAccessFile> buyerOrderIdListHandlersList = null;
 	// 存所有buyerid或者goodid对应的orderid list的文件句柄池
-	public ConcurrentHashMap<Integer, LinkedBlockingQueue<RandomAccessFile>> 
-	goodOrderIdListHandlersList = null;
+	public LinkedBlockingQueue<RandomAccessFile> goodOrderIdListHandlersList = null;
+	public LinkedBlockingQueue<RandomAccessFile> sharedOrderIdListHandlersList = null;
 
 	//public CopyOnWriteArrayList<FilePathWithIndex> orderFileList = null; 
 	//public CopyOnWriteArrayList<FilePathWithIndex> buyerFileList = null; 
@@ -97,6 +101,7 @@ public class OrderSystemImpl implements OrderSystem {
 //	private ThreadPool threadPool = ThreadPool.getInstance();
 //    private ExecutorService queryExe = threadPool.getQueryExe();
     public ConcurrentCache rowCache = null;
+    private ByteDirectMemory directMemory = null;
 //	private AtomicLong queryCounter = new AtomicLong(0L);
 //    private AtomicLong q1Sum = new AtomicLong(0L);
 //    private AtomicLong q2Sum = new AtomicLong(0L);
@@ -262,7 +267,7 @@ public class OrderSystemImpl implements OrderSystem {
 					while(results.hasNext()) {
 						System.out.println("values:" + results.next());
 					}
-//					System.out.println("start query2" );
+					System.out.println("start query2" );
 //					for( int i = 0; i < 8; i++) {
 //						// 启动八个线程同时查询
 //						Thread query = new Thread(new Runnable() {  
@@ -433,10 +438,13 @@ public class OrderSystemImpl implements OrderSystem {
 		orderHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
 		buyerHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
 		goodHandlersList = new ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
-		buyerOrderIdListHandlersList = new 
-				ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
-		goodOrderIdListHandlersList = new 
-				ConcurrentHashMap<Integer,LinkedBlockingQueue<RandomAccessFile>>();
+		
+		goodFileDirectMemoryAddress = new ConcurrentHashMap<Integer,int[]>();
+		buyerFileDirectMemoryAddress = new ConcurrentHashMap<Integer,int[]>();
+		
+		buyerOrderIdListHandlersList = new LinkedBlockingQueue<RandomAccessFile>();
+		goodOrderIdListHandlersList = new LinkedBlockingQueue<RandomAccessFile>();
+		sharedOrderIdListHandlersList = new LinkedBlockingQueue<RandomAccessFile>();
 		
 		orderFileMapping = new DataFileMapping();
 		buyerFileMapping = new DataFileMapping();
@@ -451,6 +459,7 @@ public class OrderSystemImpl implements OrderSystem {
 		//orderAttrList = new HashSet<String>(); // 保存order表的所有字段名称
 		buyerAttrList = new HashSet<String>(); // 保存buyer表的所有字段名称
 		goodAttrList = new HashSet<String>(); // 保存good表的所有字段名称
+		directMemory = ByteDirectMemory.getInstance(this);
 		//buyerIdSurrKeyFile = new FilePathWithIndex(); // 存代理键索引块的文件地址和索引元数据偏移地址
 		//goodIdSurrKeyFile = new FilePathWithIndex();
 
@@ -643,8 +652,19 @@ public class OrderSystemImpl implements OrderSystem {
 						// 从byte解析出int
 						int dataFileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 						long offset = ByteUtils.getLongOffset(buffer.getInt());
-						String records = RecordsUtils.getStringFromFile(
-								buyerHandlersList.get(dataFileIndex), offset, tableName);
+						String records = null;
+						
+						int directMemPos[] = buyerFileDirectMemoryAddress.get(dataFileIndex);
+						if( directMemPos[1] != -1) {
+							// 说明内容在直接内存里了
+							records = directMemory.getLineFromByteBuffer(directMemPos[0], 
+									(int) (directMemPos[1] + offset));
+						}
+						else {
+							records = RecordsUtils.getStringFromFile(
+									buyerHandlersList.get(dataFileIndex), offset, tableName);
+						}
+						
 						try{
 							// 放入缓冲区
 							rowCache.putInCache(key, records, TableName.BuyerTable);
@@ -676,8 +696,18 @@ public class OrderSystemImpl implements OrderSystem {
 						// 从byte解析出int
 						int dataFileIndex = ByteUtils.getMagicIntFromByte(buffer.get());
 						long offset = ByteUtils.getLongOffset(buffer.getInt());
-						String records = RecordsUtils.getStringFromFile(
-								goodHandlersList.get(dataFileIndex), offset, tableName);
+						String records = null;
+						
+						int directMemPos[] = goodFileDirectMemoryAddress.get(dataFileIndex);
+						if( directMemPos[1] != -1) {
+							// 说明内容在直接内存里了
+							records = directMemory.getLineFromByteBuffer(directMemPos[0], 
+									(int) (directMemPos[1] + offset));
+						}
+						else {
+							records = RecordsUtils.getStringFromFile(
+									goodHandlersList.get(dataFileIndex), offset, tableName);
+						}
 						try{
 							// 确认主键相同
 							rowCache.putInCache(goodKey, records, TableName.GoodTable);
