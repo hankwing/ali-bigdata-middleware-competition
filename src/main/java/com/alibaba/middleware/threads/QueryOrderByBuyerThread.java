@@ -44,7 +44,7 @@ public class QueryOrderByBuyerThread  {
         this.endTime = endTime;
         this.buyerid = buyerid;
         this.system = system;
-        directMemory = ByteDirectMemory.getInstance(system);
+        directMemory = ByteDirectMemory.getInstance();
     }
     
     /**
@@ -73,7 +73,9 @@ public class QueryOrderByBuyerThread  {
 				String diskData = RecordsUtils.getStringFromFile(
 						system.orderHandlersList.get(fileIndex), offset, TableName.OrderTable);
 				//rowCache.putInCache(new BytesKey(encodedOffset), diskData, TableName.OrderTable);
-				// 放入缓冲区	
+				// 放入缓冲区
+				
+				String goodid = RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId);
 				long createTime = Long.parseLong(RecordsUtils.getValueFromLine(
 						diskData, RaceConfig.createTime));
 				if(createTime >= startTime && createTime < endTime) {
@@ -81,7 +83,6 @@ public class QueryOrderByBuyerThread  {
 					// 加上其他表的所有数据
 					long orderid = Long.parseLong(RecordsUtils.getValueFromLine(
 							diskData, RaceConfig.orderId));
-					String goodid = RecordsUtils.getValueFromLine(diskData, RaceConfig.goodId);
 					StringBuilder resultBuilder = new StringBuilder();
 					resultBuilder.append(diskData).append("\t");
 					resultBuilder.append(system.getRowStringById(
@@ -134,9 +135,9 @@ public class QueryOrderByBuyerThread  {
 		if( !isCached) {*/
 			// 没找到则在索引里找offsetlist
 		List<byte[]> offsetList = new ArrayList<byte[]>();
-		//for( int filePathIndex : system.buyerIndexMapping.getAllFileIndexs()) {
+		for( int filePathIndex : system.buyerIndexMapping.getAllFileIndexs()) {
 			DiskHashTable<BytesKey> hashTable = 
-					system.buyerIdIndexList.get(0);
+					system.buyerIdIndexList.get(filePathIndex);
 			// 一次性解析所有offset
 			byte[] offsets = hashTable.get(surrId);
 			if( offsets != null) {
@@ -155,18 +156,9 @@ public class QueryOrderByBuyerThread  {
 					int pos = ByteUtils.byteArrayToLeInt(Arrays.copyOfRange(byteAndOffset, 
 							1, byteAndOffset.length));
 					
-					if( memoryIndex == RaceConfig.buyerMemory) {
-						// 从buyer缓冲区里拿
-						offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
-								system.buyerOrderIdListHandlersList, pos));
-					}
-					else if( memoryIndex == RaceConfig.goodMemory){
-						offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
-								system.goodOrderIdListHandlersList, pos));
-					}
-					else if(memoryIndex == RaceConfig.sharedMemory){
-						offsetList.addAll(RecordsUtils.getOrderIdListsFromFile(
-								system.sharedOrderIdListHandlersList, pos));
+					if( memoryIndex >= 0) {
+						// 说明是在直接内存里
+						offsetList.addAll(directMemory.getOrderIdListsFromBytes(memoryIndex, pos));
 					}
 					else {
 						// 说明自己就是数据的offset
@@ -175,7 +167,7 @@ public class QueryOrderByBuyerThread  {
 					
 				}
 			}
-		//}
+		}
 		/*for (int filePathIndex : system.orderIndexMapping.getAllFileIndexs()) {
 			DiskHashTable<byte[], byte[]> hashTable = 
 					system.orderBuyerIdIndexList.get(filePathIndex);
