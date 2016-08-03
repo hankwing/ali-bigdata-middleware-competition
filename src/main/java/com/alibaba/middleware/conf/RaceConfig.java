@@ -15,7 +15,7 @@ public class RaceConfig implements Serializable{
 	private static final long serialVersionUID = -4468293265402134589L;
 	public static long smallFileSizeThreshold = (long) (11* Math.pow(1024, 2));
 	
-	public static int directMemorySize = (int) (1.7 * Math.pow(1000, 2));
+	public static int directMemorySize = (int) (1720 * Math.pow(1000, 2));
 	// 用于标识是哪块direct memory
 	public static int buyerMemory = 0;
 	public static int goodMemory = 1;
